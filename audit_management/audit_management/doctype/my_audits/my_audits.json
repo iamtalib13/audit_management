@@ -1,0 +1,501 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{emp_branch}-{employee_id}-{DD}{MM}{YYYY}-{###}",
+ "creation": "2024-09-02 15:38:12.323236",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "admin_tab_tab",
+  "status",
+  "column_break_zjlzx",
+  "query_status",
+  "section_break_lrijp",
+  "level_1",
+  "bm_user_id",
+  "bm_user_status",
+  "column_break_wjjdl",
+  "level_2",
+  "dh_user_id",
+  "dh_user_status",
+  "com_user_id",
+  "com_user_status",
+  "column_break_nhcaj",
+  "column_break_riody",
+  "rm_user_id",
+  "rm_user_status",
+  "rom_user_id",
+  "rom_user_status",
+  "column_break_pcphc",
+  "level_4",
+  "zm_user_id",
+  "zm_user_status",
+  "zom_user_id",
+  "zom_user_status",
+  "section_break_ckbgv",
+  "level_5",
+  "gm_user_id",
+  "gm_user_status",
+  "column_break_ionng",
+  "level_6",
+  "coo_user_id",
+  "coo_user_status",
+  "column_break_cnkjc",
+  "level_7",
+  "ceo_user_id",
+  "ceo_user_status",
+  "new_request_tab",
+  "emp_branch",
+  "column_break_cp89q",
+  "employee_id",
+  "section_break_klcv0",
+  "employee_html",
+  "audit_query_section",
+  "query_generated_by_name",
+  "column_break_gw78v",
+  "query_generated_by_designation",
+  "column_break_eophe",
+  "query_generated_by_branch",
+  "section_break_q1bdt",
+  "audit_query_box",
+  "bm_response_section",
+  "bm_response_box",
+  "dh_com_response_section",
+  "dh_response_box",
+  "column_break_9tr1u",
+  "com_response_box",
+  "rm_rom_response_section",
+  "rm_response_box",
+  "column_break_puuhv",
+  "rom_response_box",
+  "zm_zom_response_section",
+  "zm_response_box",
+  "column_break_y5wxy",
+  "zom_response_box",
+  "gm_response_section",
+  "gm_response_box",
+  "coo_response_section",
+  "coo_response_box",
+  "ceo_response_section",
+  "ceo_response_box"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Enter Employee ID",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_cp89q",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_klcv0",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "employee_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "depends_on": "eval:frappe.session.user==\"Administrator\"",
+   "fieldname": "admin_tab_tab",
+   "fieldtype": "Tab Break",
+   "label": "Admin Tab"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nDraft\nPending\nClose"
+  },
+  {
+   "fieldname": "new_request_tab",
+   "fieldtype": "Tab Break",
+   "label": "New Request"
+  },
+  {
+   "fetch_from": "emp_branch.stage_1_bm_user_id",
+   "fieldname": "bm_user_id",
+   "fieldtype": "Data",
+   "label": "BM User ID"
+  },
+  {
+   "fetch_from": "emp_branch.stage_2_dh_user_id",
+   "fieldname": "dh_user_id",
+   "fieldtype": "Data",
+   "label": "DH User ID"
+  },
+  {
+   "fetch_from": "emp_branch.stage_2_com_user_id",
+   "fieldname": "com_user_id",
+   "fieldtype": "Data",
+   "label": "COM User ID"
+  },
+  {
+   "fetch_from": "emp_branch.stage_3_rm_user_id",
+   "fieldname": "rm_user_id",
+   "fieldtype": "Data",
+   "label": "RM User ID"
+  },
+  {
+   "fetch_from": "emp_branch.stage_3_rom_user_id",
+   "fieldname": "rom_user_id",
+   "fieldtype": "Data",
+   "label": "ROM User ID"
+  },
+  {
+   "fetch_from": "emp_branch.stage_4_zm_user_id",
+   "fieldname": "zm_user_id",
+   "fieldtype": "Data",
+   "label": "ZM User ID"
+  },
+  {
+   "fetch_from": "emp_branch.stage_4_zom_user_id",
+   "fieldname": "zom_user_id",
+   "fieldtype": "Data",
+   "label": "ZOM User ID"
+  },
+  {
+   "fetch_from": "emp_branch.stage_brn_gm_user_id",
+   "fieldname": "gm_user_id",
+   "fieldtype": "Data",
+   "label": "GM User ID"
+  },
+  {
+   "fetch_from": "emp_branch.stage_5_coo_user_id",
+   "fieldname": "coo_user_id",
+   "fieldtype": "Data",
+   "label": "COO User ID"
+  },
+  {
+   "fetch_from": "emp_branch.stage_6_ceo_user_id",
+   "fieldname": "ceo_user_id",
+   "fieldtype": "Data",
+   "label": "CEO User ID"
+  },
+  {
+   "fieldname": "section_break_lrijp",
+   "fieldtype": "Section Break",
+   "label": "Levels and Their Status"
+  },
+  {
+   "fieldname": "column_break_riody",
+   "fieldtype": "Heading",
+   "label": "Level 3"
+  },
+  {
+   "fieldname": "column_break_pcphc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_cnkjc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:!frappe.user.has_role(\"Audit Manager\");",
+   "fieldname": "audit_query_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "audit_query_box",
+   "fieldtype": "Small Text"
+  },
+  {
+   "depends_on": "eval:doc.bm_response_box != null || !frappe.user.has_role(\"Audit Manager\") && doc.status==\"Pending\" && doc.query_status==\"Pending From BM\" && doc.bm_user_status==\"Pending\" ",
+   "fieldname": "bm_response_section",
+   "fieldtype": "Section Break",
+   "label": "BM Response : ",
+   "read_only_depends_on": "eval:doc.query_status==\"Response From BM\" && doc.bm_user_status==\"Responded\""
+  },
+  {
+   "fieldname": "bm_response_box",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "dh_com_response_section",
+   "fieldtype": "Section Break",
+   "label": "DH & COM Response :"
+  },
+  {
+   "depends_on": "eval:doc.dh_response_box != null || frappe.session.user==doc.dh_user_id && doc.status==\"Pending\" && (doc.query_status==\"Pending From DH & COM\" || doc.query_status==\"Response From COM\") && doc.dh_user_status==\"Pending\" ",
+   "fieldname": "dh_response_box",
+   "fieldtype": "Small Text",
+   "label": "<b>Response Box For DH</b>"
+  },
+  {
+   "depends_on": "eval:doc.com_response_box != null || frappe.session.user==doc.com_user_id && doc.status==\"Pending\" && (doc.query_status==\"Pending From DH & COM\" || doc.query_status==\"Response From DH\") && doc.com_user_status==\"Pending\" ",
+   "fieldname": "com_response_box",
+   "fieldtype": "Small Text",
+   "label": "<b>Response Box For COM</b>"
+  },
+  {
+   "fieldname": "column_break_9tr1u",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rm_rom_response_section",
+   "fieldtype": "Section Break",
+   "label": "RM & ROM Response :"
+  },
+  {
+   "depends_on": "eval:doc.rm_response_box != null || frappe.session.user==doc.rm_user_id && doc.status==\"Pending\" && (doc.query_status==\"Pending From RM & ROM\" || doc.query_status==\"Response From ROM\") && doc.rm_user_status==\"Pending\"",
+   "fieldname": "rm_response_box",
+   "fieldtype": "Small Text",
+   "label": "<b>Response Box For RM</b>"
+  },
+  {
+   "fieldname": "column_break_puuhv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.rom_response_box != null || frappe.session.user==doc.rom_user_id && doc.status==\"Pending\" && (doc.query_status==\"Pending From RM & ROM\" || doc.query_status==\"Response From RM\") && doc.rom_user_status==\"Pending\"",
+   "fieldname": "rom_response_box",
+   "fieldtype": "Small Text",
+   "label": "<b>Response Box For ROM</b>"
+  },
+  {
+   "fieldname": "zm_zom_response_section",
+   "fieldtype": "Section Break",
+   "label": "ZM & ZOM Response :"
+  },
+  {
+   "depends_on": "eval:doc.zm_response_box != null || doc.status==\"Pending\" && doc.query_status==\"Pending From ZM\" && doc.zm_user_status==\"Pending\"",
+   "fieldname": "zm_response_box",
+   "fieldtype": "Small Text",
+   "label": "<b>Response Box For ZM</b>",
+   "read_only_depends_on": "eval:doc.query_status==\"Response From ZM\" && doc.zm_user_status==\"Responded\""
+  },
+  {
+   "fieldname": "column_break_y5wxy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.zom_response_box != null || doc.status==\"Pending\" && doc.query_status==\"Pending From ZOM\" && doc.zom_user_status==\"Pending\"",
+   "fieldname": "zom_response_box",
+   "fieldtype": "Small Text",
+   "label": "<b>Response Box For ZOM</b>",
+   "read_only_depends_on": "eval:doc.query_status==\"Response From ZOM\" && doc.zom_user_status==\"Responded\""
+  },
+  {
+   "depends_on": "eval:doc.gm_response_box != null || doc.status==\"Pending\" && doc.query_status==\"Pending From GM\" && doc.gm_user_status==\"Pending\"",
+   "fieldname": "gm_response_section",
+   "fieldtype": "Section Break",
+   "label": "GM Response :",
+   "read_only_depends_on": "eval:doc.query_status==\"Response From GM\" && doc.gm_user_status==\"Responded\""
+  },
+  {
+   "depends_on": "eval:doc.coo_response_box != null || doc.status==\"Pending\" && doc.query_status==\"Pending From COO\" && doc.coo_user_status==\"Pending\"",
+   "fieldname": "coo_response_section",
+   "fieldtype": "Section Break",
+   "label": "COO Response :",
+   "read_only_depends_on": "eval:doc.query_status==\"Response From COO\" && doc.coo_user_status==\"Responded\""
+  },
+  {
+   "depends_on": "eval:doc.ceo_response_box != null || doc.status==\"Pending\" && doc.query_status==\"Pending From CEO\" && doc.ceo_user_status==\"Pending\"",
+   "fieldname": "ceo_response_section",
+   "fieldtype": "Section Break",
+   "label": "CEO Response :",
+   "read_only_depends_on": "eval:doc.query_status==\"Response From CEO\" && doc.ceo_user_status==\"Responded\""
+  },
+  {
+   "fieldname": "query_status",
+   "fieldtype": "Select",
+   "label": "Query Status",
+   "options": "\nPending From BM\nResponse From BM\nPending From DH & COM\nResponse From DH\nResponse From COM\nResponse From DH & COM\nPending From RM & ROM\nResponse From RM\nResponse From ROM\nResponse From RM & ROM\nPending From ZM & ZOM\nResponse From ZM\nResponse From ZOM\nResponse From ZM & ZOM\nPending From GM\nResponse From GM\nPending From COO\nResponse From COO\nPending From CEO\nResponse From CEO"
+  },
+  {
+   "fieldname": "column_break_zjlzx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gm_response_box",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "coo_response_box",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "ceo_response_box",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "bm_user_status",
+   "fieldtype": "Select",
+   "label": "BM User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "column_break_wjjdl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_nhcaj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dh_user_status",
+   "fieldtype": "Select",
+   "label": "DH User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "level_1",
+   "fieldtype": "Heading",
+   "label": "Level 1"
+  },
+  {
+   "fieldname": "level_2",
+   "fieldtype": "Heading",
+   "label": "Level 2"
+  },
+  {
+   "fieldname": "com_user_status",
+   "fieldtype": "Select",
+   "label": "COM User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "rm_user_status",
+   "fieldtype": "Select",
+   "label": "RM User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "rom_user_status",
+   "fieldtype": "Select",
+   "label": "ROM User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "level_4",
+   "fieldtype": "Heading",
+   "label": "Level 4"
+  },
+  {
+   "fieldname": "zm_user_status",
+   "fieldtype": "Select",
+   "label": "ZM User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "zom_user_status",
+   "fieldtype": "Select",
+   "label": "ZOM User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "section_break_ckbgv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "level_5",
+   "fieldtype": "Heading",
+   "label": "Level 5"
+  },
+  {
+   "fieldname": "gm_user_status",
+   "fieldtype": "Select",
+   "label": "GM User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "column_break_ionng",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "level_6",
+   "fieldtype": "Heading",
+   "label": "Level 6"
+  },
+  {
+   "fieldname": "coo_user_status",
+   "fieldtype": "Select",
+   "label": "COO User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "level_7",
+   "fieldtype": "Heading",
+   "label": "Level 7"
+  },
+  {
+   "fieldname": "ceo_user_status",
+   "fieldtype": "Select",
+   "label": "CEO User Status",
+   "options": "\nPending\nResponded"
+  },
+  {
+   "fieldname": "query_generated_by_name",
+   "fieldtype": "Data",
+   "label": "Generated By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "query_generated_by_designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "query_generated_by_branch",
+   "fieldtype": "Data",
+   "label": "Branch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_gw78v",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_eophe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_q1bdt",
+   "fieldtype": "Section Break",
+   "label": "Audit Query :"
+  },
+  {
+   "fieldname": "emp_branch",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Enter Branch",
+   "options": "Audit Level",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-12 15:45:59.278199",
+ "modified_by": "Administrator",
+ "module": "Audit Management",
+ "name": "My Audits",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

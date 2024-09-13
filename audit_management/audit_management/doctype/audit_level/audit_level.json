@@ -1,0 +1,314 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:branch_for_level",
+ "creation": "2024-09-02 11:17:28.344188",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "branch_for_level",
+  "section_break_lwe7r",
+  "stage_1_bm_emp_id",
+  "stage_1_bm_user_id",
+  "stage_1_bm_html",
+  "stage_2_dh__com_section",
+  "stage_2_dh_emp_id",
+  "stage_2_dh_user_id",
+  "stage_2_dh_html",
+  "column_break_zkjp9",
+  "stage_2_com_emp_id",
+  "stage_2_com_user_id",
+  "stage_2_com_html",
+  "stage_3_rm_rom_section",
+  "stage_3_rm_emp_id",
+  "stage_3_rm_user_id",
+  "stage_3_rm_html",
+  "column_break_chjxt",
+  "stage_3_rom_emp_id",
+  "stage_3_rom_user_id",
+  "stage_3_rom_html",
+  "stage_4_zm_zom_section",
+  "stage_4_zm_emp_id",
+  "stage_4_zm_user_id",
+  "stage_4_zm_html",
+  "column_break_bjeqk",
+  "stage_4_zom_emp_id",
+  "stage_4_zom_user_id",
+  "stage_4_zom_html",
+  "branch_stage_gm_section",
+  "stage_brn_gm_emp_id",
+  "stage_brn_gm_user_id",
+  "stage_brn_gm_html",
+  "stage_5_coo_section",
+  "stage_5_coo_emp_id",
+  "stage_5_coo_user_id",
+  "stage_5_coo_html",
+  "stage_6_ceo_section",
+  "stage_6_ceo_emp_id",
+  "stage_6_ceo_user_id",
+  "stage_6_ceo_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_lwe7r",
+   "fieldtype": "Section Break",
+   "label": "Stage 1 (BM)"
+  },
+  {
+   "fieldname": "stage_2_dh__com_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 2 (DH / COM)"
+  },
+  {
+   "fieldname": "column_break_zkjp9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stage_3_rm_rom_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 3 (RM/ ROM)"
+  },
+  {
+   "fieldname": "column_break_chjxt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stage_1_bm_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>BM Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_1_bm_emp_id.user_id",
+   "fieldname": "stage_1_bm_user_id",
+   "fieldtype": "Data",
+   "label": "BM User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_1_bm_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "stage_2_dh_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>DH Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_2_dh_emp_id.user_id",
+   "fieldname": "stage_2_dh_user_id",
+   "fieldtype": "Data",
+   "label": "DH User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_2_dh_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "stage_2_com_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>COM Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_2_emp_id_2.user_id",
+   "fieldname": "stage_2_com_user_id",
+   "fieldtype": "Data",
+   "label": "COM User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_2_com_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "stage_3_rm_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>RM Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_3_rm_emp_id.user_id",
+   "fieldname": "stage_3_rm_user_id",
+   "fieldtype": "Data",
+   "label": "RM User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_3_rm_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "stage_3_rom_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>ROM Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_3_rom_emp_id.user_id",
+   "fieldname": "stage_3_rom_user_id",
+   "fieldtype": "Data",
+   "label": "ROM User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_3_rom_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "stage_4_zm_zom_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 4 (ZM/ ZOM)"
+  },
+  {
+   "fieldname": "stage_4_zm_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>ZM Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_4_zm_emp_id.user_id",
+   "fieldname": "stage_4_zm_user_id",
+   "fieldtype": "Data",
+   "label": "ZM User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_4_zm_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "column_break_bjeqk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stage_4_zom_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>ZOM Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_4_zom_emp_id.user_id",
+   "fieldname": "stage_4_zom_user_id",
+   "fieldtype": "Data",
+   "label": "ZOM User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_4_zom_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "branch_stage_gm_section",
+   "fieldtype": "Section Break",
+   "label": "Branch Stage (GM)"
+  },
+  {
+   "fieldname": "stage_brn_gm_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>GM Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_brn_gm_emp_id.user_id",
+   "fieldname": "stage_brn_gm_user_id",
+   "fieldtype": "Data",
+   "label": "GM User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_brn_gm_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "stage_5_coo_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 5 (COO)"
+  },
+  {
+   "fieldname": "stage_5_coo_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>COO Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_5_coo_emp_id.user_id",
+   "fieldname": "stage_5_coo_user_id",
+   "fieldtype": "Data",
+   "label": "COO User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_5_coo_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "stage_6_ceo_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 6 (CEO)"
+  },
+  {
+   "fieldname": "stage_6_ceo_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>CEO Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_6_ceo_emp_id.user_id",
+   "fieldname": "stage_6_ceo_user_id",
+   "fieldtype": "Data",
+   "label": "CEO User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_6_ceo_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "branch_for_level",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "unique": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-05 16:43:02.325975",
+ "modified_by": "Administrator",
+ "module": "Audit Management",
+ "name": "Audit Level",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
