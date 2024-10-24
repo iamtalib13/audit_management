@@ -127,24 +127,14 @@ app_license = "xyz"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"audit_management.tasks.all"
-# 	],
-# 	"daily": [
-# 		"audit_management.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"audit_management.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"audit_management.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"audit_management.tasks.monthly"
-# 	],
-# }
-
+scheduler_events = {
+    "cron": {
+        # Run every minute
+        "* * * * *": [
+            "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat"
+        ]
+    }
+}
 # Testing
 # -------
 
