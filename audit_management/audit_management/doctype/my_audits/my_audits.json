@@ -21,6 +21,8 @@
   "bm_pending_time",
   "column_break_vxjwg",
   "bm_user_id",
+  "column_break_afr2c",
+  "bm_mail",
   "stage_2_dh_section",
   "dh_name",
   "column_break_dnpp3",
@@ -29,6 +31,8 @@
   "dh_pending_time",
   "column_break_fz1nz",
   "dh_user_id",
+  "column_break_d1sa3",
+  "dh_mail",
   "stage_2_com_section",
   "com_name",
   "column_break_xreqg",
@@ -37,6 +41,8 @@
   "com_pending_time",
   "column_break_rfkyl",
   "com_user_id",
+  "column_break_vcp40",
+  "com_mail",
   "column_break_nhcaj",
   "rm_name",
   "column_break_safcx",
@@ -45,6 +51,8 @@
   "rm_pending_time",
   "column_break_4aarg",
   "rm_user_id",
+  "column_break_dfuzt",
+  "rm_mail",
   "stage_2_rom_section",
   "rom_name",
   "column_break_4ps5i",
@@ -53,6 +61,8 @@
   "rom_pending_time",
   "column_break_iu9eb",
   "rom_user_id",
+  "column_break_vrfxf",
+  "rom_mail",
   "column_break_pcphc",
   "zm_name",
   "column_break_8hm3a",
@@ -61,6 +71,8 @@
   "zm_pending_time",
   "column_break_h3kbq",
   "zm_user_id",
+  "column_break_2jptk",
+  "zm_mail",
   "stage_4_zom_section",
   "zom_name",
   "column_break_bnhmj",
@@ -69,6 +81,8 @@
   "zom_pending_time",
   "column_break_rqscm",
   "zom_user_id",
+  "column_break_6lf1g",
+  "zom_mail",
   "stage_5_gm_section",
   "gm_name",
   "column_break_k5ueu",
@@ -77,6 +91,8 @@
   "gm_pending_time",
   "column_break_xbqqz",
   "gm_user_id",
+  "column_break_sltt1",
+  "gm_mail",
   "stage_6_coo_section",
   "coo_name",
   "column_break_dzolr",
@@ -85,6 +101,8 @@
   "coo_pending_time",
   "column_break_wnz26",
   "coo_user_id",
+  "column_break_kdwwx",
+  "coo_mail",
   "stage_7_ceo_section",
   "ceo_name",
   "column_break_yogfk",
@@ -93,6 +111,8 @@
   "ceo_pending_time",
   "column_break_zeyjn",
   "ceo_user_id",
+  "column_break_peasz",
+  "ceo_mail",
   "new_request_tab",
   "enter_branch_section",
   "emp_branch",
@@ -105,6 +125,7 @@
   "query_generated_by_branch",
   "audit_query_section",
   "audit_attach_box",
+  "audit_query_subject_box",
   "audit_query_box",
   "bm_response_section",
   "bm_attach_box",
@@ -239,7 +260,7 @@
    "columns": 8,
    "fieldname": "audit_query_box",
    "fieldtype": "Small Text",
-   "label": "<span>&nbsp;</span>"
+   "label": "Query Description :"
   },
   {
    "fieldname": "bm_response_section",
@@ -834,11 +855,116 @@
   {
    "fieldname": "enter_branch_section",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "audit_query_subject_box",
+   "fieldtype": "Data",
+   "label": "Query Subject :"
+  },
+  {
+   "fieldname": "column_break_afr2c",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_1_bm_mail",
+   "fieldname": "bm_mail",
+   "fieldtype": "Data",
+   "label": "BM Mail"
+  },
+  {
+   "fieldname": "column_break_d1sa3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_2_dh_mail",
+   "fieldname": "dh_mail",
+   "fieldtype": "Data",
+   "label": "DH Mail"
+  },
+  {
+   "fieldname": "column_break_vcp40",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_2_com_mail",
+   "fieldname": "com_mail",
+   "fieldtype": "Data",
+   "label": "COM Mail"
+  },
+  {
+   "fieldname": "column_break_dfuzt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_3_rm_mail",
+   "fieldname": "rm_mail",
+   "fieldtype": "Data",
+   "label": "RM Mail"
+  },
+  {
+   "fieldname": "column_break_vrfxf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_3_rom_mail",
+   "fieldname": "rom_mail",
+   "fieldtype": "Data",
+   "label": "ROM Mail"
+  },
+  {
+   "fieldname": "column_break_2jptk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_4_zm_mail",
+   "fieldname": "zm_mail",
+   "fieldtype": "Data",
+   "label": "ZM Mail"
+  },
+  {
+   "fieldname": "column_break_6lf1g",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_4_zom_mail",
+   "fieldname": "zom_mail",
+   "fieldtype": "Data",
+   "label": "ZOM Mail"
+  },
+  {
+   "fieldname": "column_break_sltt1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_5_gm_mail",
+   "fieldname": "gm_mail",
+   "fieldtype": "Data",
+   "label": "GM Mail"
+  },
+  {
+   "fieldname": "column_break_kdwwx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_6_coo_mail",
+   "fieldname": "coo_mail",
+   "fieldtype": "Data",
+   "label": "COO Mail"
+  },
+  {
+   "fieldname": "column_break_peasz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_7_ceo_mail",
+   "fieldname": "ceo_mail",
+   "fieldtype": "Data",
+   "label": "CEO Mail"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-30 14:08:53.047627",
+ "modified": "2024-11-21 16:35:35.963568",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
