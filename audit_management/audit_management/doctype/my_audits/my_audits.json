@@ -827,7 +827,7 @@
    "label": "Stage 7 (CEO)"
   },
   {
-   "depends_on": "eval:!frappe.user.has_role(\"Audit Manager\");",
+   "depends_on": "eval:!doc.query_generated_by_name",
    "fieldname": "generated_by_section",
    "fieldtype": "Section Break"
   },
@@ -838,7 +838,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-19 14:56:52.760446",
+ "modified": "2024-10-30 14:08:53.047627",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

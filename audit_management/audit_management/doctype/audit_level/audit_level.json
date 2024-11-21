@@ -15,60 +15,111 @@
     "stage_1_bm_user_id",
     "column_break_a0dzt",
     "stage_1_bm_name",
+<<<<<<< HEAD
+=======
+    "column_break_v1upb",
+    "stage_1_bm_mail",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     "stage_2_dh_section",
     "stage_2_dh_emp_id",
     "column_break_zkjp9",
     "stage_2_dh_user_id",
     "column_break_zfokj",
     "stage_2_dh_name",
+<<<<<<< HEAD
+=======
+    "column_break_jiglr",
+    "stage_2_dh_mail",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     "stage_2_com_section",
     "stage_2_com_emp_id",
     "column_break_l9n86",
     "stage_2_com_user_id",
     "column_break_zevqu",
     "stage_2_com_name",
+<<<<<<< HEAD
+=======
+    "column_break_nxkqn",
+    "stage_2_com_mail",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     "stage_3_rm_section",
     "stage_3_rm_emp_id",
     "column_break_chjxt",
     "stage_3_rm_user_id",
     "column_break_zqqia",
     "stage_3_rm_name",
+<<<<<<< HEAD
+=======
+    "column_break_ol793",
+    "stage_3_rm_mail",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     "stage_3_rom_section",
     "stage_3_rom_emp_id",
     "column_break_orlwa",
     "stage_3_rom_user_id",
     "column_break_chpln",
     "stage_3_rom_name",
+<<<<<<< HEAD
+=======
+    "column_break_tqftz",
+    "stage_3_rom_mail",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     "stage_4_zm_section",
     "stage_4_zm_emp_id",
     "column_break_bjeqk",
     "stage_4_zm_user_id",
     "column_break_jmaoq",
     "stage_4_zm_name",
+<<<<<<< HEAD
+=======
+    "column_break_pt3r1",
+    "stage_4_zm_mail",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     "stage_4_zom_section",
     "stage_4_zom_emp_id",
     "column_break_tzlnx",
     "stage_4_zom_user_id",
     "column_break_gbizx",
     "stage_4_zom_name",
+<<<<<<< HEAD
+=======
+    "column_break_efkh4",
+    "stage_4_zom_mail",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     "stage_5_gm_section",
     "stage_5_gm_emp_id",
     "column_break_y6mfe",
     "stage_5_gm_user_id",
     "column_break_fdglz",
     "stage_5_gm_name",
+<<<<<<< HEAD
+=======
+    "column_break_cogey",
+    "stage_5_gm_mail",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     "stage_6_coo_section",
     "stage_6_coo_emp_id",
     "column_break_wd2ri",
     "stage_6_coo_user_id",
     "column_break_mlzxp",
     "stage_6_coo_name",
+<<<<<<< HEAD
+=======
+    "column_break_rsmjy",
+    "stage_6_coo_mail",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     "stage_7_ceo_section",
     "stage_7_ceo_emp_id",
     "column_break_r8qhq",
     "stage_7_ceo_user_id",
     "column_break_ryavi",
+<<<<<<< HEAD
     "stage_7_ceo_name"
+=======
+    "stage_7_ceo_name",
+    "column_break_z7ayy",
+    "stage_7_ceo_mail"
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
   ],
   "fields": [
     {
@@ -416,11 +467,116 @@
       "label": "Branch",
       "options": "Branch",
       "unique": 1
+    },
+    {
+      "fieldname": "column_break_v1upb",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_1_bm_emp_id.company_email",
+      "fieldname": "stage_1_bm_mail",
+      "fieldtype": "Data",
+      "label": "BM Mail"
+    },
+    {
+      "fieldname": "column_break_jiglr",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_2_dh_emp_id.company_email",
+      "fieldname": "stage_2_dh_mail",
+      "fieldtype": "Data",
+      "label": "DH Mail"
+    },
+    {
+      "fieldname": "column_break_nxkqn",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_2_com_emp_id.company_email",
+      "fieldname": "stage_2_com_mail",
+      "fieldtype": "Data",
+      "label": "COM Mail"
+    },
+    {
+      "fieldname": "column_break_ol793",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_3_rm_emp_id.company_email",
+      "fieldname": "stage_3_rm_mail",
+      "fieldtype": "Data",
+      "label": "RM Mail"
+    },
+    {
+      "fieldname": "column_break_tqftz",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_3_rom_emp_id.company_email",
+      "fieldname": "stage_3_rom_mail",
+      "fieldtype": "Data",
+      "label": "ROM Mail"
+    },
+    {
+      "fieldname": "column_break_pt3r1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_4_zm_emp_id.company_email",
+      "fieldname": "stage_4_zm_mail",
+      "fieldtype": "Data",
+      "label": "ZM Mail"
+    },
+    {
+      "fieldname": "column_break_efkh4",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_4_zom_emp_id.company_email",
+      "fieldname": "stage_4_zom_mail",
+      "fieldtype": "Data",
+      "label": "ZOM Mail"
+    },
+    {
+      "fieldname": "column_break_cogey",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_5_gm_emp_id.company_email",
+      "fieldname": "stage_5_gm_mail",
+      "fieldtype": "Data",
+      "label": "GM mail"
+    },
+    {
+      "fieldname": "column_break_rsmjy",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_6_coo_emp_id.company_email",
+      "fieldname": "stage_6_coo_mail",
+      "fieldtype": "Data",
+      "label": "COO Mail"
+    },
+    {
+      "fieldname": "column_break_z7ayy",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_7_ceo_emp_id.company_email",
+      "fieldname": "stage_7_ceo_mail",
+      "fieldtype": "Data",
+      "label": "CEO Mail"
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
     }
   ],
   "index_web_pages_for_search": 1,
   "links": [],
+<<<<<<< HEAD
   "modified": "2024-10-16 18:02:35.986447",
+=======
+  "modified": "2024-11-21 10:28:06.299561",
+>>>>>>> 2d97509aab72efd82333cdcd9534825425dd3620
   "modified_by": "Administrator",
   "module": "Audit Management",
   "name": "Audit Level",
