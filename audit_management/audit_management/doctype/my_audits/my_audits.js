@@ -16,8 +16,12 @@ frappe.ui.form.on("My Audits", {
       frm.set_df_property("audit_query_box", "read_only", true);
       frm.set_df_property("emp_branch", "read_only", true);
       frm.set_df_property("employee_id", "read_only", true);
+      frm.set_df_property("audit_query_subject_box", "read_only", true);
     }
     if (frappe.user.has_role("Audit Manager") && frm.doc.status === "Pending") {
+      frm.disable_form();
+    }
+    if (frappe.user.has_role("Audit Manager") && frm.doc.status === "Draft") {
       frm.disable_form();
     }
     if (
@@ -106,6 +110,16 @@ frappe.ui.form.on("My Audits", {
   employee_id: function (frm) {
     frm.trigger("fetch_employee_id");
   },
+  audit_query_subject_box: function (frm) {
+    // Check if audit_query_box has a value before converting to uppercase
+    if (frm.doc.audit_query_subject_box) {
+      frm.set_value(
+        "audit_query_subject_box",
+        frm.doc.audit_query_subject_box.toUpperCase()
+      );
+      frm.refresh_field("audit_query_subject_box");
+    }
+  },
   audit_query_box: function (frm) {
     // Check if audit_query_box has a value before converting to uppercase
     if (frm.doc.audit_query_box) {
@@ -189,7 +203,6 @@ frappe.ui.form.on("My Audits", {
       frm.set_value("status", "Draft");
       frm.refresh_field("status");
     }
-
     // Check if branch and employee_details are not empty before saving
     // if (!frm.doc.emp_branch || !frm.doc.employee_id) {
     //   frappe.msgprint(
@@ -199,10 +212,18 @@ frappe.ui.form.on("My Audits", {
     //   return;
     // }
 
+    if (!frm.doc.audit_query_subject_box) {
+      frappe.msgprint(
+        "<b>Before saving, First input your Query subject in the Query Subject Box.</b>"
+      );
+      frappe.validated = false;
+      return;
+    }
+
     // Check if query_box is not empty before saving
     if (!frm.doc.audit_query_box) {
       frappe.msgprint(
-        "<b>Before saving, First input your queries in the Query Box.</b>"
+        "<b>Before saving, First describe your Query in the Query Description Box.</b>"
       );
       frappe.validated = false;
       return;
@@ -911,15 +932,6 @@ frappe.ui.form.on("My Audits", {
       frappe.user.has_role("Audit Manager") &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
-      console.log("Condition met: User is Audit Manager and status is Draft.");
-      console.log("User roles:", frappe.user.roles); // Log user roles
-      console.log("Document status:", frm.doc.status); // Log the document status
-
-      // Make fields read-only and add custom button
-      frm.set_df_property("audit_query_box", "read_only", true);
-      frm.set_df_property("emp_branch", "read_only", true);
-      frm.set_df_property("employee_id", "read_only", true);
-
       frm
         .add_custom_button(
           __("Send to BM"),
