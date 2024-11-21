@@ -111,7 +111,7 @@
   "ceo_pending_time",
   "column_break_zeyjn",
   "ceo_user_id",
-  "column_break_peasz",
+  "column_break_yvwil",
   "ceo_mail",
   "new_request_tab",
   "enter_branch_section",
@@ -952,19 +952,19 @@
    "label": "COO Mail"
   },
   {
-   "fieldname": "column_break_peasz",
-   "fieldtype": "Column Break"
-  },
-  {
    "fetch_from": "emp_branch.stage_7_ceo_mail",
    "fieldname": "ceo_mail",
    "fieldtype": "Data",
    "label": "CEO Mail"
+  },
+  {
+   "fieldname": "column_break_yvwil",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-21 16:35:35.963568",
+ "modified": "2024-11-21 17:13:00.963107",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

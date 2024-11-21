@@ -109,6 +109,7 @@ frappe.ui.form.on("My Audits", {
   },
   employee_id: function (frm) {
     frm.trigger("fetch_employee_id");
+    //fetching employee data (audit employee)
   },
   audit_query_subject_box: function (frm) {
     // Check if audit_query_box has a value before converting to uppercase
