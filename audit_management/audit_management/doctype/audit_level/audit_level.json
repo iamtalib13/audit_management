@@ -139,7 +139,7 @@
    "options": "Employee"
   },
   {
-   "fetch_from": "stage_2_emp_id_2.user_id",
+   "fetch_from": "stage_2_com_emp_id.user_id",
    "fieldname": "stage_2_com_user_id",
    "fieldtype": "Data",
    "label": "COM User ID",
@@ -530,7 +530,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-21 13:53:13.646659",
+ "modified": "2024-11-21 13:27:42.645870",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",
