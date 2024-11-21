@@ -1,446 +1,566 @@
 {
- "actions": [],
- "allow_rename": 1,
- "autoname": "field:emp_branch",
- "creation": "2024-09-02 11:17:28.344188",
- "default_view": "List",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "emp_branch",
-  "section_break_lwe7r",
-  "stage_1_bm_emp_id",
-  "column_break_4v6eo",
-  "stage_1_bm_user_id",
-  "column_break_a0dzt",
-  "stage_1_bm_name",
-  "stage_2_dh_section",
-  "stage_2_dh_emp_id",
-  "column_break_zkjp9",
-  "stage_2_dh_user_id",
-  "column_break_zfokj",
-  "stage_2_dh_name",
-  "stage_2_com_section",
-  "stage_2_com_emp_id",
-  "column_break_l9n86",
-  "stage_2_com_user_id",
-  "column_break_zevqu",
-  "stage_2_com_name",
-  "stage_3_rm_section",
-  "stage_3_rm_emp_id",
-  "column_break_chjxt",
-  "stage_3_rm_user_id",
-  "column_break_zqqia",
-  "stage_3_rm_name",
-  "stage_3_rom_section",
-  "stage_3_rom_emp_id",
-  "column_break_orlwa",
-  "stage_3_rom_user_id",
-  "column_break_chpln",
-  "stage_3_rom_name",
-  "stage_4_zm_section",
-  "stage_4_zm_emp_id",
-  "column_break_bjeqk",
-  "stage_4_zm_user_id",
-  "column_break_jmaoq",
-  "stage_4_zm_name",
-  "stage_4_zom_section",
-  "stage_4_zom_emp_id",
-  "column_break_tzlnx",
-  "stage_4_zom_user_id",
-  "column_break_gbizx",
-  "stage_4_zom_name",
-  "stage_5_gm_section",
-  "stage_5_gm_emp_id",
-  "column_break_y6mfe",
-  "stage_5_gm_user_id",
-  "column_break_fdglz",
-  "stage_5_gm_name",
-  "stage_6_coo_section",
-  "stage_6_coo_emp_id",
-  "column_break_wd2ri",
-  "stage_6_coo_user_id",
-  "column_break_mlzxp",
-  "stage_6_coo_name",
-  "stage_7_ceo_section",
-  "stage_7_ceo_emp_id",
-  "column_break_r8qhq",
-  "stage_7_ceo_user_id",
-  "column_break_ryavi",
-  "stage_7_ceo_name"
- ],
- "fields": [
-  {
-   "fieldname": "section_break_lwe7r",
-   "fieldtype": "Section Break",
-   "label": "Stage 1 (BM)"
-  },
-  {
-   "fieldname": "column_break_zkjp9",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_chjxt",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "stage_1_bm_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>BM Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_1_bm_emp_id.user_id",
-   "fieldname": "stage_1_bm_user_id",
-   "fieldtype": "Data",
-   "label": "BM User ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_2_dh_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>DH Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_2_dh_emp_id.user_id",
-   "fieldname": "stage_2_dh_user_id",
-   "fieldtype": "Data",
-   "label": "DH User ID"
-  },
-  {
-   "fieldname": "stage_2_com_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>COM Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_2_emp_id_2.user_id",
-   "fieldname": "stage_2_com_user_id",
-   "fieldtype": "Data",
-   "label": "COM User ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_3_rm_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>RM Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_3_rm_emp_id.user_id",
-   "fieldname": "stage_3_rm_user_id",
-   "fieldtype": "Data",
-   "label": "RM User ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_3_rom_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>ROM Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_3_rom_emp_id.user_id",
-   "fieldname": "stage_3_rom_user_id",
-   "fieldtype": "Data",
-   "label": "ROM User ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_4_zm_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>ZM Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_4_zm_emp_id.user_id",
-   "fieldname": "stage_4_zm_user_id",
-   "fieldtype": "Data",
-   "label": "ZM User ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_bjeqk",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "stage_4_zom_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>ZOM Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_4_zom_emp_id.user_id",
-   "fieldname": "stage_4_zom_user_id",
-   "fieldtype": "Data",
-   "label": "ZOM User ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_4v6eo",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_a0dzt",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_1_bm_emp_id.employee_name",
-   "fieldname": "stage_1_bm_name",
-   "fieldtype": "Data",
-   "label": "BM Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_zfokj",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_2_dh_emp_id.employee_name",
-   "fieldname": "stage_2_dh_name",
-   "fieldtype": "Data",
-   "label": "DH Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_2_dh_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 2 (DH)"
-  },
-  {
-   "fieldname": "stage_2_com_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 2 (COM)"
-  },
-  {
-   "fieldname": "column_break_l9n86",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_zevqu",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_2_com_emp_id.employee_name",
-   "fieldname": "stage_2_com_name",
-   "fieldtype": "Data",
-   "label": "COM Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_zqqia",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_3_rm_emp_id.employee_name",
-   "fieldname": "stage_3_rm_name",
-   "fieldtype": "Data",
-   "label": "RM Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_3_rom_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 3 (ROM)"
-  },
-  {
-   "fieldname": "column_break_orlwa",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_chpln",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_3_rom_emp_id.employee_name",
-   "fieldname": "stage_3_rom_name",
-   "fieldtype": "Data",
-   "label": "ROM Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_jmaoq",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_4_zm_emp_id.employee_name",
-   "fieldname": "stage_4_zm_name",
-   "fieldtype": "Data",
-   "label": "ZM Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_4_zom_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 4 (ZOM)"
-  },
-  {
-   "fieldname": "column_break_tzlnx",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_gbizx",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_4_zom_emp_id.employee_name",
-   "fieldname": "stage_4_zom_name",
-   "fieldtype": "Data",
-   "label": "ZOM Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_3_rm_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 3 (RM)"
-  },
-  {
-   "fieldname": "stage_4_zm_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 4 (ZM)"
-  },
-  {
-   "fieldname": "stage_5_gm_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 5 (GM)"
-  },
-  {
-   "fieldname": "stage_6_coo_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 6 (COO)"
-  },
-  {
-   "fieldname": "stage_6_coo_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>COO Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_6_coo_emp_id.user_id",
-   "fieldname": "stage_6_coo_user_id",
-   "fieldtype": "Data",
-   "label": "COO User ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_7_ceo_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 7 (CEO)"
-  },
-  {
-   "fieldname": "stage_7_ceo_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>CEO Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_7_ceo_emp_id.user_id",
-   "fieldname": "stage_7_ceo_user_id",
-   "fieldtype": "Data",
-   "label": "CEO User ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stage_5_gm_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>GM Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fieldname": "column_break_y6mfe",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_5_gm_emp_id.user_id",
-   "fieldname": "stage_5_gm_user_id",
-   "fieldtype": "Data",
-   "label": "GM User ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_fdglz",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_5_gm_emp_id.employee_name",
-   "fieldname": "stage_5_gm_name",
-   "fieldtype": "Data",
-   "label": "GM Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_wd2ri",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_mlzxp",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_6_coo_emp_id.employee_name",
-   "fieldname": "stage_6_coo_name",
-   "fieldtype": "Data",
-   "label": "COO Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_r8qhq",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_ryavi",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "stage_7_ceo_emp_id.employee_name",
-   "fieldname": "stage_7_ceo_name",
-   "fieldtype": "Data",
-   "label": "CEO Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "emp_branch",
-   "fieldtype": "Link",
-   "label": "Branch",
-   "options": "Branch",
-   "unique": 1
-  }
- ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-10-16 18:02:35.986447",
- "modified_by": "Administrator",
- "module": "Audit Management",
- "name": "Audit Level",
- "naming_rule": "By fieldname",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:emp_branch",
+  "creation": "2024-09-02 11:17:28.344188",
+  "default_view": "List",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "emp_branch",
+    "section_break_lwe7r",
+    "stage_1_bm_emp_id",
+    "column_break_4v6eo",
+    "stage_1_bm_user_id",
+    "column_break_a0dzt",
+    "stage_1_bm_name",
+    "column_break_v1upb",
+    "stage_1_bm_mail",
+    "stage_2_dh_section",
+    "stage_2_dh_emp_id",
+    "column_break_zkjp9",
+    "stage_2_dh_user_id",
+    "column_break_zfokj",
+    "stage_2_dh_name",
+    "column_break_jiglr",
+    "stage_2_dh_mail",
+    "stage_2_com_section",
+    "stage_2_com_emp_id",
+    "column_break_l9n86",
+    "stage_2_com_user_id",
+    "column_break_zevqu",
+    "stage_2_com_name",
+    "column_break_nxkqn",
+    "stage_2_com_mail",
+    "stage_3_rm_section",
+    "stage_3_rm_emp_id",
+    "column_break_chjxt",
+    "stage_3_rm_user_id",
+    "column_break_zqqia",
+    "stage_3_rm_name",
+    "column_break_ol793",
+    "stage_3_rm_mail",
+    "stage_3_rom_section",
+    "stage_3_rom_emp_id",
+    "column_break_orlwa",
+    "stage_3_rom_user_id",
+    "column_break_chpln",
+    "stage_3_rom_name",
+    "column_break_tqftz",
+    "stage_3_rom_mail",
+    "stage_4_zm_section",
+    "stage_4_zm_emp_id",
+    "column_break_bjeqk",
+    "stage_4_zm_user_id",
+    "column_break_jmaoq",
+    "stage_4_zm_name",
+    "column_break_pt3r1",
+    "stage_4_zm_mail",
+    "stage_4_zom_section",
+    "stage_4_zom_emp_id",
+    "column_break_tzlnx",
+    "stage_4_zom_user_id",
+    "column_break_gbizx",
+    "stage_4_zom_name",
+    "column_break_efkh4",
+    "stage_4_zom_mail",
+    "stage_5_gm_section",
+    "stage_5_gm_emp_id",
+    "column_break_y6mfe",
+    "stage_5_gm_user_id",
+    "column_break_fdglz",
+    "stage_5_gm_name",
+    "column_break_cogey",
+    "stage_5_gm_mail",
+    "stage_6_coo_section",
+    "stage_6_coo_emp_id",
+    "column_break_wd2ri",
+    "stage_6_coo_user_id",
+    "column_break_mlzxp",
+    "stage_6_coo_name",
+    "column_break_rsmjy",
+    "stage_6_coo_mail",
+    "stage_7_ceo_section",
+    "stage_7_ceo_emp_id",
+    "column_break_r8qhq",
+    "stage_7_ceo_user_id",
+    "column_break_ryavi",
+    "stage_7_ceo_name",
+    "column_break_z7ayy",
+    "stage_7_ceo_mail"
+  ],
+  "fields": [
+    {
+      "fieldname": "section_break_lwe7r",
+      "fieldtype": "Section Break",
+      "label": "Stage 1 (BM)"
+    },
+    {
+      "fieldname": "column_break_zkjp9",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "column_break_chjxt",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "stage_1_bm_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>BM Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fetch_from": "stage_1_bm_emp_id.user_id",
+      "fieldname": "stage_1_bm_user_id",
+      "fieldtype": "Data",
+      "label": "BM User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_2_dh_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>DH Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fetch_from": "stage_2_dh_emp_id.user_id",
+      "fieldname": "stage_2_dh_user_id",
+      "fieldtype": "Data",
+      "label": "DH User ID"
+    },
+    {
+      "fieldname": "stage_2_com_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>COM Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fetch_from": "stage_2_emp_id_2.user_id",
+      "fieldname": "stage_2_com_user_id",
+      "fieldtype": "Data",
+      "label": "COM User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_3_rm_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>RM Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fetch_from": "stage_3_rm_emp_id.user_id",
+      "fieldname": "stage_3_rm_user_id",
+      "fieldtype": "Data",
+      "label": "RM User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_3_rom_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>ROM Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fetch_from": "stage_3_rom_emp_id.user_id",
+      "fieldname": "stage_3_rom_user_id",
+      "fieldtype": "Data",
+      "label": "ROM User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_4_zm_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>ZM Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fetch_from": "stage_4_zm_emp_id.user_id",
+      "fieldname": "stage_4_zm_user_id",
+      "fieldtype": "Data",
+      "label": "ZM User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_bjeqk",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "stage_4_zom_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>ZOM Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fetch_from": "stage_4_zom_emp_id.user_id",
+      "fieldname": "stage_4_zom_user_id",
+      "fieldtype": "Data",
+      "label": "ZOM User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_4v6eo",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "column_break_a0dzt",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_1_bm_emp_id.employee_name",
+      "fieldname": "stage_1_bm_name",
+      "fieldtype": "Data",
+      "label": "BM Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_zfokj",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_2_dh_emp_id.employee_name",
+      "fieldname": "stage_2_dh_name",
+      "fieldtype": "Data",
+      "label": "DH Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_2_dh_section",
+      "fieldtype": "Section Break",
+      "label": "Stage 2 (DH)"
+    },
+    {
+      "fieldname": "stage_2_com_section",
+      "fieldtype": "Section Break",
+      "label": "Stage 2 (COM)"
+    },
+    {
+      "fieldname": "column_break_l9n86",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "column_break_zevqu",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_2_com_emp_id.employee_name",
+      "fieldname": "stage_2_com_name",
+      "fieldtype": "Data",
+      "label": "COM Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_zqqia",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_3_rm_emp_id.employee_name",
+      "fieldname": "stage_3_rm_name",
+      "fieldtype": "Data",
+      "label": "RM Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_3_rom_section",
+      "fieldtype": "Section Break",
+      "label": "Stage 3 (ROM)"
+    },
+    {
+      "fieldname": "column_break_orlwa",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "column_break_chpln",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_3_rom_emp_id.employee_name",
+      "fieldname": "stage_3_rom_name",
+      "fieldtype": "Data",
+      "label": "ROM Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_jmaoq",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_4_zm_emp_id.employee_name",
+      "fieldname": "stage_4_zm_name",
+      "fieldtype": "Data",
+      "label": "ZM Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_4_zom_section",
+      "fieldtype": "Section Break",
+      "label": "Stage 4 (ZOM)"
+    },
+    {
+      "fieldname": "column_break_tzlnx",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "column_break_gbizx",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_4_zom_emp_id.employee_name",
+      "fieldname": "stage_4_zom_name",
+      "fieldtype": "Data",
+      "label": "ZOM Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_3_rm_section",
+      "fieldtype": "Section Break",
+      "label": "Stage 3 (RM)"
+    },
+    {
+      "fieldname": "stage_4_zm_section",
+      "fieldtype": "Section Break",
+      "label": "Stage 4 (ZM)"
+    },
+    {
+      "fieldname": "stage_5_gm_section",
+      "fieldtype": "Section Break",
+      "label": "Stage 5 (GM)"
+    },
+    {
+      "fieldname": "stage_6_coo_section",
+      "fieldtype": "Section Break",
+      "label": "Stage 6 (COO)"
+    },
+    {
+      "fieldname": "stage_6_coo_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>COO Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fetch_from": "stage_6_coo_emp_id.user_id",
+      "fieldname": "stage_6_coo_user_id",
+      "fieldtype": "Data",
+      "label": "COO User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_7_ceo_section",
+      "fieldtype": "Section Break",
+      "label": "Stage 7 (CEO)"
+    },
+    {
+      "fieldname": "stage_7_ceo_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>CEO Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fetch_from": "stage_7_ceo_emp_id.user_id",
+      "fieldname": "stage_7_ceo_user_id",
+      "fieldtype": "Data",
+      "label": "CEO User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "stage_5_gm_emp_id",
+      "fieldtype": "Link",
+      "ignore_user_permissions": 1,
+      "label": "<b>GM Employee ID</b>",
+      "options": "Employee"
+    },
+    {
+      "fieldname": "column_break_y6mfe",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_5_gm_emp_id.user_id",
+      "fieldname": "stage_5_gm_user_id",
+      "fieldtype": "Data",
+      "label": "GM User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_fdglz",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_5_gm_emp_id.employee_name",
+      "fieldname": "stage_5_gm_name",
+      "fieldtype": "Data",
+      "label": "GM Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_wd2ri",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "column_break_mlzxp",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_6_coo_emp_id.employee_name",
+      "fieldname": "stage_6_coo_name",
+      "fieldtype": "Data",
+      "label": "COO Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_r8qhq",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "column_break_ryavi",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_7_ceo_emp_id.employee_name",
+      "fieldname": "stage_7_ceo_name",
+      "fieldtype": "Data",
+      "label": "CEO Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "emp_branch",
+      "fieldtype": "Link",
+      "label": "Branch",
+      "options": "Branch",
+      "unique": 1
+    },
+    {
+      "fieldname": "column_break_v1upb",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_1_bm_emp_id.company_email",
+      "fieldname": "stage_1_bm_mail",
+      "fieldtype": "Data",
+      "label": "BM Mail"
+    },
+    {
+      "fieldname": "column_break_jiglr",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_2_dh_emp_id.company_email",
+      "fieldname": "stage_2_dh_mail",
+      "fieldtype": "Data",
+      "label": "DH Mail"
+    },
+    {
+      "fieldname": "column_break_nxkqn",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_2_com_emp_id.company_email",
+      "fieldname": "stage_2_com_mail",
+      "fieldtype": "Data",
+      "label": "COM Mail"
+    },
+    {
+      "fieldname": "column_break_ol793",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_3_rm_emp_id.company_email",
+      "fieldname": "stage_3_rm_mail",
+      "fieldtype": "Data",
+      "label": "RM Mail"
+    },
+    {
+      "fieldname": "column_break_tqftz",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_3_rom_emp_id.company_email",
+      "fieldname": "stage_3_rom_mail",
+      "fieldtype": "Data",
+      "label": "ROM Mail"
+    },
+    {
+      "fieldname": "column_break_pt3r1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_4_zm_emp_id.company_email",
+      "fieldname": "stage_4_zm_mail",
+      "fieldtype": "Data",
+      "label": "ZM Mail"
+    },
+    {
+      "fieldname": "column_break_efkh4",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_4_zom_emp_id.company_email",
+      "fieldname": "stage_4_zom_mail",
+      "fieldtype": "Data",
+      "label": "ZOM Mail"
+    },
+    {
+      "fieldname": "column_break_cogey",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_5_gm_emp_id.company_email",
+      "fieldname": "stage_5_gm_mail",
+      "fieldtype": "Data",
+      "label": "GM mail"
+    },
+    {
+      "fieldname": "column_break_rsmjy",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_6_coo_emp_id.company_email",
+      "fieldname": "stage_6_coo_mail",
+      "fieldtype": "Data",
+      "label": "COO Mail"
+    },
+    {
+      "fieldname": "column_break_z7ayy",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fetch_from": "stage_7_ceo_emp_id.company_email",
+      "fieldname": "stage_7_ceo_mail",
+      "fieldtype": "Data",
+      "label": "CEO Mail"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2024-11-21 10:28:06.299561",
+  "modified_by": "Administrator",
+  "module": "Audit Management",
+  "name": "Audit Level",
+  "naming_rule": "By fieldname",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
 }

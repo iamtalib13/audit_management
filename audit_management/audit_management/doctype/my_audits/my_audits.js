@@ -1940,49 +1940,53 @@ frappe.ui.form.on("My Audits", {
       });
   },
   close_query: function (frm) {
-    frm
-      .add_custom_button(__("Close Query"), function () {
-        frappe.confirm(
-          "This will ensure that you're satisfied with the recent response and close the query.<br><b>Are you sure you want to close this audit query?</b>",
-          function () {
-            // Action if 'Yes' is selected
-            if (frm.doc.status !== "Close") {
-              // Prompt for closing remarks
-              frappe.prompt(
-                [
-                  {
-                    label: "Enter Closing Remark",
-                    fieldname: "closing_remark",
-                    fieldtype: "Data", // You can use 'Data' for a simple text box or 'Text Editor' for a larger input area
-                    reqd: 1, // Makes the field required
+    if (frm.doc.status !== "Close") {
+      frm
+        .add_custom_button(__("Close Query"), function () {
+          frappe.confirm(
+            "This will ensure that you're satisfied with the recent response and close the query.<br><b>Are you sure you want to close this audit query?</b>",
+            function () {
+              // Action if 'Yes' is selected
+              if (frm.doc.status !== "Close") {
+                // Prompt for closing remarks
+                frappe.prompt(
+                  [
+                    {
+                      label: "Enter Closing Remark",
+                      fieldname: "closing_remark",
+                      fieldtype: "Data", // You can use 'Data' for a simple text box or 'Text Editor' for a larger input area
+                      reqd: 1, // Makes the field required
+                    },
+                  ],
+                  function (data) {
+                    // Action to take after getting the remark
+                    frm.set_value("closing_remark", data.closing_remark); // Assuming you have a field for closing remarks in your doctype
+                    frm.set_value("status", "Close");
+                    frm.save().then(function () {
+                      frappe.msgprint(
+                        "<b>Audit query closed successfully!</b>"
+                      );
+                      frm.disable_form(); // Disable form after closing the query
+                    });
                   },
-                ],
-                function (data) {
-                  // Action to take after getting the remark
-                  frm.set_value("closing_remark", data.closing_remark); // Assuming you have a field for closing remarks in your doctype
-                  frm.set_value("status", "Close");
-                  frm.save().then(function () {
-                    frappe.msgprint("<b>Audit query closed successfully!</b>");
-                    frm.disable_form(); // Disable form after closing the query
-                  });
-                },
-                "Enter Closing Remark", // Title of the prompt
-                "Close" // Title of the confirm button
-              );
-            } else {
-              frappe.msgprint("<b>This query is already closed.</b>");
+                  "Enter Closing Remark", // Title of the prompt
+                  "Close" // Title of the confirm button
+                );
+              } else {
+                frappe.msgprint("<b>This query is already closed.</b>");
+              }
+            },
+            function () {
+              // Action if 'No' is selected
+              frappe.msgprint("Action cancelled.");
             }
-          },
-          function () {
-            // Action if 'No' is selected
-            frappe.msgprint("Action cancelled.");
-          }
-        );
-      })
-      .css({
-        "background-color": "#dc3545",
-        color: "#ffffff",
-      });
+          );
+        })
+        .css({
+          "background-color": "#dc3545",
+          color: "#ffffff",
+        });
+    }
   },
   onload: function (frm) {
     // Define the function inside the onload event
