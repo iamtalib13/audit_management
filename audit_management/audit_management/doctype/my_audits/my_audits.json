@@ -19,7 +19,7 @@
   "bm_user_status",
   "column_break_jcpix",
   "bm_pending_time",
-  "column_break_vxjwg",
+  "column_break_vghnk",
   "bm_user_id",
   "column_break_afr2c",
   "bm_mail",
@@ -691,10 +691,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "column_break_vxjwg",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "stages_and_their_status",
    "fieldtype": "Heading",
    "label": "Stages and Their Status"
@@ -960,11 +956,15 @@
   {
    "fieldname": "column_break_yvwil",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_vghnk",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-21 17:13:00.963107",
+ "modified": "2024-11-22 10:19:05.714754",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

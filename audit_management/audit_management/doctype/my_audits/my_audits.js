@@ -38,8 +38,8 @@ frappe.ui.form.on("My Audits", {
         frm.set_df_property("dh_attach_box", "read_only", true);
       }
       if (frm.doc.com_user_status === "Responded") {
-        frm.set_df_property("com_response_box", "read_only", 1);
         frm.set_df_property("com_attach_box", "read_only", true);
+        frm.set_df_property("com_response_box", "read_only", 1);
       }
       frm.refresh_field("dh_response_box");
       frm.refresh_field("dh_attach_box");
