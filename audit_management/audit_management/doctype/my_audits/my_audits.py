@@ -1,6 +1,6 @@
 # Copyright (c) 2024, Sahayog and contributors
 # For license information, please see license.txt
-
+import re
 import frappe
 from frappe.model.document import Document
 from frappe.utils import now, time_diff_in_hours
@@ -227,97 +227,92 @@ def send_to_all(record):
 
 @frappe.whitelist()
 def check_pending_tat():
-    """Check for pending statuses and trigger the next stage if 1 minute has passed for debugging."""
-    
+    """Check for pending statuses and trigger the next stage if the pending time exceeds the threshold."""
+
     def has_pending_exceeded(record, user_status_field, pending_time_field):
-        """Helper function to check if the pending time has exceeded 1 minute."""
+        """Helper function to check if the pending time has exceeded the set threshold."""
         status = getattr(record, user_status_field)
         pending_time = getattr(record, pending_time_field)
-        return status == "Pending" and pending_time and time_diff_in_hours(now_time, pending_time) >= 24
-    
-    # Fetch all records where any stage is still 'Pending'
-    pending_records = frappe.get_all("My Audits", or_filters=[
-        ["bm_user_status", "=", "Pending"],
-        ["dh_user_status", "=", "Pending"],
-        ["com_user_status", "=", "Pending"],
-        ["rm_user_status", "=", "Pending"],
-        ["rom_user_status", "=", "Pending"],
-        ["zm_user_status", "=", "Pending"],
-        ["zom_user_status", "=", "Pending"],
-        ["gm_user_status", "=", "Pending"],
-        ["coo_user_status", "=", "Pending"],
-        ["ceo_user_status", "=", "Pending"]
-    ], fields=["name", "bm_user_status", "bm_pending_time", "dh_user_status", "dh_pending_time",
-                "com_user_status", "com_pending_time", "rm_user_status", "rm_pending_time", 
-                "rom_user_status", "rom_pending_time", "zm_user_status", "zm_pending_time",
-                "zom_user_status", "zom_pending_time", "gm_user_status", "gm_pending_time",
-                "coo_user_status", "coo_pending_time", "ceo_user_status", "ceo_pending_time"])
+        query_type = getattr(record, "query_type", None)
 
+        # Determine TAT based on conditions
+        if user_status_field == "bm_user_status":
+            if query_type == "Branch Compliance":
+                tat_time = 15 * 24  # 15 days in hours
+                tat_day = "15 Days TAT"  # Set TAT day for Branch Compliance
+            elif query_type == "Urgent":
+                tat_time = 24  # 1 day in hours
+                tat_day = "1 Days TAT"  # Set TAT day for Urgent
+            else:
+                tat_time = 24  # Default TAT (1 day)
+                tat_day = "1 Days TAT"  # Default TAT day
+        else:
+            tat_hours = 24  # Default TAT for other statuses (1 day)
+            tat_day = "15D then 1D TAT"  # Default TAT day for other statuses
+
+        # Check if the pending time has exceeded the threshold
+        if status == "Pending" and pending_time:
+            time_diff_minutes = time_diff_in_hours(now_time, pending_time)
+            if time_diff_minutes >= tat_time:
+                # Set the TAT day field based on the conditions
+                frappe.db.set_value("My Audits", record.name, "tat_day", tat_day, update_modified=False)
+                return True
+        return False
+
+    # Fetch current time
     now_time = now()
-    updates = []  # Store updates to be made to the database
+
+    # Fetch all records where any stage is still 'Pending'
+    pending_records = frappe.get_all(
+        "My Audits",
+        or_filters=[
+            ["bm_user_status", "=", "Pending"],
+            ["dh_user_status", "=", "Pending"],
+            ["com_user_status", "=", "Pending"],
+            ["rm_user_status", "=", "Pending"],
+            ["rom_user_status", "=", "Pending"],
+            ["zm_user_status", "=", "Pending"],
+            ["zom_user_status", "=", "Pending"],
+            ["gm_user_status", "=", "Pending"],
+            ["coo_user_status", "=", "Pending"],
+            ["ceo_user_status", "=", "Pending"],
+        ],
+        fields=[
+            "name", "query_type", "bm_user_status", "bm_pending_time", "dh_user_status", "dh_pending_time",
+            "com_user_status", "com_pending_time", "rm_user_status", "rm_pending_time",
+            "rom_user_status", "rom_pending_time", "zm_user_status", "zm_pending_time",
+            "zom_user_status", "zom_pending_time", "gm_user_status", "gm_pending_time",
+            "coo_user_status", "coo_pending_time", "ceo_user_status", "ceo_pending_time"
+        ],
+    )
+
+    updates = []  # Store updates for batch processing
 
     for record in pending_records:
-        # Check BM status
-        if has_pending_exceeded(record, "bm_user_status", "bm_pending_time"):
-            # Check if dh_user_status and com_user_status are empty
-            if not record.dh_user_status:
-                updates.append({"name": record.name, "field": "dh_user_status", "value": "Pending"})
-                updates.append({"name": record.name, "field": "dh_pending_time", "value": now_time})
+        # Process each level sequentially
+        for user_status_field, pending_time_field, next_fields in [
+            ("bm_user_status", "bm_pending_time", [("dh_user_status", "dh_pending_time"), ("com_user_status", "com_pending_time")]),
+            ("dh_user_status", "dh_pending_time", [("rm_user_status", "rm_pending_time"), ("rom_user_status", "rom_pending_time")]),
+            ("rm_user_status", "rm_pending_time", [("zm_user_status", "zm_pending_time"), ("zom_user_status", "zom_pending_time")]),
+            ("zm_user_status", "zm_pending_time", [("gm_user_status", "gm_pending_time")]),
+            ("gm_user_status", "gm_pending_time", [("coo_user_status", "coo_pending_time")]),
+            ("coo_user_status", "coo_pending_time", [("ceo_user_status", "ceo_pending_time")]),
+        ]:
+            if has_pending_exceeded(record, user_status_field, pending_time_field):
+                for next_field, next_time_field in next_fields:
+                    if not getattr(record, next_field):
+                        updates.append({"name": record.name, "field": user_status_field, "value": "No Response"})
+                        updates.append({"name": record.name, "field": next_field, "value": "Pending"})
+                        updates.append({"name": record.name, "field": next_time_field, "value": now_time})
 
-            if not record.com_user_status:
-                updates.append({"name": record.name, "field": "com_user_status", "value": "Pending"})
-                updates.append({"name": record.name, "field": "com_pending_time", "value": now_time})
-
-        # Check DH/COM status
-        if (has_pending_exceeded(record, "dh_user_status", "dh_pending_time") or 
-            has_pending_exceeded(record, "com_user_status", "com_pending_time")):
-            if not record.rm_user_status:
-                updates.append({"name": record.name, "field": "rm_user_status", "value": "Pending"})
-                updates.append({"name": record.name, "field": "rm_pending_time", "value": now_time})
-            if not record.rom_user_status:
-                updates.append({"name": record.name, "field": "rom_user_status", "value": "Pending"})
-                updates.append({"name": record.name, "field": "rom_pending_time", "value": now_time})
-
-        # Check RM/ROM status
-        if (has_pending_exceeded(record, "rm_user_status", "rm_pending_time") or 
-            has_pending_exceeded(record, "rom_user_status", "rom_pending_time")):
-            if not record.zm_user_status:
-                updates.append({"name": record.name, "field": "zm_user_status", "value": "Pending"})
-                updates.append({"name": record.name, "field": "zm_pending_time", "value": now_time})
-
-            if not record.zom_user_status:
-                updates.append({"name": record.name, "field": "zom_user_status", "value": "Pending"})
-                updates.append({"name": record.name, "field": "zom_pending_time", "value": now_time})
-
-
-        # Check ZM/ZOM status
-        if (has_pending_exceeded(record, "zm_user_status", "zm_pending_time") or 
-            has_pending_exceeded(record, "zom_user_status", "zom_pending_time")):
-            if not record.gm_user_status:
-                updates.append({"name": record.name, "field": "gm_user_status", "value": "Pending"})
-                updates.append({"name": record.name, "field": "gm_pending_time", "value": now_time})
-
-        # Check GM status
-        if has_pending_exceeded(record, "gm_user_status", "gm_pending_time"):
-            if not record.coo_user_status:
-                updates.append({"name": record.name, "field": "coo_user_status", "value": "Pending"})
-                updates.append({"name": record.name, "field": "coo_pending_time", "value": now_time})
-
-
-        # Check COO status
-        if has_pending_exceeded(record, "coo_user_status", "coo_pending_time"):
-            if not record.ceo_user_status:
-                updates.append({"name": record.name, "field": "ceo_user_status", "value": "Pending"})
-                updates.append({"name": record.name, "field": "ceo_pending_time", "value": now_time})
-
-
-    # Execute all updates in one go
+    # Batch update all pending statuses
     for update in updates:
-        frappe.db.set_value("My Audits", update['name'], update['field'], update['value'], update_modified=False)
+        frappe.db.set_value("My Audits", update["name"], update["field"], update["value"], update_modified=False)
 
     frappe.db.commit()
 
 
+#this was for testing
 @frappe.whitelist()
 def printing_all_records():
     """Fetch and print all records where any stage is still 'Pending'."""
@@ -344,3 +339,134 @@ def printing_all_records():
         record_str = str(record)[:140]  # Truncate the record string to 140 characters
         frappe.log_error(record_str, "Pending Audit Record")  # Log for debugging
         print(record)
+
+@frappe.whitelist()
+def get_audit_counts(is_admin=None):
+    # Adjust the SQL queries based on the is_admin flag
+    counts = {}
+
+    # Example SQL queries based on the value of is_admin
+    if is_admin == "yes":
+        # Query for Admin or Audit Manager (e.g., all records)
+        counts["total_count"] = frappe.db.count("My Audits")
+        counts["draft_count"] = frappe.db.count("My Audits", filters={"status": "Draft"})
+        counts["pending_count"] = frappe.db.count("My Audits", filters={"status": "Pending"})
+        counts["close_count"] = frappe.db.count("My Audits", filters={"status": "Close"})
+        counts["bm_pending_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "Pending"})
+        counts["dh_pending_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "Pending"})
+        counts["com_pending_count"] = frappe.db.count("My Audits", filters={"com_user_status": "Pending"})
+        counts["rm_pending_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "Pending"})
+        counts["rom_pending_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "Pending"})
+        counts["zm_pending_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "Pending"})
+        counts["zom_pending_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "Pending"})
+        counts["gm_pending_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "Pending"})
+        counts["coo_pending_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Pending"})
+        counts["ceo_pending_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Pending"})
+        counts["bm_response_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "Responded"})
+        counts["dh_response_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "Responded"})
+        counts["com_response_count"] = frappe.db.count("My Audits", filters={"com_user_status": "Responded"})
+        counts["rm_response_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "Responded"})
+        counts["rom_response_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "Responded"})
+        counts["zm_response_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "Responded"})
+        counts["zom_response_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "Responded"})
+        counts["gm_response_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "Responded"})
+        counts["coo_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Responded"})
+        counts["ceo_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Responded"})
+
+
+    elif is_admin == "no":
+        # Query for Audit Manager (e.g., restricted records)
+       	counts["total_count"] = frappe.db.count("My Audits",filters={"owner": frappe.session.user})
+        counts["draft_count"] = frappe.db.count("My Audits", filters={"status": "Draft", "owner": frappe.session.user})
+        counts["pending_count"] = frappe.db.count("My Audits", filters={"status": "Pending", "owner": frappe.session.user})
+        counts["close_count"] = frappe.db.count("My Audits", filters={"status": "Close", "owner": frappe.session.user})
+        counts["bm_pending_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "Pending", "owner": frappe.session.user})
+        counts["dh_pending_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "Pending", "owner": frappe.session.user})
+        counts["com_pending_count"] = frappe.db.count("My Audits", filters={"com_user_status": "Pending", "owner": frappe.session.user})
+        counts["rm_pending_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "Pending", "owner": frappe.session.user})
+        counts["rom_pending_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "Pending", "owner": frappe.session.user})
+        counts["zm_pending_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "Pending", "owner": frappe.session.user})
+        counts["zom_pending_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "Pending", "owner": frappe.session.user})
+        counts["gm_pending_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "Pending", "owner": frappe.session.user})
+        counts["coo_pending_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Pending", "owner": frappe.session.user})
+        counts["ceo_pending_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Pending", "owner": frappe.session.user})
+        counts["bm_response_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "Responded", "owner": frappe.session.user})
+        counts["dh_response_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "Responded", "owner": frappe.session.user})
+        counts["com_response_count"] = frappe.db.count("My Audits", filters={"com_user_status": "Responded", "owner": frappe.session.user})
+        counts["rm_response_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "Responded", "owner": frappe.session.user})
+        counts["rom_response_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "Responded", "owner": frappe.session.user})
+        counts["zm_response_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "Responded", "owner": frappe.session.user})
+        counts["zom_response_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "Responded", "owner": frappe.session.user})
+        counts["gm_response_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "Responded", "owner": frappe.session.user})
+        counts["coo_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Responded", "owner": frappe.session.user})
+        counts["ceo_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Responded", "owner": frappe.session.user})
+
+    return counts
+
+@frappe.whitelist(allow_guest=True)
+def get_audit_level_for_user():
+    # Get the current logged-in user
+    user = frappe.session.user
+
+    # Use or_filters to check if the user exists in any of the specified fields
+    matches = frappe.get_all(
+        'Audit Level',
+        or_filters=[
+            ['stage_1_bm_user_id', '=', user],
+            ['stage_2_dh_user_id', '=', user],
+            ['stage_2_com_user_id', '=', user],
+            ['stage_3_rm_user_id', '=', user],
+            ['stage_3_rom_user_id', '=', user],
+            ['stage_4_zm_user_id', '=', user],
+            ['stage_4_zom_user_id', '=', user],
+            ['stage_5_gm_user_id', '=', user],
+            ['stage_6_coo_user_id', '=', user],
+            ['stage_7_ceo_user_id', '=', user]
+        ],
+        fields=[
+            'name', 'stage_1_bm_user_id', 'stage_2_dh_user_id', 'stage_2_com_user_id',
+            'stage_3_rm_user_id', 'stage_3_rom_user_id', 'stage_4_zm_user_id',
+            'stage_4_zom_user_id', 'stage_5_gm_user_id', 'stage_6_coo_user_id',
+            'stage_7_ceo_user_id'
+        ]
+    )
+
+    # If matches are found, determine user stages for each
+    if matches:
+        results = []
+        stages = {
+            'stage_1_bm_user_id': "bm_user_status",
+            'stage_2_dh_user_id': "dh_user_status",
+            'stage_2_com_user_id': "com_user_status",
+            'stage_3_rm_user_id': "rm_user_status",
+            'stage_3_rom_user_id': "rom_user_status",
+            'stage_4_zm_user_id': "zm_user_status",
+            'stage_4_zom_user_id': "zom_user_status",
+            'stage_5_gm_user_id': "gm_user_status",
+            'stage_6_coo_user_id': "coo_user_status", 
+            'stage_7_ceo_user_id': "ceo_user_status"
+        }
+
+        # Loop through each matching record and find the corresponding user stage
+        for audit_level in matches:
+            for stage_field, status_field in stages.items():
+                if audit_level.get(stage_field) == user:
+                    results.append({
+                        "name": audit_level['name'],
+                        "user_stage": status_field
+                    })
+        
+        return {
+            "flag": "LevelUser",
+            "matches": results
+        }
+
+    # Check if the user has any of the specified roles (Audit Manager, Audit Member, etc.)
+    user_roles = frappe.get_roles(user)
+    audit_roles = {"Audit Manager", "Audit Member", "System Manager", "Administrator"}
+
+    if audit_roles.intersection(user_roles):
+        return {"flag": "AuditUser"}
+
+    # If neither condition is met, return "OtherUser"
+    return {"flag": "OtherUser"}

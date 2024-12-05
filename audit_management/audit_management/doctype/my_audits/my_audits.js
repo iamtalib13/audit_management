@@ -8,7 +8,8 @@ frappe.ui.form.on("My Audits", {
   },
   check_field_read_only: function (frm) {
     if (
-      !frappe.user.has_role("Audit Manager") &&
+      (!frappe.user.has_role("Audit Manager") ||
+        !frappe.user.has_role("Audit Member")) &&
       frm.doc.status === "Pending"
     ) {
       console.log("Disabling Save button");
@@ -18,10 +19,18 @@ frappe.ui.form.on("My Audits", {
       frm.set_df_property("employee_id", "read_only", true);
       frm.set_df_property("audit_query_subject_box", "read_only", true);
     }
-    if (frappe.user.has_role("Audit Manager") && frm.doc.status === "Pending") {
+    if (
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
+      frm.doc.status === "Pending"
+    ) {
       frm.disable_form();
     }
-    if (frappe.user.has_role("Audit Manager") && frm.doc.status === "Draft") {
+    if (
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
+      frm.doc.status === "Draft"
+    ) {
       frm.disable_form();
     }
     if (
@@ -229,21 +238,12 @@ frappe.ui.form.on("My Audits", {
       frappe.validated = false;
       return;
     }
-  },
-  emp_branch: function (frm) {
-    // Get the selected branch value
-    var selected_branch = frm.doc.emp_branch;
-    console.log("selected branch : " + selected_branch);
-    // Apply filter to employee_details field based on the selected branch
-    frm.set_query("employee_id", function () {
-      return {
-        filters: {
-          branch: selected_branch,
-        },
-      };
-    });
-    // Clear the employee_details field if branch is changed
-    frm.set_value("employee_id", null);
+
+    if (!frm.doc.query_type) {
+      frappe.msgprint("<b>Before saving, Please select Query Type.</b>");
+      frappe.validated = false;
+      return;
+    }
   },
   // Function to call the Python method and set intro HTML
   call_html_intro: function (frm) {
@@ -304,7 +304,11 @@ frappe.ui.form.on("My Audits", {
     if (frm.doc.status === "Close") {
       frm.disable_form();
     }
-    if (frappe.user.has_role("Audit Manager") && frm.doc.status === "Pending") {
+    if (
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
+      frm.doc.status === "Pending"
+    ) {
       frm.disable_form();
     }
     if (frm.is_new()) {
@@ -371,58 +375,63 @@ frappe.ui.form.on("My Audits", {
       ) {
         frm.trigger("show_sendResponse_btn");
       }
-      // if (
-      //   frappe.user.has_role("Audit Manager") &&
-      //   frm.doc.status === "Pending" &&
-      //   (frm.doc.bm_user_status === "" ||
-      //     frm.doc.dh_user_status === "" ||
-      //     frm.doc.com_user_status === "" ||
-      //     frm.doc.rm_user_status === "" ||
-      //     frm.doc.rom_user_status === "" ||
-      //     frm.doc.zm_user_status === "" ||
-      //     frm.doc.zom_user_status === "" ||
-      //     frm.doc.gm_user_status === "" ||
-      //     frm.doc.coo_user_status === "" ||
-      //     frm.doc.ceo_user_status === "")
-      // ) {
-      // }
 
       if (
-        frappe.user.has_role("Audit Manager") &&
+        (frappe.user.has_role("Audit Manager") ||
+          frappe.user.has_role("Audit Member")) &&
         (frm.doc.status === "Draft" || frm.doc.status === "Pending")
       ) {
         if (frm.doc.bm_user_status === "") {
           frm.trigger("show_sendToBmWithClose_btn");
         }
-        if (frm.doc.dh_user_status === "" || frm.doc.com_user_status === "") {
+        if (
+          (frm.doc.dh_user_status === "" || frm.doc.com_user_status === "") &&
+          frm.doc.query_type !== "Branch Compliance"
+        ) {
           frm.trigger("show_sendToDhComWithClose_btn");
         }
-        if (frm.doc.rm_user_status === "" || frm.doc.rom_user_status === "") {
+        if (
+          (frm.doc.rm_user_status === "" || frm.doc.rom_user_status === "") &&
+          frm.doc.query_type !== "Branch Compliance"
+        ) {
           frm.trigger("show_sendToRmRomWithClose_btn");
         }
-        if (frm.doc.zm_user_status === "" || frm.doc.zom_user_status === "") {
+        if (
+          (frm.doc.zm_user_status === "" || frm.doc.zom_user_status === "") &&
+          frm.doc.query_type !== "Branch Compliance"
+        ) {
           frm.trigger("show_sendToZmZomWithClose_btn");
         }
-        if (frm.doc.gm_user_status === "") {
+        if (
+          frm.doc.gm_user_status === "" &&
+          frm.doc.query_type !== "Branch Compliance"
+        ) {
           frm.trigger("show_sendToGm_withClose_btn");
         }
-        if (frm.doc.coo_user_status === "") {
+        if (
+          frm.doc.coo_user_status === "" &&
+          frm.doc.query_type !== "Branch Compliance"
+        ) {
           frm.trigger("show_sendToCOO_withClose_btn");
         }
-        if (frm.doc.ceo_user_status === "") {
+        if (
+          frm.doc.ceo_user_status === "" &&
+          frm.doc.query_type !== "Branch Compliance"
+        ) {
           frm.trigger("show_sendToCEO_withClose_btn");
         }
         if (
-          !frm.doc.bm_user_status ||
-          !frm.doc.dh_user_status ||
-          !frm.doc.com_user_status ||
-          !frm.doc.rm_user_status ||
-          !frm.doc.rom_user_status ||
-          !frm.doc.zm_user_status ||
-          !frm.doc.zom_user_status ||
-          !frm.doc.gm_user_status ||
-          !frm.doc.coo_user_status ||
-          !frm.doc.ceo_user_status
+          (!frm.doc.bm_user_status ||
+            !frm.doc.dh_user_status ||
+            !frm.doc.com_user_status ||
+            !frm.doc.rm_user_status ||
+            !frm.doc.rom_user_status ||
+            !frm.doc.zm_user_status ||
+            !frm.doc.zom_user_status ||
+            !frm.doc.gm_user_status ||
+            !frm.doc.coo_user_status ||
+            !frm.doc.ceo_user_status) &&
+          frm.doc.query_type !== "Branch Compliance"
         ) {
           frm.trigger("show_sendToAll_withClose_btn");
         }
@@ -430,507 +439,69 @@ frappe.ui.form.on("My Audits", {
       if (frm.doc.status !== "Draft" && frappe.user.has_role("Audit Manager")) {
         frm.trigger("close_query");
       }
-
-      // if (
-      //   frappe.user.has_role("Audit Manager") &&
-      //   frm.doc.status === "Pending" &&
-      //   frm.doc.query_status === "Response From BM" &&
-      //   frm.doc.bm_user_status === "Responded"
-      // ) {
-      //   frm.trigger("show_sendToDhComWithClose_btn");
-      // }
-
-      // if (
-      //   frappe.user.has_role("Audit Manager") &&
-      //   frm.doc.status === "Pending" &&
-      //   frm.doc.query_status === "Response From DH & COM" &&
-      //   frm.doc.dh_user_status === "Responded" &&
-      //   frm.doc.com_user_status === "Responded"
-      // ) {
-      //   frm.trigger("show_sendToRmRomWithClose_btn");
-      // }
-      // if (
-      //   frappe.user.has_role("Audit Manager") &&
-      //   frm.doc.status === "Pending" &&
-      //   frm.doc.query_status === "Response From RM & ROM" &&
-      //   frm.doc.rm_user_status === "Responded" &&
-      //   frm.doc.rom_user_status === "Responded"
-      // ) {
-      //   frm.trigger("show_sendToZmZomWithClose_btn");
-      // }
-      // if (
-      //   frappe.user.has_role("Audit Manager") &&
-      //   frm.doc.status === "Pending" &&
-      //   frm.doc.query_status === "Response From ZM & ZOM" &&
-      //   frm.doc.zm_user_status === "Responded" &&
-      //   frm.doc.zom_user_status === "Responded"
-      // ) {
-      //   frm.trigger("show_sendtoCOOorGm_withClose_btn");
-      // }
     }
-    // // Define the status messages
-    // let statusMessages = {
-    //   pending: "Pending",
-    //   responded: "Responded",
-    // };
-
-    // // Define colors
-    // let colors = {
-    //   green: "#28a745",
-    //   red: "#dc3545",
-    // };
-
-    // // Initialize the intro message
-    // let introMessage = "";
-
-    // // Check the current status and set the intro message
-    // if (frm.doc.status === "Pending") {
-    //   if (
-    //     frm.doc.query_status === "Pending From BM" &&
-    //     frm.doc.bm_user_status === "Pending"
-    //   ) {
-    //     introMessage = `
-    // 			<p><span style="color: ${colors.green}">Audit Manager</span> &#8658;
-    // 			<span style="color: ${colors.red}">BM</span></p>
-    // 		`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From BM" &&
-    //     frm.doc.bm_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    // 			<p><span style="color: ${colors.green}">Audit Manager</span> &#8658;
-    // 			<span style="color: ${colors.green}">BM</span></p>
-    // 		`;
-    //   } else if (
-    //     frm.doc.query_status === "Pending From DH & COM" &&
-    //     frm.doc.dh_user_status === "Pending" &&
-    //     frm.doc.com_user_status === "Pending"
-    //   ) {
-    //     introMessage = `
-    //      <table>
-    //         <tr>
-    //             <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //             <td>&#8663;</td>
-    //             <td style="color: ${colors.red};"> DH</td>
-    //         </tr>
-    //         <tr>
-    //             <td>&#8664;</td>
-    //             <td style="color: ${colors.red};"> COM</td>
-    //         </tr>
-    //     </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From DH" &&
-    //     frm.doc.dh_user_status === "Responded" &&
-    //     frm.doc.com_user_status === "Pending"
-    //   ) {
-    //     introMessage = `
-    //      <table>
-    //         <tr>
-    //             <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //             <td>&#8663;</td>
-    //             <td style="color: ${colors.green};"> DH</td>
-    //         </tr>
-    //         <tr>
-    //             <td>&#8664;</td>
-    //             <td style="color: ${colors.red};"> COM</td>
-    //         </tr>
-    //     </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From COM" &&
-    //     frm.doc.dh_user_status === "Pending" &&
-    //     frm.doc.com_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //      <table>
-    //         <tr>
-    //             <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //             <td>&#8663;</td>
-    //             <td style="color: ${colors.red};"> DH</td>
-    //         </tr>
-    //         <tr>
-    //             <td>&#8664;</td>
-    //             <td style="color: ${colors.green};"> COM</td>
-    //         </tr>
-    //     </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From DH & COM" &&
-    //     frm.doc.dh_user_status === "Responded" &&
-    //     frm.doc.com_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //      <table>
-    //         <tr>
-    //             <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //             <td>&#8663;</td>
-    //             <td style="color: ${colors.green};"> DH</td>
-    //         </tr>
-    //         <tr>
-    //             <td>&#8664;</td>
-    //             <td style="color: ${colors.green};"> COM</td>
-    //         </tr>
-    //     </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Pending From RM & ROM" &&
-    //     frm.doc.rm_user_status === "Pending" &&
-    //     frm.doc.rom_user_status === "Pending" &&
-    //     frm.doc.dh_user_status === "Responded" &&
-    //     frm.doc.com_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //       <table>
-    //          <tr>
-    //              <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //              <td>&#8663;</td>
-    //              <td style="color: ${colors.green};"> DH</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.red};"> RM</td>
-    //          </tr>
-    //          <tr>
-    //              <td>&#8664;</td>
-    //              <td style="color: ${colors.green};"> COM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.red};"> ROM</td>
-    //          </tr>
-    //      </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From ROM" &&
-    //     frm.doc.rm_user_status === "Pending" &&
-    //     frm.doc.rom_user_status === "Responded" &&
-    //     frm.doc.dh_user_status === "Responded" &&
-    //     frm.doc.com_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //       <table>
-    //          <tr>
-    //              <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //              <td>&#8663;</td>
-    //              <td style="color: ${colors.green};"> DH</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.red};"> RM</td>
-    //          </tr>
-    //          <tr>
-    //              <td>&#8664;</td>
-    //              <td style="color: ${colors.green};"> COM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ROM</td>
-    //          </tr>
-    //      </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From RM" &&
-    //     frm.doc.rm_user_status === "Responded" &&
-    //     frm.doc.rom_user_status === "Pending" &&
-    //     frm.doc.dh_user_status === "Responded" &&
-    //     frm.doc.com_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //       <table>
-    //          <tr>
-    //              <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //              <td>&#8663;</td>
-    //              <td style="color: ${colors.green};"> DH</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> RM</td>
-    //          </tr>
-    //          <tr>
-    //              <td>&#8664;</td>
-    //              <td style="color: ${colors.green};"> COM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.red};"> ROM</td>
-    //          </tr>
-    //      </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From RM & ROM" &&
-    //     frm.doc.rm_user_status === "Responded" &&
-    //     frm.doc.rom_user_status === "Responded" &&
-    //     frm.doc.dh_user_status === "Responded" &&
-    //     frm.doc.com_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //       <table>
-    //          <tr>
-    //              <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //              <td>&#8663;</td>
-    //              <td style="color: ${colors.green};"> DH</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> RM</td>
-    //          </tr>
-    //          <tr>
-    //              <td>&#8664;</td>
-    //              <td style="color: ${colors.green};"> COM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ROM</td>
-    //          </tr>
-    //      </table>`;
-    //   }
-    //   // for zm & zom
-    //   else if (
-    //     frm.doc.query_status === "Pending From ZM & ZOM" &&
-    //     frm.doc.zm_user_status === "Pending" &&
-    //     frm.doc.zom_user_status === "Pending" &&
-    //     frm.doc.rm_user_status === "Responded" &&
-    //     frm.doc.rom_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //       <table>
-    //          <tr>
-    //              <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //              <td>&#8663;</td>
-    //              <td style="color: ${colors.green};"> DH</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> RM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.red};"> ZM</td>
-    //          </tr>
-    //          <tr>
-    //              <td>&#8664;</td>
-    //              <td style="color: ${colors.green};"> COM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ROM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.red};"> ZOM</td>
-    //          </tr>
-    //      </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From ZOM" &&
-    //     frm.doc.zm_user_status === "Pending" &&
-    //     frm.doc.zom_user_status === "Responded" &&
-    //     frm.doc.rm_user_status === "Responded" &&
-    //     frm.doc.rom_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //       <table>
-    //          <tr>
-    //              <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //              <td>&#8663;</td>
-    //              <td style="color: ${colors.green};"> DH</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> RM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.red};"> ZM</td>
-    //          </tr>
-    //          <tr>
-    //              <td>&#8664;</td>
-    //              <td style="color: ${colors.green};"> COM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ROM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ZOM</td>
-    //          </tr>
-    //      </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From ZM" &&
-    //     frm.doc.zm_user_status === "Responded" &&
-    //     frm.doc.zom_user_status === "Pending" &&
-    //     frm.doc.rm_user_status === "Responded" &&
-    //     frm.doc.rom_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //       <table>
-    //          <tr>
-    //              <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //              <td>&#8663;</td>
-    //              <td style="color: ${colors.green};"> DH</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> RM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ZM</td>
-    //          </tr>
-    //          <tr>
-    //              <td>&#8664;</td>
-    //              <td style="color: ${colors.green};"> COM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ROM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.red};"> ZOM</td>
-    //          </tr>
-    //      </table>`;
-    //   } else if (
-    //     frm.doc.query_status === "Response From ZM & ZOM" &&
-    //     frm.doc.zm_user_status === "Responded" &&
-    //     frm.doc.zom_user_status === "Responded" &&
-    //     frm.doc.rm_user_status === "Responded" &&
-    //     frm.doc.rom_user_status === "Responded"
-    //   ) {
-    //     introMessage = `
-    //       <table>
-    //          <tr>
-    //              <td rowspan="2" style="color: ${colors.green}; padding-right: 2px;">Audit Manager &#8658; BM</td>
-    //              <td>&#8663;</td>
-    //              <td style="color: ${colors.green};"> DH</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> RM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ZM</td>
-    //          </tr>
-    //          <tr>
-    //              <td>&#8664;</td>
-    //              <td style="color: ${colors.green};"> COM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ROM</td>
-    //              <td>&#8658;</td>
-    //              <td style="color: ${colors.green};"> ZOM</td>
-    //          </tr>
-    //      </table>`;
-    //   }
-
-    //   // Add similar checks for other levels...
-    // }
-
-    // // Set the intro message
-    // frm.set_intro(introMessage, true);
-  },
-  // fetch_employee_id: function (frm) {
-  //   if (frm.doc.employee_id) {
-  //     frappe.call({
-  //       method:
-  //         "audit_management.audit_management.doctype.audit_level.audit_level.fetch_employee",
-  //       args: {
-  //         employee_id: frm.doc.employee_id,
-  //       },
-  //       callback: function (r) {
-  //         if (!r.exc) {
-  //           if (Array.isArray(r.message) && r.message.length > 0) {
-  //             const employeeData = r.message[0]; // Accessing the first element of the array
-  //             console.log("Employee Data:", employeeData);
-
-  //             // Safeguard against potential HTML injection
-  //             const escapeHtml = (unsafe) => {
-  //               return unsafe
-  //                 .replace(/&/g, "&amp;")
-  //                 .replace(/</g, "&lt;")
-  //                 .replace(/>/g, "&gt;")
-  //                 .replace(/"/g, "&quot;")
-  //                 .replace(/'/g, "&#039;");
-  //             };
-
-  //             // Directly set the response data in HTML with inline CSS
-  //             let html = `
-  // 								  <style>
-  // 									  .myemployee-grid {
-  // 										  display: grid;
-  // 										  grid-template-columns: repeat(3, 1fr); /* Creates 3 equal columns */
-  // 										  gap: 10px; /* Adds space between items */
-  // 									  }
-  // 									  .myemployee-grid p {
-  // 										  border-radius: 5px;
-  // 										  padding: 7px;
-  // 										  margin: 5px;
-  // 										  background: #f4f5f6;
-  // 									  }
-  // 									  .mylabel {
-  // 										  margin: 8px;
-  // 										  font-size: var(--text-sm);
-  // 									  }
-  // 								  </style>
-  // 								  <div class="employee-details">
-  // 									  <div class="myemployee-grid">
-  // 										  <div>
-  // 											  <span class="mylabel">Employee Name</span>
-  // 											  <p id="employee_name">${escapeHtml(employeeData.employee_name || "- - -")}</p>
-  // 											  <span class="mylabel">Employee ID</span>
-  // 											  <p id="employee_id">${escapeHtml(frm.doc.employee_id || "- - -")}</p>
-  // 											  <span class="mylabel">Designation</span>
-  // 											  <p id="employee_designation">${escapeHtml(
-  //                           employeeData.designation || "- - -"
-  //                         )}</p><hr>
-  // 										  </div>
-  // 										  <div>
-  // 											  <span class="mylabel">Phone</span>
-  // 											  <p id="employee_phone">${escapeHtml(employeeData.cell_number || "- - -")}</p>
-  // 											  <span class="mylabel">Region</span>
-  // 											  <p id="employee_region">${escapeHtml(employeeData.region || "- - -")}</p>
-  // 											  <span class="mylabel">Division</span>
-  // 											  <p id="employee_division">${escapeHtml(
-  //                           employeeData.division || "- - -"
-  //                         )}</p><hr>
-  // 										  </div>
-  // 										  <div>
-  // 											  <span class="mylabel">District</span>
-  // 											  <p id="employee_district">${escapeHtml(employeeData.district || "- - -")}</p>
-  // 											  <span class="mylabel">Branch</span>
-  // 											  <p id="employee_branch">${escapeHtml(employeeData.branch || "- - -")}</p>
-  // 											  <span class="mylabel">Department</span>
-  // 											  <p id="employee_department">${escapeHtml(
-  //                           employeeData.department || "- - -"
-  //                         )}</p><hr>
-  // 										  </div>
-  // 									  </div>
-  // 								  </div>
-  // 							  `;
-
-  //             // Set the above `html` as Summary HTML
-  //             frm.set_df_property("employee_html", "options", html);
-
-  //             // Setting user_id in the form field
-  //             // frm.set_value("stage_1_bm_user_id", employeeData.user_id || "- - -");
-  //           } else {
-  //             console.error("Unexpected response format or empty data.");
-  //           }
-  //         } else {
-  //           console.error("Error in API call:", r.exc);
-  //         }
-  //       },
-  //     });
-  //   }
-  // },
-  set_background_colors: function (frm) {
-    // frm.fields_dict["enter_branch_section"].wrapper.css({
-    //   "background-color": "#f29996",
-    // });
-    // frm.fields_dict["audit_query_section"].wrapper.css({
-    //   "background-color": "#eb9c9e", // Gradient
-    // });
-    // frm.fields_dict["bm_response_section"].wrapper.css({
-    //   "background-color": "#e49ea6",
-    // });
   },
   fetch_query_maker: function (frm) {
     console.log("new");
     // When form is new
     // Setting Employee ID
-    let auditor_user = frm.doc.owner;
-    let auditor_user_emp_id = auditor_user.match(/\d+/)[0];
-    console.log("Employee ID:", auditor_user_emp_id);
+    if (
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
+      frm.doc.status
+    ) {
+      let auditor_user = frappe.session.user;
+      let auditor_user_emp_id = auditor_user.match(/\d+/)[0];
+      console.log("Employee ID:", auditor_user_emp_id);
 
-    frm.call({
-      method: "fetch_employee_data",
-      args: {
-        employee_id: auditor_user_emp_id,
-      },
-      callback: function (r) {
-        if (!r.exc) {
-          // Accessing response data
-          const employeeData = r.message[0]; // Accessing the first element of the array
-          console.log("Employee Data:", employeeData);
+      frm.call({
+        method: "fetch_employee_data",
+        args: {
+          employee_id: auditor_user_emp_id,
+        },
+        callback: function (r) {
+          if (!r.exc) {
+            // Accessing response data
+            const employeeData = r.message[0]; // Accessing the first element of the array
+            console.log("Employee Data:", employeeData);
 
-          // Set emp_full_name field with employee's name
-          frm.set_value("query_generated_by_name", employeeData.employee_name);
-          console.log(frm.doc.query_generated_by_name);
-          frm.refresh_field("query_generated_by_name");
+            // Set emp_full_name field with employee's name
+            frm.set_value("query_generated_by_empid", auditor_user_emp_id);
+            console.log(frm.doc.query_generated_by_empid);
+            frm.refresh_field("query_generated_by_empid");
 
-          frm.set_value(
-            "query_generated_by_designation",
-            employeeData.designation
-          );
-          console.log(frm.doc.query_generated_by_designation);
-          frm.refresh_field("query_generated_by_designation");
+            frm.set_value(
+              "query_generated_by_name",
+              employeeData.employee_name
+            );
+            console.log(frm.doc.query_generated_by_name);
+            frm.refresh_field("query_generated_by_name");
 
-          frm.set_value("query_generated_by_branch", employeeData.branch);
-          console.log(frm.doc.query_generated_by_branch);
-          frm.refresh_field("query_generated_by_branch");
-        } else {
-          console.error("Error fetching employee data", r.exc);
-        }
-      },
-      error: function (err) {
-        console.error("Failed to fetch employee data", err);
-      },
-    });
+            frm.set_value(
+              "query_generated_by_designation",
+              employeeData.designation
+            );
+            console.log(frm.doc.query_generated_by_designation);
+            frm.refresh_field("query_generated_by_designation");
+
+            frm.set_value("query_generated_by_branch", employeeData.branch);
+            console.log(frm.doc.query_generated_by_branch);
+            frm.refresh_field("query_generated_by_branch");
+          } else {
+            console.error("Error fetching employee data", r.exc);
+          }
+        },
+        error: function (err) {
+          console.error("Failed to fetch employee data", err);
+        },
+      });
+    }
   },
   show_sendToBmWithClose_btn: function (frm) {
     console.log("audit work kar raha hai");
     if (
-      frappe.user.has_role("Audit Manager") &&
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
       frm
@@ -1001,7 +572,8 @@ frappe.ui.form.on("My Audits", {
   show_sendToDhComWithClose_btn: function (frm) {
     // Add the first button - "Send Response"
     if (
-      frappe.user.has_role("Audit Manager") &&
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
       frm
@@ -1104,7 +676,8 @@ frappe.ui.form.on("My Audits", {
   show_sendToRmRomWithClose_btn: function (frm) {
     // Add the first button - "Send Response"
     if (
-      frappe.user.has_role("Audit Manager") &&
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
       frm
@@ -1210,7 +783,8 @@ frappe.ui.form.on("My Audits", {
   show_sendToZmZomWithClose_btn: function (frm) {
     // Add the first button - "Send Response"
     if (
-      frappe.user.has_role("Audit Manager") &&
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
       frm
@@ -1314,7 +888,8 @@ frappe.ui.form.on("My Audits", {
   },
   show_sendToGm_withClose_btn: function (frm) {
     if (
-      frappe.user.has_role("Audit Manager") &&
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
       // Add the "Send to GM" button
@@ -1403,7 +978,8 @@ frappe.ui.form.on("My Audits", {
   },
   show_sendToCOO_withClose_btn: function (frm) {
     if (
-      frappe.user.has_role("Audit Manager") &&
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
       // Add the "Send to COO" button
@@ -1493,7 +1069,8 @@ frappe.ui.form.on("My Audits", {
   },
   show_sendToCEO_withClose_btn: function (frm) {
     if (
-      frappe.user.has_role("Audit Manager") &&
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
       // Add the "Send to COO" button
@@ -1581,7 +1158,8 @@ frappe.ui.form.on("My Audits", {
   },
   show_sendToAll_withClose_btn: function (frm) {
     if (
-      frappe.user.has_role("Audit Manager") &&
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
       // Create an array of user IDs and their corresponding status fields
