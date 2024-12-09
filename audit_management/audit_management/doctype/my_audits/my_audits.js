@@ -17,6 +17,7 @@ frappe.ui.form.on("My Audits", {
       frm.set_df_property("audit_query_box", "read_only", true);
       frm.set_df_property("emp_branch", "read_only", true);
       frm.set_df_property("employee_id", "read_only", true);
+      frm.set_df_property("query_type", "read_only", true);
       frm.set_df_property("audit_query_subject_box", "read_only", true);
     }
     if (
