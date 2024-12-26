@@ -129,7 +129,8 @@
    "fetch_from": "stage_2_dh_emp_id.user_id",
    "fieldname": "stage_2_dh_user_id",
    "fieldtype": "Data",
-   "label": "DH User ID"
+   "label": "DH User ID",
+   "read_only": 1
   },
   {
    "fieldname": "stage_2_com_emp_id",
@@ -507,7 +508,7 @@
   {
    "fieldname": "stage_5_gm_mail",
    "fieldtype": "Data",
-   "label": "GM mail"
+   "label": "GM Mail"
   },
   {
    "fieldname": "column_break_rsmjy",
@@ -530,7 +531,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-21 13:27:42.645870",
+ "modified": "2024-12-17 17:00:40.640230",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",
