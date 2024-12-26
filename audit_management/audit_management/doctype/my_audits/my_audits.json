@@ -95,7 +95,17 @@
   "gm_user_id",
   "column_break_sltt1",
   "gm_mail",
-  "stage_6_coo_section",
+  "stage_6_hr_section",
+  "hr_name",
+  "column_break_5xrke",
+  "hr_user_status",
+  "column_break_5mjlf",
+  "hr_pending_time",
+  "column_break_rqmhu",
+  "hr_user_id",
+  "column_break_ejb1i",
+  "hr_mail",
+  "stage_7_coo_section",
   "coo_name",
   "column_break_dzolr",
   "coo_user_status",
@@ -105,7 +115,7 @@
   "coo_user_id",
   "column_break_kdwwx",
   "coo_mail",
-  "stage_7_ceo_section",
+  "stage_8_ceo_section",
   "ceo_name",
   "column_break_yogfk",
   "ceo_user_status",
@@ -121,6 +131,7 @@
   "employee_id",
   "generated_by_section",
   "query_generated_by_empid",
+  "query_generated_by_mail",
   "query_generated_by_name",
   "column_break_gw78v",
   "query_generated_by_designation",
@@ -158,6 +169,9 @@
   "gm_response_section",
   "gm_attach_box",
   "gm_response_box",
+  "hr_response_section",
+  "hr_attach_box",
+  "hr_response_box",
   "coo_response_section",
   "coo_attach_box",
   "coo_response_box",
@@ -242,13 +256,13 @@
    "label": "GM User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_6_coo_user_id",
+   "fetch_from": "emp_branch.stage_7_coo_user_id",
    "fieldname": "coo_user_id",
    "fieldtype": "Data",
    "label": "COO User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_7_ceo_user_id",
+   "fetch_from": "emp_branch.stage_8_ceo_user_id",
    "fieldname": "ceo_user_id",
    "fieldtype": "Data",
    "label": "CEO User ID"
@@ -345,20 +359,17 @@
    "label": "ZOM response box "
   },
   {
-   "depends_on": "eval:(doc.gm_response_box != null || doc.gm_attach_box != null) || !frappe.user.has_role(\"Audit Manager\") && doc.status==\"Pending\" && doc.query_status==\"Pending From GM\" && doc.gm_user_status==\"Pending\"",
    "fieldname": "gm_response_section",
    "fieldtype": "Section Break",
    "label": "<b>GM Response : </b>",
    "read_only_depends_on": "eval:doc.query_status==\"Response From GM\" && doc.gm_user_status==\"Responded\""
   },
   {
-   "depends_on": "eval:(doc.coo_response_box != null || doc.coo_attach_box != null) || doc.status==\"Pending\" && doc.query_status==\"Pending From COO\" && doc.coo_user_status==\"Pending\" && frappe.session.user==doc.coo_user_id",
    "fieldname": "coo_response_section",
    "fieldtype": "Section Break",
    "label": "<b>COO Response : </b>"
   },
   {
-   "depends_on": "eval:(doc.ceo_response_box != null ||doc.ceo_attach_box != null)  || doc.status==\"Pending\" && doc.query_status==\"Pending From CEO\" && doc.ceo_user_status==\"Pending\"",
    "fieldname": "ceo_response_section",
    "fieldtype": "Section Break",
    "label": "<b>CEO Response : </b>"
@@ -367,14 +378,14 @@
    "fieldname": "query_status",
    "fieldtype": "Select",
    "label": "Query Status",
-   "options": "\nPending From BM\nResponse From BM\nPending From DH & COM\nResponse From DH\nResponse From COM\nResponse From DH & COM\nPending From RM & ROM\nResponse From RM\nResponse From ROM\nResponse From RM & ROM\nPending From ZM & ZOM\nResponse From ZM\nResponse From ZOM\nResponse From ZM & ZOM\nPending From GM\nResponse From GM\nPending From COO\nResponse From COO\nPending From CEO\nResponse From CEO"
+   "options": "\nPending From BM\nResponse From BM\nPending From DH & COM\nResponse From DH\nResponse From COM\nResponse From DH & COM\nPending From RM & ROM\nResponse From RM\nResponse From ROM\nResponse From RM & ROM\nPending From ZM & ZOM\nResponse From ZM\nResponse From ZOM\nResponse From ZM & ZOM\nPending From GM\nResponse From GM\nPending From HR\nResponse From HR\nPending From COO\nResponse From COO\nPending From CEO\nResponse From CEO"
   },
   {
    "fieldname": "column_break_zjlzx",
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.gm_response_box != null || frappe.session.user==doc.gm_user_id && doc.status==\"Pending\" && doc.gm_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.gm_response_box != null || frappe.session.user==doc.gm_user_id && doc.status==\"Pending\" && doc.gm_user_status==\"Pending\"",
    "fieldname": "gm_response_box",
    "fieldtype": "Small Text",
    "label": "GM response box "
@@ -395,7 +406,7 @@
    "fieldname": "bm_user_status",
    "fieldtype": "Select",
    "label": "BM User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "column_break_nhcaj",
@@ -406,55 +417,55 @@
    "fieldname": "dh_user_status",
    "fieldtype": "Select",
    "label": "DH User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "com_user_status",
    "fieldtype": "Select",
    "label": "COM User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "rm_user_status",
    "fieldtype": "Select",
    "label": "RM User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "rom_user_status",
    "fieldtype": "Select",
    "label": "ROM User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "zm_user_status",
    "fieldtype": "Select",
    "label": "ZM User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "zom_user_status",
    "fieldtype": "Select",
    "label": "ZOM User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "gm_user_status",
    "fieldtype": "Select",
    "label": "GM User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "coo_user_status",
    "fieldtype": "Select",
    "label": "COO User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "ceo_user_status",
    "fieldtype": "Select",
    "label": "CEO User Status",
-   "options": "\nPending\nNo Response\nResponded"
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
   },
   {
    "fieldname": "query_generated_by_name",
@@ -548,7 +559,7 @@
    "read_only_depends_on": "eval:frappe.session.user!==doc.zom_user_id && doc.zom_attach_box != null && doc.zom_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval: frappe.session.user==doc.gm_user_id && (doc.gm_user_status===\"Pending\" || doc.gm_user_status===\"Responded\") || (frappe.session.user!==doc.gm_user_id && doc.gm_attach_box != null)\n",
+   "depends_on": "eval:frappe.session.user==doc.gm_user_id && (doc.gm_user_status===\"Pending\" || doc.gm_user_status===\"Responded\" ) || (frappe.session.user!==doc.gm_user_id && doc.gm_attach_box != null )",
    "fieldname": "gm_attach_box",
    "fieldtype": "Attach",
    "label": "GM attachment",
@@ -629,13 +640,13 @@
    "label": "GM Name"
   },
   {
-   "fetch_from": "emp_branch.stage_6_coo_name",
+   "fetch_from": "emp_branch.stage_7_coo_name",
    "fieldname": "coo_name",
    "fieldtype": "Data",
    "label": "COO Name"
   },
   {
-   "fetch_from": "emp_branch.stage_7_ceo_name",
+   "fetch_from": "emp_branch.stage_8_ceo_name",
    "fieldname": "ceo_name",
    "fieldtype": "Data",
    "label": "CEO Name"
@@ -818,11 +829,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "stage_6_coo_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 6 (COO)"
-  },
-  {
    "fieldname": "column_break_dzolr",
    "fieldtype": "Column Break"
   },
@@ -847,12 +853,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "stage_7_ceo_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 7 (CEO)"
-  },
-  {
-   "depends_on": "eval:doc.query_generated_by_name",
+   "depends_on": "eval:doc.query_generated_by_empid || frappe.session.user==\"Administrator\"",
    "fieldname": "generated_by_section",
    "fieldtype": "Section Break"
   },
@@ -951,13 +952,13 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_6_coo_mail",
+   "fetch_from": "emp_branch.stage_7_coo_mail",
    "fieldname": "coo_mail",
    "fieldtype": "Data",
    "label": "COO Mail"
   },
   {
-   "fetch_from": "emp_branch.stage_7_ceo_mail",
+   "fetch_from": "emp_branch.stage_8_ceo_mail",
    "fieldname": "ceo_mail",
    "fieldtype": "Data",
    "label": "CEO Mail"
@@ -971,9 +972,9 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:frappe.session.user==\"Administrator\"",
    "fieldname": "query_generated_by_empid",
    "fieldtype": "Data",
-   "hidden": 1,
    "label": "Generated By (empID)",
    "read_only": 1
   },
@@ -993,7 +994,7 @@
    "fieldname": "query_type",
    "fieldtype": "Select",
    "label": "Query Type",
-   "options": "\nBranch Compliance\nUrgent",
+   "options": "\nBranch Compliance\nCritical Compliance",
    "reqd": 1
   },
   {
@@ -1004,11 +1005,96 @@
    "fieldname": "tat_day",
    "fieldtype": "Data",
    "label": "TAT Day"
+  },
+  {
+   "depends_on": "eval:frappe.session.user==\"Administrator\"",
+   "fieldname": "query_generated_by_mail",
+   "fieldtype": "Data",
+   "label": "Generated By (Mail)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_7_coo_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 7 (COO)"
+  },
+  {
+   "fieldname": "stage_8_ceo_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 8 (CEO)"
+  },
+  {
+   "fieldname": "stage_6_hr_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 6 (HR)"
+  },
+  {
+   "fetch_from": "emp_branch.stage_6_hr_name",
+   "fieldname": "hr_name",
+   "fieldtype": "Data",
+   "label": "HR Name"
+  },
+  {
+   "fieldname": "column_break_5xrke",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hr_user_status",
+   "fieldtype": "Select",
+   "label": "HR User Status",
+   "options": "\nPending\nNo Response\nResponded\nSkipped"
+  },
+  {
+   "fieldname": "column_break_5mjlf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hr_pending_time",
+   "fieldtype": "Data",
+   "label": "HR Pending Time"
+  },
+  {
+   "fieldname": "column_break_rqmhu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_6_hr_user_id",
+   "fieldname": "hr_user_id",
+   "fieldtype": "Data",
+   "label": "HR User ID"
+  },
+  {
+   "fieldname": "column_break_ejb1i",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "emp_branch.stage_6_hr_mail",
+   "fieldname": "hr_mail",
+   "fieldtype": "Data",
+   "label": "HR Mail"
+  },
+  {
+   "fieldname": "hr_response_section",
+   "fieldtype": "Section Break",
+   "label": "<b>HR Response : </b>"
+  },
+  {
+   "depends_on": "eval:frappe.session.user==doc.hr_user_id && (doc.hr_user_status===\"Pending\" || doc.hr_user_status===\"Responded\" ) || (frappe.session.user!==doc.hr_user_id && doc.hr_attach_box != null )",
+   "fieldname": "hr_attach_box",
+   "fieldtype": "Attach",
+   "label": "HR attachment",
+   "read_only_depends_on": "eval:frappe.session.user!==doc.hr_user_id && doc.hr_attach_box != null && doc.hr_user_status===\"Responded\""
+  },
+  {
+   "depends_on": "eval:doc.hr_response_box != null || frappe.session.user==doc.hr_user_id && doc.status==\"Pending\" && doc.hr_user_status==\"Pending\"",
+   "fieldname": "hr_response_box",
+   "fieldtype": "Small Text",
+   "label": "HR response box "
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-04 10:17:42.919451",
+ "modified": "2024-12-26 17:23:24.539683",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
