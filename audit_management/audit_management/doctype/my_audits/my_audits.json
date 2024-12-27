@@ -14,6 +14,8 @@
   "query_status",
   "column_break_lmxqs",
   "tat_day",
+  "column_break_mwykn",
+  "send_mail_to_all",
   "stages_and_their_status",
   "stage_1_bm_section",
   "bm_name",
@@ -1090,11 +1092,22 @@
    "fieldname": "hr_response_box",
    "fieldtype": "Small Text",
    "label": "HR response box "
+  },
+  {
+   "fieldname": "column_break_mwykn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "No",
+   "fieldname": "send_mail_to_all",
+   "fieldtype": "Select",
+   "label": "send mail to all ?",
+   "options": "\nNo\nYes"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-26 17:23:24.539683",
+ "modified": "2024-12-27 12:17:40.991513",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

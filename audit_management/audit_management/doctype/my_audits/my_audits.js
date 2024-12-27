@@ -1295,7 +1295,6 @@ frappe.ui.form.on("My Audits", {
         frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
-      // Create an array of user IDs and their corresponding status fields
       const userStatusMapping = [
         { userId: frm.doc.bm_user_id, statusField: "bm_user_status" },
         { userId: frm.doc.dh_user_id, statusField: "dh_user_status" },
@@ -1310,138 +1309,123 @@ frappe.ui.form.on("My Audits", {
         { userId: frm.doc.ceo_user_id, statusField: "ceo_user_status" },
       ];
 
-      // Check if any of the statuses are empty
       const hasEmptyStatus = userStatusMapping.some((mapping) => {
-        return !frm.doc[mapping.statusField]; // Check if _user_status is empty
+        return !frm.doc[mapping.statusField];
       });
 
-      // Add the "Send to All" button
       if (hasEmptyStatus) {
         frm
           .add_custom_button(
             __("<b>Send to ALL</b>"),
-            function () {
-              // Fallback if emp_branch is not available
+            async function () {
               let emp_branch = frm.doc.emp_branch || "the employee's branch";
 
               frappe.confirm(
                 `<i><b>Do you want to send the query to the remaining levels from branch ${emp_branch} (BM to CEO)?</b></i>`,
-                () => {
-                  let promises = [];
+                async () => {
+                  let updates = [];
 
-                  // Loop through each user and send the document if the status is empty
-                  userStatusMapping.forEach((mapping) => {
+                  // Loop through each user and update statuses where necessary
+                  for (const mapping of userStatusMapping) {
                     if (!frm.doc[mapping.statusField]) {
-                      promises.push(
-                        frappe
-                          .call({
-                            method: "frappe.share.add",
-                            args: {
-                              doctype: frm.doctype,
-                              name: frm.docname,
-                              user: mapping.userId, // Send to each user
-                              read: 1,
-                              write: 1,
-                              submit: 0,
-                              share: 1,
-                              notify: 1,
-                              send_email: 0,
-                            },
-                          })
-                          .then(() => {
-                            // Update the user status to Pending
-                            frm.set_value(mapping.statusField, "Pending");
-                            frm.save();
-                          })
-                      );
+                      try {
+                        await frappe.call({
+                          method: "frappe.share.add",
+                          args: {
+                            doctype: frm.doctype,
+                            name: frm.docname,
+                            user: mapping.userId,
+                            read: 1,
+                            write: 1,
+                            submit: 0,
+                            share: 1,
+                            notify: 1,
+                            send_email: 0,
+                          },
+                        });
+
+                        // Batch updates to the form
+                        updates.push(() =>
+                          frm.set_value(mapping.statusField, "Pending")
+                        );
+                      } catch (error) {
+                        console.error(
+                          `Failed to send to user: ${mapping.userId}`,
+                          error
+                        );
+                      }
                     }
+                  }
+
+                  // Execute batched updates
+                  updates.forEach((update) => update());
+
+                  // Call server-side method for timestamps
+                  const response = await frappe.call({
+                    method:
+                      "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all",
+                    args: { record: frm.docname },
                   });
 
-                  // Execute all promises
-                  Promise.all(promises)
-                    .then(() => {
-                      // Success message
-                      console.log("Sent to All");
-                      frappe.show_alert({
-                        message:
-                          "Your Query Request Sent to All stages Successfully",
-                        indicator: "green",
-                      });
-                      frm.set_value("status", "Pending");
-                      frm.refresh_field("status");
-                      frm.refresh_field("query_status");
-                      // Call the function to set pending times for all stages
-                      frappe.call({
-                        method:
-                          "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all",
-                        args: {
-                          record: frm.docname, // Pass the current document's name as the 'record'
-                        },
-                        callback: function (response) {
-                          if (response.message) {
-                            const {
-                              bm_timestamp,
-                              dh_timestamp,
-                              com_timestamp,
-                              rm_timestamp,
-                              rom_timestamp,
-                              zm_timestamp,
-                              zom_timestamp,
-                              gm_timestamp,
-                              hr_timestamp,
-                              coo_timestamp,
-                              ceo_timestamp,
-                            } = response.message;
+                  if (response.message) {
+                    const {
+                      bm_timestamp,
+                      dh_timestamp,
+                      com_timestamp,
+                      rm_timestamp,
+                      rom_timestamp,
+                      zm_timestamp,
+                      zom_timestamp,
+                      gm_timestamp,
+                      hr_timestamp,
+                      coo_timestamp,
+                      ceo_timestamp,
+                    } = response.message;
 
-                            // Check if the field is empty and set the value if it's not already set
-                            if (bm_timestamp && !frm.doc.bm_pending_time) {
-                              frm.set_value("bm_pending_time", bm_timestamp);
-                            }
-                            if (dh_timestamp && !frm.doc.dh_pending_time) {
-                              frm.set_value("dh_pending_time", dh_timestamp);
-                            }
-                            if (com_timestamp && !frm.doc.com_pending_time) {
-                              frm.set_value("com_pending_time", com_timestamp);
-                            }
-                            if (rm_timestamp && !frm.doc.rm_pending_time) {
-                              frm.set_value("rm_pending_time", rm_timestamp);
-                            }
-                            if (rom_timestamp && !frm.doc.rom_pending_time) {
-                              frm.set_value("rom_pending_time", rom_timestamp);
-                            }
-                            if (zm_timestamp && !frm.doc.zm_pending_time) {
-                              frm.set_value("zm_pending_time", zm_timestamp);
-                            }
-                            if (zom_timestamp && !frm.doc.zom_pending_time) {
-                              frm.set_value("zom_pending_time", zom_timestamp);
-                            }
-                            if (gm_timestamp && !frm.doc.gm_pending_time) {
-                              frm.set_value("gm_pending_time", gm_timestamp);
-                            }
-                            if (hr_timestamp && !frm.doc.hr_pending_time) {
-                              frm.set_value("hr_pending_time", hr_timestamp);
-                            }
-                            if (coo_timestamp && !frm.doc.coo_pending_time) {
-                              frm.set_value("coo_pending_time", coo_timestamp);
-                            }
-                            if (ceo_timestamp && !frm.doc.ceo_pending_time) {
-                              frm.set_value("ceo_pending_time", ceo_timestamp);
-                            }
-                            // Optionally, display a message
-                            console.log(
-                              `All Timestamps received for: ${frm.docname}`
-                            );
-                          }
-                        },
-                      });
-                      frm.save();
-                    })
-                    .catch(() => {
-                      // Handle failure
-                      frappe.msgprint(
-                        "An error occurred while sending the requests."
-                      );
-                    });
+                    // Update pending timestamps
+                    const timestampUpdates = {
+                      bm_pending_time: bm_timestamp,
+                      dh_pending_time: dh_timestamp,
+                      com_pending_time: com_timestamp,
+                      rm_pending_time: rm_timestamp,
+                      rom_pending_time: rom_timestamp,
+                      zm_pending_time: zm_timestamp,
+                      zom_pending_time: zom_timestamp,
+                      gm_pending_time: gm_timestamp,
+                      hr_pending_time: hr_timestamp,
+                      coo_pending_time: coo_timestamp,
+                      ceo_pending_time: ceo_timestamp,
+                    };
+
+                    for (const [field, value] of Object.entries(
+                      timestampUpdates
+                    )) {
+                      if (value && !frm.doc[field]) {
+                        frm.set_value(field, value);
+                      }
+                    }
+                  }
+
+                  // Check if all status fields are set to "Pending"
+                  const allStatusPending = userStatusMapping.every(
+                    (mapping) => frm.doc[mapping.statusField] === "Pending"
+                  );
+
+                  if (allStatusPending) {
+                    frm.set_value("send_mail_to_all", "Yes");
+                  }
+
+                  // Final save after all updates
+                  frm.set_value("status", "Pending");
+                  frm.refresh_field("status");
+                  frm.refresh_field("query_status");
+
+                  await frm.save();
+                  frappe.show_alert({
+                    message:
+                      "Your Query Request Sent to All stages Successfully",
+                    indicator: "green",
+                  });
                 }
               );
             },
@@ -1453,21 +1437,20 @@ frappe.ui.form.on("My Audits", {
             margin: "1px",
           });
 
-        // Add styling to the button using its class
         $('.btn.btn-default.ellipsis:contains("Send to")').css({
-          "background-color": "#28a745", // Custom green background color
-          color: "#ffffff", // White text color
+          "background-color": "#28a745",
+          color: "#ffffff",
           margin: "1px",
           width: "100px",
         });
       }
 
-      // Add the close_query button
       if (frm.doc.status !== "Draft") {
         frm.trigger("close_query");
       }
     }
   },
+
   show_sendResponse_btn: function (frm) {
     frm
       .add_custom_button(__("Send Response"), function () {
