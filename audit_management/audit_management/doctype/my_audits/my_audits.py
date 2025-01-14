@@ -467,6 +467,58 @@ def check_pending_tat():
 
     frappe.db.commit()
 
+
+@frappe.whitelist()
+def trigger_audit_notification(docname):
+    # Fetch the Audit document using docname
+    doc = frappe.get_doc('My Audits', docname)
+    
+    # Check for each user status and trigger the corresponding notification
+    if doc.dh_user_status == 'Pending':
+        trigger_notification('Audit Mail Second Level DH', doc)
+    if doc.rm_user_status == 'Pending':
+        trigger_notification('Audit Mail Third Level RM', doc)
+    if doc.zm_user_status == 'Pending':
+        trigger_notification('Audit Mail Fourth Level ZM', doc)
+    if doc.gm_user_status == 'Pending':
+        trigger_notification('Audit Mail Fifth Level GM', doc)
+    if doc.hr_user_status == 'Pending':
+        trigger_notification('Audit Mail HR', doc)
+    if doc.coo_user_status == 'Pending':
+        trigger_notification('Audit Mail Sixth Level COO', doc)
+    if doc.ceo_user_status == 'Pending':
+        trigger_notification('Audit Mail Seventh Level CEO', doc)
+
+    def trigger_notification(notification_name, doc):
+        try:
+            # Fetch the Notification document by name
+            notification = frappe.get_doc('Notification', notification_name)
+    
+            # Check if the notification is enabled and then send it
+            if notification.enabled:
+                # Send the notification according to how it is configured
+                notification.send(doc)
+    
+                # Log success message
+                success_message = f"Notification '{notification_name}' was sent successfully."
+                frappe.log_error(message=success_message, title="Notification Sent")
+            else:
+                error_message = f"Notification '{notification_name}' is not enabled."
+                # Log the error
+                frappe.log_error(message=error_message, title="Notification Disabled")
+        except frappe.DoesNotExistError:
+            error_message = f"Notification '{notification_name}' does not exist."
+            # Log the error
+            frappe.log_error(message=error_message, title="Notification Not Found")
+        except Exception as e:
+            error_message = f"An error occurred: {str(e)}"
+            # Log the error with traceback for debugging
+            frappe.log_error(message=frappe.get_traceback(), title="Notification Sending Failed")
+
+
+
+
+
 #this was for testing
 @frappe.whitelist()
 def printing_all_records():

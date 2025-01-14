@@ -17,7 +17,7 @@ class AuditLevel(Document):
                 filters={"emp_branch": self.emp_branch},  # Use appropriate filter for linking
                 fields=["name", "bm_user_status", "dh_user_status", "com_user_status",
                         "rm_user_status", "rom_user_status", "zm_user_status", 
-                        "zom_user_status", "gm_user_status", "coo_user_status", 
+                        "zom_user_status", "gm_user_status","hr_user_status","coo_user_status", 
                         "ceo_user_status"]
             )
 

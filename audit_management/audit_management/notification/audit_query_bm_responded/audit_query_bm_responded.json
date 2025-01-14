@@ -1,0 +1,33 @@
+{
+ "attach_print": 0,
+ "channel": "Email",
+ "creation": "2024-12-28 13:16:01.477973",
+ "days_in_advance": 0,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "My Audits",
+ "enabled": 1,
+ "event": "Value Change",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"description\" content=\"BM Responded to Your Audit Query\" />\n    <title>BM Responded to Your Query</title>\n    <style>\n      body {\n        font-family: Arial, sans-serif;\n        background-color: #f4f4f4;\n        margin: 0;\n        padding: 20px;\n      }\n      .container {\n        max-width: 600px;\n        margin: 0 auto;\n        background-color: #fff;\n        padding: 20px;\n        border-radius: 8px;\n        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n      }\n      .header {\n        font-size: 20px;\n        font-weight: bold;\n        margin-bottom: 20px;\n      }\n      .content {\n        font-size: 14px;\n        line-height: 1.6;\n        color: #333;\n      }\n      .response-box {\n        width: 90%;\n        margin: 0 auto;\n        height: 150px;\n        border: 1px solid #ddd;\n        border-radius: 5px;\n        padding: 10px;\n        font-size: 14px;\n        line-height: 1.6;\n        background-color: #f9f9f9;\n        color: black;\n        overflow-y: auto;\n        pointer-events: none;\n      }\n      .button-container {\n        margin-top: 20px;\n        text-align: center;\n      }\n      .button {\n        display: inline-block;\n        background-color: #4caf50;\n        color: #fff;\n        padding: 10px 20px;\n        text-decoration: none;\n        border-radius: 5px;\n      }\n      .footer {\n        font-size: 12px;\n        color: #666;\n        text-align: center;\n        margin-top: 20px;\n        padding-top: 10px;\n        border-top: 1px solid #ddd;\n      }\n      @media (max-width: 600px) {\n        .container {\n          padding: 10px;\n        }\n        .header {\n          font-size: 18px;\n        }\n        .content {\n          font-size: 12px;\n        }\n        .button {\n          padding: 8px 16px;\n        }\n      }\n    </style>\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"header\">BM Responded: {{ doc.name }}</div>\n      <div class=\"content\">\n        Dear {{ doc.query_generated_by_name }},<br /><br />\n\n        BM \" {{ doc.bm_name }} \" from {{ doc.emp_branch }} has responded to the\n        audit query you created. Please review the response and take necessary\n        action if required.<br /><br />\n\n        <p><b>BM's Response:</b></p>\n        <div class=\"response-box\">{{ doc.bm_response_box }}</div>\n        <br /><br />\n\n        Query Details:<br />\n        <p>\n          Query ID: {{ doc.name }}<br />\n          Branch: {{ doc.emp_branch }}<br />\n          Query Type: {{ doc.query_type }}\n        </p>\n      </div>\n\n      <div class=\"button-container\">\n        <a\n          href=\"{{ 'http://mysahayog.com/app/my-audits/' + doc.name }}\"\n          class=\"button\"\n          target=\"_blank\"\n          aria-label=\"Click to review the BM's response\"\n          >Review Response</a\n        >\n      </div>\n\n      <div class=\"footer\">\n        This is an automated email sent from the Audit Management System. If you\n        have any questions, please contact the Audit Department.\n      </div>\n    </div>\n  </body>\n</html>\n",
+ "message_type": "HTML",
+ "modified": "2024-12-31 12:32:08.855486",
+ "modified_by": "Administrator",
+ "module": "Audit Management",
+ "name": "Audit Query BM Responded",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "cc": "gondiaaudit@sahayogmultistate.com\n",
+   "condition": "doc.bm_user_status == \"Responded\"",
+   "receiver_by_document_field": "query_generated_by_mail"
+  }
+ ],
+ "send_system_notification": 0,
+ "send_to_all_assignees": 0,
+ "sender": "Sahayog Support System",
+ "sender_email": "support@sahayogmulstistate.com",
+ "subject": "BM Responded: {{ doc.name }}",
+ "value_changed": "bm_user_status"
+}

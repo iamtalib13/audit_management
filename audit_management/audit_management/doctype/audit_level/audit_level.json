@@ -394,7 +394,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_1_bm_emp_id.company_email",
    "fieldname": "stage_1_bm_mail",
    "fieldtype": "Data",
    "label": "BM Mail"
@@ -404,7 +403,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_2_dh_emp_id.company_email",
    "fieldname": "stage_2_dh_mail",
    "fieldtype": "Data",
    "label": "DH Mail"
@@ -414,7 +412,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_2_com_emp_id.company_email",
    "fieldname": "stage_2_com_mail",
    "fieldtype": "Data",
    "label": "COM Mail"
@@ -424,7 +421,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_3_rm_emp_id.company_email",
    "fieldname": "stage_3_rm_mail",
    "fieldtype": "Data",
    "label": "RM Mail"
@@ -434,7 +430,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_3_rom_emp_id.company_email",
    "fieldname": "stage_3_rom_mail",
    "fieldtype": "Data",
    "label": "ROM Mail"
@@ -444,7 +439,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_4_zm_emp_id.company_email",
    "fieldname": "stage_4_zm_mail",
    "fieldtype": "Data",
    "label": "ZM Mail"
@@ -454,7 +448,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_4_zom_emp_id.company_email",
    "fieldname": "stage_4_zom_mail",
    "fieldtype": "Data",
    "label": "ZOM Mail"
@@ -485,6 +478,7 @@
   {
    "fieldname": "stage_6_hr_emp_id",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "<b>HR Employee ID</b>",
    "options": "Employee"
   },
@@ -590,7 +584,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-26 16:20:14.321570",
+ "modified": "2025-01-11 12:01:16.618294",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",

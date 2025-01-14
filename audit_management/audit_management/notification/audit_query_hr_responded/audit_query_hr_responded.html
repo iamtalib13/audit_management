@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="HR Responded to Your Audit Query" />
+    <title>HR Responded to Your Query</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+      .content {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #333;
+      }
+      .response-box {
+        width: 90%;
+        margin: 0 auto;
+        height: 150px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        font-size: 14px;
+        line-height: 1.6;
+        background-color: #f9f9f9;
+        color: black;
+        overflow-y: auto;
+        pointer-events: none;
+      }
+      .button-container {
+        margin-top: 20px;
+        text-align: center;
+      }
+      .button {
+        display: inline-block;
+        background-color: #4caf50;
+        color: #fff;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+      }
+      .footer {
+        font-size: 12px;
+        color: #666;
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 10px;
+        border-top: 1px solid #ddd;
+      }
+      @media (max-width: 600px) {
+        .container {
+          padding: 10px;
+        }
+        .header {
+          font-size: 18px;
+        }
+        .content {
+          font-size: 12px;
+        }
+        .button {
+          padding: 8px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">HR Responded : {{ doc.name }}</div>
+      <div class="content">
+        Dear {{ doc.query_generated_by_name }},<br /><br />
+
+        HR " {{ doc.hr_name }} " from {{ doc.emp_branch }} has responded to the
+        audit query you created. Please review the response and take necessary
+        action if required.<br /><br />
+
+        <p><b>HR's Response:</b></p>
+        <div class="response-box">{{ doc.hr_response_box }}</div>
+        <br /><br />
+
+        Query Details:<br />
+        <p>
+          Query ID: {{ doc.name }}<br />
+          Branch: {{ doc.emp_branch }}<br />
+          Query Type: {{ doc.query_type }}
+        </p>
+      </div>
+
+      <div class="button-container">
+        <a
+          href="{{ 'http://mysahayog.com/app/my-audits/' + doc.name }}"
+          class="button"
+          target="_blank"
+          aria-label="Click to review the HR's response"
+          >Review Response</a
+        >
+      </div>
+
+      <div class="footer">
+        This is an automated email sent from the Audit Management System. If you
+        have any questions, please contact the Audit Department.
+      </div>
+    </div>
+  </body>
+</html>

@@ -2,6 +2,10 @@
 <html>
   <head>
     <meta charset="UTF-8" />
+    <meta
+      name="description"
+      content="New Audit Query: Please review and respond promptly."
+    />
     <title>Audit Query Mail</title>
     <style>
       body {
@@ -28,23 +32,20 @@
         line-height: 1.6;
         color: #333;
       }
-      .textarea-box {
-        width: 90%; /* Adjust width for space on left and right */
-        margin: 0 auto; /* Center the textarea */
+      .query-box {
+        width: 90%;
+        margin: 0 auto;
         height: 150px;
         border: 1px solid #ddd;
         border-radius: 5px;
         padding: 10px;
         font-size: 14px;
         line-height: 1.6;
-        resize: none; /* Disable resizing */
-        overflow: auto; /* Add scrollbar if needed */
-        color: black; /* Ensure font color is black */
         background-color: #f9f9f9;
-        pointer-events: none; /* Make readonly behavior */
-        user-select: text; /* Allow text selection */
+        color: black;
+        overflow-y: auto;
+        pointer-events: none;
       }
-
       .button-container {
         margin-top: 20px;
         text-align: center;
@@ -56,6 +57,14 @@
         padding: 10px 20px;
         text-decoration: none;
         border-radius: 5px;
+      }
+      .footer {
+        font-size: 12px;
+        color: #666;
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 10px;
+        border-top: 1px solid #ddd;
       }
       @media (max-width: 600px) {
         .container {
@@ -78,14 +87,15 @@
       <div class="header">Audit Query: {{ doc.name }}</div>
       <div class="content">
         Dear {{ doc.zom_name }},<br />
-        ZOM of {{ doc.emp_branch }},<br /><br />
+        ZOM for {{ doc.emp_branch }},<br /><br />
 
-        A new audit query has been sent to you from the Audit Department. Please review the query and respond 
-        <span style="color: red;">as soon as possible, within 24 hours</span>.
+        A new audit query has been sent to you from the Audit Department. Please
+        review the query and respond
+        <span style="color: red">as soon as possible, within 24 hours</span>.
         <br /><br />
 
         <p><b>Audit Query:</b></p>
-        <textarea class="textarea-box">{{ doc.audit_query_box }}</textarea>
+        <div class="query-box">{{ doc.audit_query_box }}</div>
         <br /><br />
 
         Query Creator:<br />
@@ -97,7 +107,18 @@
       </div>
 
       <div class="button-container">
-        <a href="{{ 'http://mysahayog.com/app/my-audits/' + doc.name }}" class="button" target="_blank">Click here to reply</a>
+        <a
+          href="{{ 'http://mysahayog.com/app/my-audits/' + doc.name }}"
+          class="button"
+          target="_blank"
+          aria-label="Click to reply to the audit query"
+          >Click here to reply</a
+        >
+      </div>
+
+      <div class="footer">
+        This is an automated email sent from the Audit Management System. If you
+        have any questions, please contact the Audit Department.
       </div>
     </div>
   </body>

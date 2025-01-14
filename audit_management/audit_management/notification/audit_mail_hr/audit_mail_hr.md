@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Audit Query Mail</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+      .content {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #333;
+      }
+      .textarea-box {
+        width: 90%; /* Adjust width for space on left and right */
+        margin: 0 auto; /* Center the textarea */
+        height: 150px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        font-size: 14px;
+        line-height: 1.6;
+        resize: none; /* Disable resizing */
+        overflow: auto; /* Add scrollbar if needed */
+        color: black; /* Ensure font color is black */
+        background-color: #f9f9f9;
+        pointer-events: none; /* Make readonly behavior */
+        user-select: text; /* Allow text selection */
+      }
+
+      .button-container {
+        margin-top: 20px;
+        text-align: center;
+      }
+      .button {
+        display: inline-block;
+        background-color: #4caf50;
+        color: #fff;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+      }
+      @media (max-width: 600px) {
+        .container {
+          padding: 10px;
+        }
+        .header {
+          font-size: 18px;
+        }
+        .content {
+          font-size: 12px;
+        }
+        .button {
+          padding: 8px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">Audit Query: {{ doc.name }}</div>
+      <div class="content">
+        Dear {{ doc.ceo_name }},<br />
+        CEO for {{ doc.emp_branch }},<br /><br />
+
+        A new audit query has been sent to you from the Audit Department. Please review the query and respond 
+        <span style="color: red;">as soon as possible, within 24 hours</span>.
+        <br /><br />
+
+        <p><b>Audit Query:</b></p>
+        <textarea class="textarea-box">{{ doc.audit_query_box }}</textarea>
+        <br /><br />
+
+        Query Creator:<br />
+        <p>
+          Name: {{ doc.query_generated_by_name }}<br />
+          Designation: {{ doc.query_generated_by_designation }}<br />
+          Branch: {{ doc.query_generated_by_branch }}
+        </p>
+      </div>
+
+      <div class="button-container">
+        <a href="{{ 'http://mysahayog.com/app/my-audits/' + doc.name }}" class="button" target="_blank">Click here to reply</a>
+      </div>
+    </div>
+  </body>
+</html>

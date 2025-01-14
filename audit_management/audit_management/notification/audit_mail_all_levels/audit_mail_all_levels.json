@@ -1,0 +1,34 @@
+{
+ "attach_print": 0,
+ "channel": "Email",
+ "condition": "",
+ "creation": "2024-12-27 12:38:11.227762",
+ "days_in_advance": 0,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "My Audits",
+ "enabled": 1,
+ "event": "Value Change",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"UTF-8\" />\n    <title>Audit Query Mail</title>\n    <style>\n      body {\n        font-family: Arial, sans-serif;\n        background-color: #f4f4f4;\n        margin: 0;\n        padding: 20px;\n      }\n      .container {\n        max-width: 600px;\n        margin: 0 auto;\n        background-color: #fff;\n        padding: 20px;\n        border-radius: 8px;\n        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n      }\n      .header {\n        font-size: 20px;\n        font-weight: bold;\n        margin-bottom: 20px;\n      }\n      .content {\n        font-size: 14px;\n        line-height: 1.6;\n        color: #333;\n      }\n      .textarea-box {\n        width: 90%; /* Adjust width for space on left and right */\n        margin: 0 auto; /* Center the textarea */\n        height: 150px;\n        border: 1px solid #ddd;\n        border-radius: 5px;\n        padding: 10px;\n        font-size: 14px;\n        line-height: 1.6;\n        resize: none; /* Disable resizing */\n        overflow: auto; /* Add scrollbar if needed */\n        color: black; /* Ensure font color is black */\n        background-color: #f9f9f9;\n        pointer-events: none; /* Make readonly behavior */\n        user-select: text; /* Allow text selection */\n      }\n\n      .button-container {\n        margin-top: 20px;\n        text-align: center;\n      }\n      .button {\n        display: inline-block;\n        background-color: #4caf50;\n        color: #fff;\n        padding: 10px 20px;\n        text-decoration: none;\n        border-radius: 5px;\n      }\n      @media (max-width: 600px) {\n        .container {\n          padding: 10px;\n        }\n        .header {\n          font-size: 18px;\n        }\n        .content {\n          font-size: 12px;\n        }\n        .button {\n          padding: 8px 16px;\n        }\n      }\n    </style>\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"header\">Audit Query: {{ doc.name }}</div>\n      <div class=\"content\">\n        Dear All Query Level Persons of {{ doc.emp_branch }},<br />\n\n        A new audit query has been sent to you from the Audit Department. Please review the query and respond \n        <span style=\"color: red;\">as soon as possible, within 24 hours</span>.\n        <br /><br />\n\n        <p><b>Audit Query:</b></p>\n        <textarea class=\"textarea-box\">{{ doc.audit_query_box }}</textarea>\n        <br /><br />\n\n        Query Creator:<br />\n        <p>\n          Name: {{ doc.query_generated_by_name }}<br />\n          Designation: {{ doc.query_generated_by_designation }}<br />\n          Branch: {{ doc.query_generated_by_branch }}\n        </p>\n      </div>\n\n      <div class=\"button-container\">\n        <a href=\"{{ 'http://mysahayog.com/app/my-audits/' + doc.name }}\" class=\"button\" target=\"_blank\">Click here to reply</a>\n      </div>\n    </div>\n  </body>\n</html>\n",
+ "message_type": "HTML",
+ "modified": "2025-01-11 12:07:41.287749",
+ "modified_by": "Administrator",
+ "module": "Audit Management",
+ "name": "Audit Mail All Levels",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "cc": "gondiaaudit@sahayogmultistate.com\n{% if doc.query_generated_by_mail %}{{ doc.query_generated_by_mail }},{% endif %}\n{% if doc.dh_mail %}{{ doc.dh_mail }},{% endif %}\n{% if doc.com_mail %}{{ doc.com_mail }},{% endif %}\n{% if doc.rm_mail %}{{ doc.rm_mail }},{% endif %}\n{% if doc.rom_mail %}{{ doc.rom_mail }},{% endif %}\n{% if doc.zm_mail %}{{ doc.zm_mail }},{% endif %}\n{% if doc.zom_mail %}{{ doc.zom_mail }},{% endif %}\n{% if doc.gm_mail %}{{ doc.gm_mail }},{% endif %}\n{% if doc.hr_mail %}{{ doc.hr_mail }},{% endif %}\n{% if doc.coo_mail %}{{ doc.coo_mail }},{% endif %}\n{% if doc.ceo_mail %}{{ doc.ceo_mail }},{% endif %}",
+   "condition": "doc.send_mail_to_all == \"Yes\"",
+   "receiver_by_document_field": "bm_mail"
+  }
+ ],
+ "send_system_notification": 0,
+ "send_to_all_assignees": 0,
+ "sender": "Sahayog Support System",
+ "sender_email": "support@sahayogmulstistate.com",
+ "subject": "For : {{doc.audit_query_subject_box}}",
+ "value_changed": "send_mail_to_all"
+}
