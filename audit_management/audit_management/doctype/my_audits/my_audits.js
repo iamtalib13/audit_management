@@ -6,49 +6,6 @@ frappe.ui.form.on("My Audits", {
     frm.trigger("check_field_read_only");
     frm.trigger("set_background_colors");
   },
-  dh_user_status: function(frm) {
-    frm.trigger('trigger_notification_on_pending_status', 'dh_user_status');
-  },
-  rm_user_status: function(frm) {
-      frm.trigger('trigger_notification_on_pending_status', 'rm_user_status');
-  },
-  zm_user_status: function(frm) {
-      frm.trigger('trigger_notification_on_pending_status', 'zm_user_status');
-  },
-  gm_user_status: function(frm) {
-      frm.trigger('trigger_notification_on_pending_status', 'gm_user_status');
-  },
-  hr_user_status: function(frm) {
-      frm.trigger('trigger_notification_on_pending_status', 'hr_user_status');
-  },
-  coo_user_status: function(frm) {
-      frm.trigger('trigger_notification_on_pending_status', 'coo_user_status');
-  },
-  ceo_user_status: function(frm) {
-      frm.trigger('trigger_notification_on_pending_status', 'ceo_user_status');
-  },
-    // Trigger notification when the status changes
-  trigger_notification_on_pending_status: function(frm, field_name) {
-    console.log("notification function triggered 1");
-    // Check if the passed field has 'Pending' value
-    if (frm.doc[field_name] === 'Pending') {
-        // Trigger the notification if the field is 'Pending'
-        console.log("notification function triggered 2");
-        frappe.call({
-            method: "audit_management.audit_management.doctype.my_audits.my_audits.trigger_audit_notification", // Replace with correct path
-            args: {
-                docname: frm.doc.name
-            },
-            callback: function(response) {
-                if (response.message) {
-                    frappe.msgprint(__('Notification triggered successfully.'));
-                } else {
-                    frappe.msgprint(__('Failed to trigger the notification.'));
-                }
-            }
-        });
-    }
-  },
   check_field_read_only: function (frm) {
     if (
       (!frappe.user.has_role("Audit Manager") ||
