@@ -467,58 +467,6 @@ def check_pending_tat():
 
     frappe.db.commit()
 
-
-@frappe.whitelist()
-def trigger_audit_notification(docname):
-    # Fetch the Audit document using docname
-    doc = frappe.get_doc('My Audits', docname)
-    
-    # Check for each user status and trigger the corresponding notification
-    if doc.dh_user_status == 'Pending':
-        trigger_notification('Audit Mail Second Level DH', doc)
-    if doc.rm_user_status == 'Pending':
-        trigger_notification('Audit Mail Third Level RM', doc)
-    if doc.zm_user_status == 'Pending':
-        trigger_notification('Audit Mail Fourth Level ZM', doc)
-    if doc.gm_user_status == 'Pending':
-        trigger_notification('Audit Mail Fifth Level GM', doc)
-    if doc.hr_user_status == 'Pending':
-        trigger_notification('Audit Mail HR', doc)
-    if doc.coo_user_status == 'Pending':
-        trigger_notification('Audit Mail Sixth Level COO', doc)
-    if doc.ceo_user_status == 'Pending':
-        trigger_notification('Audit Mail Seventh Level CEO', doc)
-
-    def trigger_notification(notification_name, doc):
-        try:
-            # Fetch the Notification document by name
-            notification = frappe.get_doc('Notification', notification_name)
-    
-            # Check if the notification is enabled and then send it
-            if notification.enabled:
-                # Send the notification according to how it is configured
-                notification.send(doc)
-    
-                # Log success message
-                success_message = f"Notification '{notification_name}' was sent successfully."
-                frappe.log_error(message=success_message, title="Notification Sent")
-            else:
-                error_message = f"Notification '{notification_name}' is not enabled."
-                # Log the error
-                frappe.log_error(message=error_message, title="Notification Disabled")
-        except frappe.DoesNotExistError:
-            error_message = f"Notification '{notification_name}' does not exist."
-            # Log the error
-            frappe.log_error(message=error_message, title="Notification Not Found")
-        except Exception as e:
-            error_message = f"An error occurred: {str(e)}"
-            # Log the error with traceback for debugging
-            frappe.log_error(message=frappe.get_traceback(), title="Notification Sending Failed")
-
-
-
-
-
 #this was for testing
 @frappe.whitelist()
 def printing_all_records():
@@ -583,6 +531,18 @@ def get_audit_counts(is_admin=None):
         counts["coo_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Responded"})
         counts["ceo_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Responded"})
 
+        # Add No Response counts
+        counts["bm_no_response_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "No Response"})
+        counts["dh_no_response_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "No Response"})
+        counts["com_no_response_count"] = frappe.db.count("My Audits", filters={"com_user_status": "No Response"})
+        counts["rm_no_response_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "No Response"})
+        counts["rom_no_response_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "No Response"})
+        counts["zm_no_response_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "No Response"})
+        counts["zom_no_response_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "No Response"})
+        counts["gm_no_response_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "No Response"})
+        counts["hr_no_response_count"] = frappe.db.count("My Audits", filters={"hr_user_status": "No Response"})
+        counts["coo_no_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "No Response"})
+        counts["ceo_no_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "No Response"})
 
     elif is_admin == "no":
         # Query for Audit Manager (e.g., restricted records)
@@ -612,6 +572,19 @@ def get_audit_counts(is_admin=None):
         counts["hr_response_count"] = frappe.db.count("My Audits", filters={"hr_user_status": "Responded", "owner": frappe.session.user})
         counts["coo_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Responded", "owner": frappe.session.user})
         counts["ceo_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Responded", "owner": frappe.session.user})
+           
+        # Add No Response counts for restricted access
+        counts["bm_no_response_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "No Response", "owner": frappe.session.user})
+        counts["dh_no_response_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "No Response", "owner": frappe.session.user})
+        counts["com_no_response_count"] = frappe.db.count("My Audits", filters={"com_user_status": "No Response", "owner": frappe.session.user})
+        counts["rm_no_response_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "No Response", "owner": frappe.session.user})
+        counts["rom_no_response_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "No Response", "owner": frappe.session.user})
+        counts["zm_no_response_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "No Response", "owner": frappe.session.user})
+        counts["zom_no_response_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "No Response", "owner": frappe.session.user})
+        counts["gm_no_response_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "No Response", "owner": frappe.session.user})
+        counts["hr_no_response_count"] = frappe.db.count("My Audits", filters={"hr_user_status": "No Response", "owner": frappe.session.user})
+        counts["coo_no_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "No Response", "owner": frappe.session.user})
+        counts["ceo_no_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "No Response", "owner": frappe.session.user})
 
     return counts
 
