@@ -359,7 +359,7 @@ def check_pending_tat():
 
         # Determine TAT based on conditions
         if user_status_field == "bm_user_status":
-            if query_type == "Branch Compliance":
+            if query_type == "Audit Report Compliance":
                 tat_time = 15 * 24 * 60  # 15 days in minutes
                 tat_day = "15 Days then 1 Day TAT"
             elif query_type == "Critical Compliance":

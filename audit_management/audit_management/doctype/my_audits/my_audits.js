@@ -401,49 +401,49 @@ frappe.ui.form.on("My Audits", {
         }
         if (
           (frm.doc.dh_user_status === "" || frm.doc.com_user_status === "") &&
-          (frm.doc.query_type !== "Branch Compliance" ||
+          (frm.doc.query_type !== "Audit Report Compliance" ||
             frm.doc.bm_user_status === "Responded")
         ) {
           frm.trigger("show_sendToDhComWithClose_btn");
         }
         if (
           (frm.doc.rm_user_status === "" || frm.doc.rom_user_status === "") &&
-          (frm.doc.query_type !== "Branch Compliance" ||
+          (frm.doc.query_type !== "Audit Report Compliance" ||
             frm.doc.bm_user_status === "Responded")
         ) {
           frm.trigger("show_sendToRmRomWithClose_btn");
         }
         if (
           (frm.doc.zm_user_status === "" || frm.doc.zom_user_status === "") &&
-          (frm.doc.query_type !== "Branch Compliance" ||
+          (frm.doc.query_type !== "Audit Report Compliance" ||
             frm.doc.bm_user_status === "Responded")
         ) {
           frm.trigger("show_sendToZmZomWithClose_btn");
         }
         if (
           frm.doc.gm_user_status === "" &&
-          (frm.doc.query_type !== "Branch Compliance" ||
+          (frm.doc.query_type !== "Audit Report Compliance" ||
             frm.doc.bm_user_status === "Responded")
         ) {
           frm.trigger("show_sendToGm_withClose_btn");
         }
         if (
           frm.doc.hr_user_status === "" &&
-          (frm.doc.query_type !== "Branch Compliance" ||
+          (frm.doc.query_type !== "Audit Report Compliance" ||
             frm.doc.bm_user_status === "Responded")
         ) {
           frm.trigger("show_sendToHr_withClose_btn");
         }
         if (
           frm.doc.coo_user_status === "" &&
-          (frm.doc.query_type !== "Branch Compliance" ||
+          (frm.doc.query_type !== "Audit Report Compliance" ||
             frm.doc.bm_user_status === "Responded")
         ) {
           frm.trigger("show_sendToCOO_withClose_btn");
         }
         if (
           frm.doc.ceo_user_status === "" &&
-          (frm.doc.query_type !== "Branch Compliance" ||
+          (frm.doc.query_type !== "Audit Report Compliance" ||
             frm.doc.bm_user_status === "Responded")
         ) {
           frm.trigger("show_sendToCEO_withClose_btn");
@@ -459,7 +459,7 @@ frappe.ui.form.on("My Audits", {
             !frm.doc.gm_user_status ||
             !frm.doc.coo_user_status ||
             !frm.doc.ceo_user_status) &&
-          frm.doc.query_type !== "Branch Compliance"
+          frm.doc.query_type !== "Audit Report Compliance"
         ) {
           frm.trigger("show_sendToAll_withClose_btn");
         }
