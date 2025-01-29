@@ -454,7 +454,9 @@ def check_pending_tat():
             ):
                 # Set current statuses to "No Response"
                 for status_field, _ in current_level:
-                    updates.append({"name": record.name, "field": status_field, "value": "No Response"})
+                    # Only set "No Response" if the status_field is not one of the excluded fields
+                    if status_field not in ["hr_user_status", "coo_user_status", "ceo_user_status"]:
+                        updates.append({"name": record.name, "field": status_field, "value": "No Response"})
 
                 # Set next statuses to "Pending" with updated pending time
                 for next_status_field, next_pending_field in next_level:
@@ -546,7 +548,7 @@ def get_audit_counts(is_admin=None):
 
     elif is_admin == "no":
         # Query for Audit Manager (e.g., restricted records)
-       	counts["total_count"] = frappe.db.count("My Audits",filters={"owner": frappe.session.user})
+        counts["total_count"] = frappe.db.count("My Audits",filters={"owner": frappe.session.user})
         counts["draft_count"] = frappe.db.count("My Audits", filters={"status": "Draft", "owner": frappe.session.user})
         counts["pending_count"] = frappe.db.count("My Audits", filters={"status": "Pending", "owner": frappe.session.user})
         counts["close_count"] = frappe.db.count("My Audits", filters={"status": "Close", "owner": frappe.session.user})
