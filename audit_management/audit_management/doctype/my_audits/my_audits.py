@@ -469,6 +469,27 @@ def check_pending_tat():
 
     frappe.db.commit()
 
+
+import frappe
+@frappe.whitelist()
+def sendmail():
+    recipients = [
+        'talib.s@sahayogmultistate.com',
+        'arshad.q@sahayogmultistate.com'
+    ]
+
+    context = {
+        "message": "Hello, this is a test email using a template!",  # Template me use hone wala message
+    }
+
+    frappe.sendmail(
+        recipients=recipients,
+        subject="Test",  # ✅ Subject me "Test"
+        template="sending_mail",  # ✅ Template ka naam (path nahi dena hota)
+        args=context,
+    )
+    print("mail send successfully")
+
 #this was for testing
 @frappe.whitelist()
 def printing_all_records():
