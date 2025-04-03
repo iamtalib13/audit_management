@@ -335,15 +335,20 @@ frappe.ui.form.on("My Audits", {
       if (
         frm.doc.status === "Pending" &&
         ((frappe.session.user == frm.doc.bm_user_id &&
-          frm.doc.bm_user_status === "Pending") ||
+          (frm.doc.bm_user_status === "Pending" ||
+          frm.doc.bm_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.gm_user_id &&
-            frm.doc.gm_user_status === "Pending") ||
+            (frm.doc.gm_user_status === "Pending" ||
+            frm.doc.gm_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.hr_user_id &&
-            frm.doc.hr_user_status === "Pending") ||
+            (frm.doc.hr_user_status === "Pending" ||
+            frm.doc.hr_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.coo_user_id &&
-            frm.doc.coo_user_status === "Pending") ||
+            (frm.doc.coo_user_status === "Pending" ||
+            frm.doc.coo_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.ceo_user_id &&
-            frm.doc.ceo_user_status === "Pending"))
+            (frm.doc.ceo_user_status === "Pending" ||
+            frm.doc.ceo_user_status === "No Response")))
       ) {
         frm.trigger("show_sendResponse_btn");
       }
@@ -352,17 +357,23 @@ frappe.ui.form.on("My Audits", {
       if (
         frm.doc.status === "Pending" &&
         ((frappe.session.user == frm.doc.dh_user_id &&
-          frm.doc.dh_user_status === "Pending") ||
+          (frm.doc.dh_user_status === "Pending" ||
+          frm.doc.dh_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.com_user_id &&
-            frm.doc.com_user_status === "Pending") ||
+            (frm.doc.com_user_status === "Pending" ||
+            frm.doc.com_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.rm_user_id &&
-            frm.doc.rm_user_status === "Pending") ||
+            (frm.doc.rm_user_status === "Pending" ||
+            frm.doc.rm_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.rom_user_id &&
-            frm.doc.rom_user_status === "Pending") ||
+            (frm.doc.rom_user_status === "Pending" ||
+            frm.doc.rom_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.zm_user_id &&
-            frm.doc.zm_user_status === "Pending") ||
+            (frm.doc.zm_user_status === "Pending" ||
+            frm.doc.zm_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.zom_user_id &&
-            frm.doc.zom_user_status === "Pending"))
+            (frm.doc.zom_user_status === "Pending" ||
+            frm.doc.zom_user_status === "No Response")))
       ) {
         frm.trigger("show_sendResponse_btn");
       }
@@ -370,22 +381,22 @@ frappe.ui.form.on("My Audits", {
       // jab DH||COM aur RM||ROM aur ZM||ZOM mese koi ek reply kre to dusre ko sendTOresponse ki button dikhane
       if (
         (frappe.session.user == frm.doc.dh_user_id &&
-          frm.doc.dh_user_status === "Pending" &&
+          (frm.doc.dh_user_status === "Pending" || frm.doc.dh_user_status === "No Response" ) &&
           frm.doc.com_user_status === "Responded") ||
         (frappe.session.user == frm.doc.com_user_id &&
-          frm.doc.com_user_status === "Pending" &&
+          (frm.doc.com_user_status === "Pending" || frm.doc.com_user_status === "No Response") &&
           frm.doc.dh_user_status === "Responded") ||
         (frappe.session.user == frm.doc.rm_user_id &&
-          frm.doc.rm_user_status === "Pending" &&
+          (frm.doc.rm_user_status === "Pending" || frm.doc.rm_user_status === "No Response") &&
           frm.doc.rom_user_status === "Responded") ||
         (frappe.session.user == frm.doc.rom_user_id &&
-          frm.doc.rom_user_status === "Pending" &&
+          (frm.doc.rom_user_status === "Pending" || frm.doc.rom_user_status === "No Response") &&
           frm.doc.rm_user_status === "Responded") ||
         (frappe.session.user == frm.doc.zm_user_id &&
-          frm.doc.zm_user_status === "Pending" &&
+          (frm.doc.zm_user_status === "Pending" || frm.doc.zm_user_status === "No Response") &&
           frm.doc.zom_user_status === "Responded") ||
         (frappe.session.user == frm.doc.zom_user_id &&
-          frm.doc.zom_user_status === "Pending" &&
+          (frm.doc.zom_user_status === "Pending" || frm.doc.zom_user_status === "No Response") &&
           frm.doc.zm_user_status === "Responded")
       ) {
         frm.trigger("show_sendResponse_btn");
