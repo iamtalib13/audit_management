@@ -1,0 +1,36 @@
+{
+ "attach_print": 0,
+ "channel": "Email",
+ "creation": "2025-01-29 12:54:26.011837",
+ "days_in_advance": 0,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "My Audits",
+ "enabled": 1,
+ "event": "Value Change",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "<h1>hello from me</h1>",
+ "message_type": "HTML",
+ "modified": "2025-01-29 16:43:58.851443",
+ "modified_by": "Administrator",
+ "module": "Audit Management",
+ "name": "audit mail for checking",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "condition": "doc.send_mail_to_dh == \"Yes\" and doc.send_mail_to_all == \"No\"",
+   "receiver_by_document_field": "dh_mail"
+  },
+  {
+   "condition": "doc.send_mail_to_dh == \"Yes\" and doc.send_mail_to_all == \"No\"",
+   "receiver_by_document_field": "com_mail"
+  }
+ ],
+ "send_system_notification": 0,
+ "send_to_all_assignees": 0,
+ "sender": "Sahayog Support System",
+ "sender_email": "support@sahayogmulstistate.com",
+ "subject": "arshad arshad",
+ "value_changed": "send_mail_to_dh"
+}
