@@ -393,12 +393,33 @@ def check_pending_tat():
             ["coo_user_status", "=", "Pending"],
             ["ceo_user_status", "=", "Pending"],
         ],
-        fields=["name","query_generated_by_name","query_generated_by_designation","query_generated_by_branch", "audit_query_subject_box", "query_type", "bm_user_status", "bm_pending_time", "bm_mail",
-                "dh_user_status", "dh_pending_time", "dh_mail", "com_user_status", "com_pending_time", "com_mail",
-                "rm_user_status", "rm_pending_time", "rm_mail", "rom_user_status", "rom_pending_time", "rom_mail",
-                "zm_user_status", "zm_pending_time", "zm_mail", "zom_user_status", "zom_pending_time", "zom_mail",
-                "gm_user_status", "gm_pending_time", "gm_mail", "hr_user_status", "hr_pending_time", "hr_mail",
-                "coo_user_status", "coo_pending_time", "coo_mail", "ceo_user_status", "ceo_pending_time", "ceo_mail"]
+        fields=[
+        "name",
+        "query_generated_by_name",
+        "query_generated_by_designation",
+        "query_generated_by_branch",
+        "audit_query_subject_box",
+        "query_type",
+        "emp_branch",                
+        "dh_name", "com_name",       
+        "rm_name", "rom_name",        
+        "zm_name", "zom_name",        
+        "gm_name",                   
+        "hr_name",                    
+        "coo_name",                
+        "ceo_name",
+        "bm_user_status", "bm_pending_time", "bm_mail",
+        "dh_user_status", "dh_pending_time", "dh_mail",
+        "com_user_status", "com_pending_time", "com_mail",
+        "rm_user_status", "rm_pending_time", "rm_mail",
+        "rom_user_status", "rom_pending_time", "rom_mail",
+        "zm_user_status", "zm_pending_time", "zm_mail",
+        "zom_user_status", "zom_pending_time", "zom_mail",
+        "gm_user_status", "gm_pending_time", "gm_mail",
+        "hr_user_status", "hr_pending_time", "hr_mail",
+        "coo_user_status", "coo_pending_time", "coo_mail",
+        "ceo_user_status", "ceo_pending_time", "ceo_mail"
+    ]
     )
     
     print(f"Total pending records found: {len(pending_records)}")
@@ -453,145 +474,117 @@ def check_pending_tat():
             ]
         }
     ]
-
-    dear_lines = {
-    "dh_user_status": "Dear {{ doc.dh_name }} & {{ doc.com_name }},<br />DH & COM of {{ doc.emp_branch }},<br /><br />",
-    "com_user_status": "Dear {{ doc.dh_name }} & {{ doc.com_name }},<br />DH & COM of {{ doc.emp_branch }},<br /><br />",
-    "rm_user_status": "Dear {{ doc.rm_name }} & {{ doc.rom_name }},<br />RM & ROM for {{ doc.emp_branch }},<br /><br />",
-    "rom_user_status": "Dear {{ doc.rm_name }} & {{ doc.rom_name }},<br />RM & ROM for {{ doc.emp_branch }},<br /><br />",
-    "zm_user_status": "Dear {{ doc.zm_name }} & {{ doc.zom_name }},<br />ZM & ZOM for {{ doc.emp_branch }},<br /><br />",
-    "zom_user_status": "Dear {{ doc.zm_name }} & {{ doc.zom_name }},<br />ZM & ZOM for {{ doc.emp_branch }},<br /><br />",
-    "gm_user_status": "Dear {{ doc.gm_name }},<br />GM for {{ doc.emp_branch }},<br /><br />",
-    "hr_user_status": "Dear {{ doc.hr_name }},<br />HR for {{ doc.emp_branch }},<br /><br />",
-    "coo_user_status": "Dear {{ doc.coo_name }},<br />COO for {{ doc.emp_branch }},<br /><br />",
-    "ceo_user_status": "Dear {{ doc.ceo_name }},<br />CEO for {{ doc.emp_branch }},<br /><br />",
-    }
-
-    query_creator = f"""
-    <p>Name: {{doc.query_generated_by_name}}</p>
-    <p>Designation: {{doc.query_generated_by_designation}}</p>
-    <p>Branch: {{doc.query_generated_by_branch}}</p>
-    
-    """
-    
-
     
     # Loop through the transition
     for record in pending_records:
         print(f"Processing record: {record.name}")
 
-        # Iterate through the transitions
+        dear_lines = {
+            "dh_user_status": f"Dear {record.dh_name} & {record.com_name},<br />DH & COM of {record.query_generated_by_branch},<br /><br />",
+            "com_user_status": f"Dear {record.dh_name} & {record.com_name},<br />DH & COM of {record.query_generated_by_branch},<br /><br />",
+            "rm_user_status": f"Dear {record.rm_name} & {record.rom_name},<br />RM & ROM for {record.query_generated_by_branch},<br /><br />",
+            "rom_user_status": f"Dear {record.rm_name} & {record.rom_name},<br />RM & ROM for {record.query_generated_by_branch},<br /><br />",
+            "zm_user_status": f"Dear {record.zm_name} & {record.zom_name},<br />ZM & ZOM for {record.query_generated_by_branch},<br /><br />",
+            "zom_user_status": f"Dear {record.zm_name} & {record.zom_name},<br />ZM & ZOM for {record.query_generated_by_branch},<br /><br />",
+            "gm_user_status": f"Dear {record.gm_name},<br />GM for {record.query_generated_by_branch},<br /><br />",
+            "hr_user_status": f"Dear {record.hr_name},<br />HR for {record.query_generated_by_branch},<br /><br />",
+            "coo_user_status": f"Dear {record.coo_name},<br />COO for {record.query_generated_by_branch},<br /><br />",
+            "ceo_user_status": f"Dear {record.ceo_name},<br />CEO for {record.query_generated_by_branch},<br /><br />",
+        }
+
+        query_creator = f"""
+        <p>Name: {record.query_generated_by_name}</p>
+        <p>Designation: {record.query_generated_by_designation}</p>
+        <p>Branch: {record.query_generated_by_branch}</p>
+        """
+        
         for transition in level_transitions:
             current_level = transition["current"]
             next_levels = transition["next"]
 
-            # 🔍 Find all "Pending" status fields in current_level
             active_fields = []
-            skip_update = False  # Flag to check if we need to skip update
+            skip_update = False
 
-            # Check for multiple "Pending" statuses in current level
             for i in range(0, len(current_level), 3):
                 status_field = current_level[i]
-                # If status is "Pending", add to active_fields
-                if getattr(record, status_field) == "Pending":  
+                if getattr(record, status_field) == "Pending":
                     active_fields.append(status_field)
-                elif getattr(record, status_field) == "Responded":  # If any status is "Responded", skip update
+                elif getattr(record, status_field) == "Responded":
                     skip_update = True
                     break
 
             if skip_update:
                 print(f"Skipping update for {record.name}, as one or more user statuses are 'Responded'.")
-                continue  # Skip if any status is "Responded" and move to the next record
+                continue
 
-            # If we have active fields (multiple "Pending" statuses), update them
             if active_fields:
                 print(f"Active Fields: {active_fields}")
 
-                # ✅ Check pending time only for the active fields
                 for active_field in active_fields:
                     pending_time_field = current_level[current_level.index(active_field) + 1]
 
-                    # Call the has_pending_exceeded function to check if pending time is exceeded
                     if has_pending_exceeded(record, active_field, pending_time_field, now_time):
                         print(f"Pending time exceeded for {active_field}, updating...")
 
-                        # ✅ Update all "Pending" fields to "No Response"
-                        for field in active_fields:  # Iterate over all active fields
+                        # Mark all current "Pending" fields as "No Response"
+                        for field in active_fields:
                             updates.append({"name": record.name, "field": field, "value": "No Response"})
                             print(f"Setting 'No Response' for {field} in record {record.name}")
 
-                        # ✅ Move to next level and set "Pending" for all active transitions
                         for next_level in next_levels:
-                            # Extract user_status fields only (skip pending_time fields)
-                            user_status_fields = [next_level[i] for i in range(0, len(next_level), 2)]  # Taking only user_status fields
+                            user_status_fields = [next_level[i] for i in range(0, len(next_level), 2)]
 
-                            print("User Status Fields:", user_status_fields)  # Debugging: Print extracted fields
-
-                            # Update only the user status fields
                             for user_status_field in user_status_fields:
-                                if not user_status_field.endswith("_mail"):  # Ignore _mail fields
-                                    print(f"Setting 'Pending' for {user_status_field} in record {record.name}")  # Debugging
+                                if not user_status_field.endswith("_mail"):
                                     updates.append({"name": record.name, "field": user_status_field, "value": "Pending"})
+                                    print(f"Setting 'Pending' for {user_status_field} in record {record.name}")
 
-                            # Update the corresponding pending_time fields
-                            for i in range(1, len(next_level), 2):  # Taking only pending_time fields
+                            for i in range(1, len(next_level), 2):
                                 pending_time_field = next_level[i]
-                                print(f"Setting '{now_time}' for {pending_time_field} in record {record.name}")  # Debugging
                                 updates.append({"name": record.name, "field": pending_time_field, "value": now_time})
+                                print(f"Setting '{now_time}' for {pending_time_field} in record {record.name}")
 
-                            # Generate dynamic greeting based on the next status field
+                            # ✅ Email details
                             dear_line = dear_lines.get(next_level[0], "Dear Sir/Madam,<br /><br />")
 
-                            # Collect email recipients without duplicates
-                           # Collect email recipients without duplicates
                             if len(next_level) > 2 and hasattr(record, next_level[2]):
                                 recipient = getattr(record, next_level[2])
-                                print(f"Extracted recipient from {next_level[2]}: {recipient}")  # Debugging: Print recipient
-
                                 if recipient and recipient not in emails:
                                     emails.append(recipient)
-                                    print(f"Added {recipient} to email list.")  # Debugging: Confirm addition
+                                    print(f"Added {recipient} to email list.")
+                        break  # Stop checking more fields in current transition
                     else:
                         print(f"Pending time not exceeded for {active_field}, skipping update...")
-                        continue  # Skip if pending time is not exceeded
+                break  # Process only one transition level per record
 
-                    # 🛑 Stop further processing for this record once an update is done
-                    break  # This break will now end the transition loop and go to the next record
+        # ✅ Send email for this record (after all transition logic)
+        if emails:
+            email_subject = f"For : {record.audit_query_subject_box}"
+            email_message = frappe.render_template(
+                "audit_management/templates/emails/audit_query.html",
+                {
+                    "doc": record,
+                    "dear_line": dear_line,
+                    "query_creator": query_creator
+                }
+            )
+            print(f"Sending email to recipients: {emails}")
+            frappe.sendmail(
+                recipients=emails,
+                subject=email_subject,
+                message=email_message
+            )
+            print("Email sending completed.")
+            emails = []  # Clear email list for next record
 
-    # Sending a single email to all recipients
-    # Sending a single email to all recipients
-    if emails:
-        email_subject = f"For : {record.audit_query_subject_box}"
-        email_message = frappe.render_template(
-            "audit_management/templates/emails/audit_query.html",
-            {
-                "doc": record, 
-                "dear_line": dear_line, 
-                "query_creator": query_creator  # ✅ Query creator bhi pass kar diya
-            }
-        )
-
-        # Send email to all recipients at once
-        print(f"Sending email to recipients: {emails}")
-        frappe.sendmail(
-            recipients=emails,
-            subject=email_subject,
-            message=email_message
-        )
-        print("Email sending completed.")
-
-
-    # Commit the database updates
-    print("Updating database...")
+    # ✅ Commit updates after loop
     if updates:
+        print("Updating database...")
         for update in updates:
-            if isinstance(update["field"], list):  # If it's a list, update fields individually
-                for field in update["field"]:
-                    frappe.db.set_value("My Audits", update["name"], field, update["value"])
-                    print("=========================")
-            else:
-                frappe.db.set_value("My Audits", update["name"], update["field"], update["value"])
-                print("=========================")
+            frappe.db.set_value("My Audits", update["name"], update["field"], update["value"])
+            print(f"Updated {update['field']} in {update['name']} with {update['value']}")
+            print("======================")
+
 
 
 #this was for testing
