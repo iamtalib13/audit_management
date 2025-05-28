@@ -1462,16 +1462,16 @@ frappe.ui.form.on("My Audits", {
           function () {
             // Action if 'Yes' is selected
             // for BM
-            if (frm.doc.bm_user_status === "Pending") {
+            if (frm.doc.bm_user_status === "Pending" || frm.doc.bm_user_status === "No Response") {
               frm.set_value("query_status", "Response From BM");
               frm.set_value("bm_user_status", "Responded");
             }
             // for DH and COM
             if (
-              (frm.doc.dh_user_status === "Pending" &&
+              ((frm.doc.dh_user_status === "Pending" || frm.doc.dh_user_status === "No Response") &&
                 frappe.session.user == frm.doc.dh_user_id) ||
               (frm.doc.query_status === "Response From COM" &&
-                frm.doc.dh_user_status === "Pending")
+                (frm.doc.dh_user_status === "Pending" || frm.doc.dh_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From DH");
               frm.set_value("dh_user_status", "Responded");
@@ -1484,10 +1484,10 @@ frappe.ui.form.on("My Audits", {
               frm.refresh_field("dh_user_status");
               frm.refresh_field("com_user_status");
             } else if (
-              (frm.doc.com_user_status === "Pending" &&
+              ((frm.doc.com_user_status === "Pending" || frm.doc.com_user_status === "No Response") &&
                 frappe.session.user == frm.doc.com_user_id) ||
               (frm.doc.query_status === "Response From DH" &&
-                frm.doc.com_user_status === "Pending")
+                (frm.doc.com_user_status === "Pending" || frm.doc.com_user_status === "No Response" ))
             ) {
               frm.set_value("query_status", "Response From COM");
               frm.set_value("com_user_status", "Responded");
@@ -1510,10 +1510,10 @@ frappe.ui.form.on("My Audits", {
 
             // for RM & ROM
             if (
-              (frm.doc.rm_user_status === "Pending" &&
+              ((frm.doc.rm_user_status === "Pending" || frm.doc.rm_user_status === "No Response") &&
                 frappe.session.user == frm.doc.rm_user_id) ||
               (frm.doc.query_status === "Response From ROM" &&
-                frm.doc.rm_user_status === "Pending")
+                (frm.doc.rm_user_status === "Pending" || frm.doc.rm_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From RM");
               frm.set_value("rm_user_status", "Responded");
@@ -1526,10 +1526,10 @@ frappe.ui.form.on("My Audits", {
               frm.refresh_field("rm_user_status");
               frm.refresh_field("rom_user_status");
             } else if (
-              (frm.doc.rom_user_status === "Pending" &&
+              ((frm.doc.rom_user_status === "Pending" || frm.doc.rom_user_status === "No Response") &&
                 frappe.session.user == frm.doc.rom_user_id) ||
               (frm.doc.query_status === "Response From RM" &&
-                frm.doc.rom_user_status === "Pending")
+                (frm.doc.rom_user_status === "Pending" || frm.doc.rom_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From ROM");
               frm.set_value("rom_user_status", "Responded");
@@ -1552,10 +1552,10 @@ frappe.ui.form.on("My Audits", {
 
             // for ZM & ZOM
             if (
-              (frm.doc.zm_user_status === "Pending" &&
+              ((frm.doc.zm_user_status === "Pending" || frm.doc.zm_user_status === "No Response")  &&
                 frappe.session.user == frm.doc.zm_user_id) ||
               (frm.doc.query_status === "Response From ZOM" &&
-                frm.doc.zm_user_status === "Pending")
+                (frm.doc.zm_user_status === "Pending" || frm.doc.zm_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From ZM");
               frm.set_value("zm_user_status", "Responded");
@@ -1568,10 +1568,10 @@ frappe.ui.form.on("My Audits", {
               frm.refresh_field("zm_user_status");
               frm.refresh_field("zom_user_status");
             } else if (
-              (frm.doc.zom_user_status === "Pending" &&
+              ((frm.doc.zom_user_status === "Pending" || frm.doc.zom_user_status === "No Response") &&
                 frappe.session.user == frm.doc.zom_user_id) ||
               (frm.doc.query_status === "Response From ZM" &&
-                frm.doc.zom_user_status === "Pending")
+                (frm.doc.zom_user_status === "Pending" || frm.doc.zom_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From ZOM");
               frm.set_value("zom_user_status", "Responded");
@@ -1593,25 +1593,25 @@ frappe.ui.form.on("My Audits", {
             }
 
             // for gm
-            if (frm.doc.gm_user_status === "Pending") {
+            if (frm.doc.gm_user_status === "Pending" || frm.doc.gm_user_status === "No Response") {
               frm.set_value("query_status", "Response From GM");
               frm.set_value("gm_user_status", "Responded");
             }
 
             // for hr
-            if (frm.doc.hr_user_status === "Pending") {
+            if (frm.doc.hr_user_status === "Pending" || frm.doc.hr_user_status === "No Response") {
               frm.set_value("query_status", "Response From HR");
               frm.set_value("hr_user_status", "Responded");
             }
 
             // for coo
-            if (frm.doc.coo_user_status === "Pending") {
+            if (frm.doc.coo_user_status === "Pending" || frm.doc.coo_user_status === "No Response") {
               frm.set_value("query_status", "Response From COO");
               frm.set_value("coo_user_status", "Responded");
             }
 
             // for ceo
-            if (frm.doc.ceo_user_status === "Pending") {
+            if (frm.doc.ceo_user_status === "Pending" || frm.doc.ceo_user_status === "No Response") {
               frm.set_value("query_status", "Response From CEO");
               frm.set_value("ceo_user_status", "Responded");
             }
