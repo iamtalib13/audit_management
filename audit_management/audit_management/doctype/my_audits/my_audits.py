@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 import re
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now
 class MyAudits(Document):
@@ -248,15 +249,23 @@ def get_status_tracker_html(docname):
 
     return html_output
 
-
 @frappe.whitelist()
-def fetch_employee_data(employee_id):
-    # Use parameterized query to prevent SQL injection
-    sql_query = """SELECT employee_name, designation, branch, company_email FROM tabEmployee WHERE employee_id=%s"""
-    # Execute the query with the provided employee_id
-    result = frappe.db.sql(sql_query, (employee_id,), as_dict=True)
+def fetch_employee_data(employee_id=None):
+    if not employee_id:
+        frappe.throw(_("Employee ID is required."))
 
-    return result
+    employee = frappe.db.get_value(
+        "Employee",
+        {"employee": employee_id},
+        ["employee_name", "designation", "branch", "company_email"],
+        as_dict=True
+    )
+
+    if not employee:
+        frappe.throw(_("No employee found with ID: {0}").format(employee_id))
+
+    return employee  # returning a dictionary
+
 
 @frappe.whitelist()
 def send_to_specific_stage(record, stage):
