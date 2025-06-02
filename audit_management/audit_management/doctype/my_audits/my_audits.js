@@ -286,35 +286,67 @@ frappe.ui.form.on("My Audits", {
     frm.trigger("check_field_read_only");
     frm.trigger("set_background_colors");
 
-    // Call intro only if in draft status and intro has not been set yet
-    // if (
-    //   ((frm.doc.status === "Draft" ||
-    //     frm.doc.status === "Pending" ||
-    //     frm.doc.status === "Close") &&
-    //     !frm.is_intro_set)) {
-    //   frappe.after_ajax(function () {
-    //     frm.trigger("call_html_intro");
-    //   });
-    // }
-    // const statusFields = [
-    //   "bm_user_status",
-    //   "dh_user_status",
-    //   "com_user_status",
-    //   "rm_user_status",
-    //   "rom_user_status",
-    //   "zm_user_status",
-    //   "zom_user_status",
-    //   "gm_user_status",// Add all relevant fields here
-    //   "coo_user_status",
-    //   "ceo_user_status",
-    // ];
-
-    // statusFields.forEach((field) => {
-    //   frm.fields_dict[field].df.on_change = function () {
-    //     frm.is_intro_set = false; // Reset the intro set flag when the status changes
-    //     frm.trigger("call_html_intro");
-    //   };
-    // });
+    // Show button only for Administrator
+    if (frappe.session.user === "Administrator") {
+      frm.add_custom_button("Fetch Employee Data", function () {
+          let emp_id = frm.doc.query_generated_by_empid;
+      
+          if (!emp_id) {
+              frappe.confirm(
+                  "Employee ID not found. Do you know the query creator's Employee ID?",
+                  function () {
+                      // YES: prompt for employee ID
+                      frappe.prompt([
+                          {
+                              label: "Enter Employee ID",
+                              fieldname: "manual_emp_id",
+                              fieldtype: "Data",
+                              reqd: 1
+                          }
+                      ], function (values) {
+                          emp_id = values.manual_emp_id;
+                      
+                          frm.set_value("query_generated_by_empid", emp_id);
+                      
+                          fetch_and_set_employee_data(emp_id);
+                      }, "Provide Employee ID", "Fetch");
+                  },
+                  function () {
+                      // NO: Do nothing
+                      frappe.msgprint("Action cancelled. Employee ID is required to fetch data.");
+                  }
+              );
+          } else {
+              // If emp_id exists, proceed to fetch
+              fetch_and_set_employee_data(emp_id);
+          }
+        
+          // Core function to fetch and set data
+          function fetch_and_set_employee_data(emp_id) {
+              frappe.call({
+                  method: "audit_management.audit_management.doctype.my_audits.my_audits.fetch_employee_data",
+                  args: {
+                      employee_id: emp_id,
+                  },
+                  callback: function (r) {
+                      if (!r.exc && r.message) {
+                          const data = r.message;
+                      
+                          frm.set_value("query_generated_by_name", data.employee_name);
+                          frm.set_value("query_generated_by_designation", data.designation);
+                          frm.set_value("query_generated_by_branch", data.branch);
+                          frm.set_value("query_generated_by_mail", data.company_email);
+                      
+                          frm.save(); // Auto-save
+                      } else {
+                          frappe.msgprint("Failed to fetch employee data.");
+                      }
+                  }
+              });
+          }
+      });
+    }
+    
     if (frm.doc.status === "Close") {
       frm.disable_form();
     }
