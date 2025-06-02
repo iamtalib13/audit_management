@@ -288,7 +288,7 @@ frappe.ui.form.on("My Audits", {
 
     // Show button only for Administrator
     if (frappe.session.user === "Administrator") {
-      frm.add_custom_button("Fetch Employee Data", function () {
+      frm.add_custom_button("Fetch Query Creator Data", function () {
           let emp_id = frm.doc.query_generated_by_empid;
       
           if (!emp_id) {
@@ -344,6 +344,9 @@ frappe.ui.form.on("My Audits", {
                   }
               });
           }
+      }).css({
+        "background-color": "#28a745",  // green background
+        "color": "white"                // white text
       });
     }
     
