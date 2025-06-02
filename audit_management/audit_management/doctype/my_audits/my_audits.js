@@ -480,15 +480,16 @@ frappe.ui.form.on("My Audits", {
       }
     }
   },
+  
   fetch_query_maker: function (frm) {
     console.log("Fetching query maker data...");
 
     // Prevent data fetching on refresh after save
     if (!frm.__is_fetched) {
-        frm.__is_fetched = true; // Set flag to prevent re-fetching
+        frm.__is_fetched = true;
 
         let auditor_user = frappe.session.user;
-        let auditor_user_emp_id = auditor_user.match(/\d+/)[0];
+        let auditor_user_emp_id = auditor_user.match(/\d+/)[0];  // Extract digits from user ID
         console.log("Employee ID:", auditor_user_emp_id);
 
         frappe.call({
@@ -497,37 +498,27 @@ frappe.ui.form.on("My Audits", {
                 employee_id: auditor_user_emp_id,
             },
             callback: function (r) {
-                if (!r.exc) {
-                    // Accessing response data
-                    const employeeData = r.message[0]; // Accessing the first element of the array
+                if (!r.exc && r.message) {
+                    const employeeData = r.message;
                     console.log("Employee Data:", employeeData);
 
-                    // Set fields with employee data
                     frm.set_value("query_generated_by_empid", auditor_user_emp_id);
-                    frm.refresh_field("query_generated_by_empid");
-
                     frm.set_value("query_generated_by_name", employeeData.employee_name);
-                    frm.refresh_field("query_generated_by_name");
-
                     frm.set_value("query_generated_by_designation", employeeData.designation);
-                    frm.refresh_field("query_generated_by_designation");
-
                     frm.set_value("query_generated_by_branch", employeeData.branch);
-                    frm.refresh_field("query_generated_by_branch");
-
                     frm.set_value("query_generated_by_mail", employeeData.company_email);
-                    frm.refresh_field("query_generated_by_mail");
-
                 } else {
-                    console.error("Error fetching employee data", r.exc);
+                    frappe.msgprint("Failed to fetch employee data.");
+                    console.error("Error:", r.exc);
                 }
             },
             error: function (err) {
-                console.error("Failed to fetch employee data", err);
-            },
+                frappe.msgprint("Server error while fetching employee data.");
+                console.error("AJAX error:", err);
+            }
         });
     }
-  },
+},
   show_sendToBmWithClose_btn: function (frm) {
     console.log("audit work kar raha hai");
     if (
