@@ -1,0 +1,34 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"MKlkhtKljW\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Audit Management\",\"col\":12}}]",
+ "creation": "2025-06-05 12:20:50.567526",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Audit Management",
+   "label": "Audit Management"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "read-status",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Audit Management",
+ "links": [],
+ "modified": "2025-06-05 12:21:17.227511",
+ "modified_by": "Administrator",
+ "module": "Audit Management",
+ "name": "Audit Management",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 76.0,
+ "shortcuts": [],
+ "title": "Audit Management"
+}
