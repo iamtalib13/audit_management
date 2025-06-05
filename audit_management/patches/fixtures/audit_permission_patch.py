@@ -64,6 +64,30 @@ def execute():
             "write": 1,
             "export": 1,
             "select": 1
+        },
+
+        # Branch permissions for Audit Manager and Audit Member
+        {
+            "doctype": "Branch",
+            "role": "Audit Manager",
+            "permlevel": 0,
+            "read": 1,
+            "write": 1,
+            "export": 1,
+            "select": 1,
+            "create": 0,
+            "delete": 0,
+        },
+        {
+            "doctype": "Branch",
+            "role": "Audit Member",
+            "permlevel": 0,
+            "read": 1,
+            "write": 1,
+            "export": 1,
+            "select": 1,
+            "create": 0,
+            "delete": 0,
         }
     ]
 
