@@ -67,13 +67,16 @@ def execute():
     }
 
     for doctype, perms in doctype_permissions.items():
+        print(f"Processing Doctype: {doctype}")
         for perm in perms:
+            print(f"  Checking permission for role: {perm['role']} at permlevel: {perm['permlevel']}")
             filters = {
                 "parent": doctype,
                 "role": perm["role"],
                 "permlevel": perm["permlevel"]
             }
             if not frappe.db.exists("Custom DocPerm", filters):
+                print(f"    ➕ Creating permission for role '{perm['role']}' on doctype '{doctype}'")
                 docperm = frappe.get_doc({
                     "doctype": "Custom DocPerm",
                     "parent": doctype,
@@ -94,5 +97,8 @@ def execute():
                     "report": perm.get("report", 0)
                 })
                 docperm.insert(ignore_permissions=True)
+            else:
+                print(f"    ✅ Permission already exists for role '{perm['role']}' on doctype '{doctype}'")
 
     frappe.clear_cache(doctype=None)
+    print("✅ Permissions setup complete and cache cleared.")
