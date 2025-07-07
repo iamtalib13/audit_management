@@ -287,69 +287,82 @@ frappe.ui.form.on("My Audits", {
     frm.trigger("set_background_colors");
 
     // Show button only for Administrator
-    if (frappe.session.user === "Administrator") {
-      frm.add_custom_button("Fetch Query Creator Data", function () {
+    if (frappe.session.user === "Administrator" && !frm.is_new()) {
+      frm
+        .add_custom_button("Fetch Query Creator Data", function () {
           let emp_id = frm.doc.query_generated_by_empid;
-      
+
           if (!emp_id) {
-              frappe.confirm(
-                  "Employee ID not found. Do you know the query creator's Employee ID?",
-                  function () {
-                      // YES: prompt for employee ID
-                      frappe.prompt([
-                          {
-                              label: "Enter Employee ID",
-                              fieldname: "manual_emp_id",
-                              fieldtype: "Data",
-                              reqd: 1
-                          }
-                      ], function (values) {
-                          emp_id = values.manual_emp_id;
-                      
-                          frm.set_value("query_generated_by_empid", emp_id);
-                      
-                          fetch_and_set_employee_data(emp_id);
-                      }, "Provide Employee ID", "Fetch");
+            frappe.confirm(
+              "Employee ID not found. Do you know the query creator's Employee ID?",
+              function () {
+                // YES: prompt for employee ID
+                frappe.prompt(
+                  [
+                    {
+                      label: "Enter Employee ID",
+                      fieldname: "manual_emp_id",
+                      fieldtype: "Data",
+                      reqd: 1,
+                    },
+                  ],
+                  function (values) {
+                    emp_id = values.manual_emp_id;
+
+                    frm.set_value("query_generated_by_empid", emp_id);
+
+                    fetch_and_set_employee_data(emp_id);
                   },
-                  function () {
-                      // NO: Do nothing
-                      frappe.msgprint("Action cancelled. Employee ID is required to fetch data.");
-                  }
-              );
+                  "Provide Employee ID",
+                  "Fetch"
+                );
+              },
+              function () {
+                // NO: Do nothing
+                frappe.msgprint(
+                  "Action cancelled. Employee ID is required to fetch data."
+                );
+              }
+            );
           } else {
-              // If emp_id exists, proceed to fetch
-              fetch_and_set_employee_data(emp_id);
+            // If emp_id exists, proceed to fetch
+            fetch_and_set_employee_data(emp_id);
           }
-        
+
           // Core function to fetch and set data
           function fetch_and_set_employee_data(emp_id) {
-              frappe.call({
-                  method: "audit_management.audit_management.doctype.my_audits.my_audits.fetch_employee_data",
-                  args: {
-                      employee_id: emp_id,
-                  },
-                  callback: function (r) {
-                      if (!r.exc && r.message) {
-                          const data = r.message;
-                      
-                          frm.set_value("query_generated_by_name", data.employee_name);
-                          frm.set_value("query_generated_by_designation", data.designation);
-                          frm.set_value("query_generated_by_branch", data.branch);
-                          frm.set_value("query_generated_by_mail", data.company_email);
-                      
-                          frm.save(); // Auto-save
-                      } else {
-                          frappe.msgprint("Failed to fetch employee data.");
-                      }
-                  }
-              });
+            frappe.call({
+              method:
+                "audit_management.audit_management.doctype.my_audits.my_audits.fetch_employee_data",
+              args: {
+                employee_id: emp_id,
+              },
+              callback: function (r) {
+                if (!r.exc && r.message) {
+                  const data = r.message;
+
+                  frm.set_value("query_generated_by_name", data.employee_name);
+                  frm.set_value(
+                    "query_generated_by_designation",
+                    data.designation
+                  );
+                  frm.set_value("query_generated_by_branch", data.branch);
+                  frm.set_value("query_generated_by_mail", data.company_email);
+
+                  frm.save(); // Auto-save
+                } else {
+                  frappe.msgprint("Failed to fetch employee data.");
+                }
+              },
+            });
           }
-      }).css({
-        "background-color": "#28a745",  // green background
-        "color": "white"                // white text
-      });
+        })
+        .css({
+          "background-color": "#28a745", // green background
+          color: "white", // white text
+        });
     }
-    
+
     if (frm.doc.status === "Close") {
       frm.disable_form();
     }
@@ -363,7 +376,7 @@ frappe.ui.form.on("My Audits", {
 
     // Check if the form is new
     if (frm.is_new() && !frm.__is_fetched) {
-      console.log("calling and fetching details")
+      console.log("calling and fetching details");
       frm.trigger("fetch_query_maker"); // Call the fetch function
     } else if (!frm.is_new()) {
       console.log("not new");
@@ -371,19 +384,19 @@ frappe.ui.form.on("My Audits", {
         frm.doc.status === "Pending" &&
         ((frappe.session.user == frm.doc.bm_user_id &&
           (frm.doc.bm_user_status === "Pending" ||
-          frm.doc.bm_user_status === "No Response")) ||
+            frm.doc.bm_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.gm_user_id &&
             (frm.doc.gm_user_status === "Pending" ||
-            frm.doc.gm_user_status === "No Response")) ||
+              frm.doc.gm_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.hr_user_id &&
             (frm.doc.hr_user_status === "Pending" ||
-            frm.doc.hr_user_status === "No Response")) ||
+              frm.doc.hr_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.coo_user_id &&
             (frm.doc.coo_user_status === "Pending" ||
-            frm.doc.coo_user_status === "No Response")) ||
+              frm.doc.coo_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.ceo_user_id &&
             (frm.doc.ceo_user_status === "Pending" ||
-            frm.doc.ceo_user_status === "No Response")))
+              frm.doc.ceo_user_status === "No Response")))
       ) {
         frm.trigger("show_sendResponse_btn");
       }
@@ -393,22 +406,22 @@ frappe.ui.form.on("My Audits", {
         frm.doc.status === "Pending" &&
         ((frappe.session.user == frm.doc.dh_user_id &&
           (frm.doc.dh_user_status === "Pending" ||
-          frm.doc.dh_user_status === "No Response")) ||
+            frm.doc.dh_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.com_user_id &&
             (frm.doc.com_user_status === "Pending" ||
-            frm.doc.com_user_status === "No Response")) ||
+              frm.doc.com_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.rm_user_id &&
             (frm.doc.rm_user_status === "Pending" ||
-            frm.doc.rm_user_status === "No Response")) ||
+              frm.doc.rm_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.rom_user_id &&
             (frm.doc.rom_user_status === "Pending" ||
-            frm.doc.rom_user_status === "No Response")) ||
+              frm.doc.rom_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.zm_user_id &&
             (frm.doc.zm_user_status === "Pending" ||
-            frm.doc.zm_user_status === "No Response")) ||
+              frm.doc.zm_user_status === "No Response")) ||
           (frappe.session.user == frm.doc.zom_user_id &&
             (frm.doc.zom_user_status === "Pending" ||
-            frm.doc.zom_user_status === "No Response")))
+              frm.doc.zom_user_status === "No Response")))
       ) {
         frm.trigger("show_sendResponse_btn");
       }
@@ -416,22 +429,28 @@ frappe.ui.form.on("My Audits", {
       // jab DH||COM aur RM||ROM aur ZM||ZOM mese koi ek reply kre to dusre ko sendTOresponse ki button dikhane
       if (
         (frappe.session.user == frm.doc.dh_user_id &&
-          (frm.doc.dh_user_status === "Pending" || frm.doc.dh_user_status === "No Response" ) &&
+          (frm.doc.dh_user_status === "Pending" ||
+            frm.doc.dh_user_status === "No Response") &&
           frm.doc.com_user_status === "Responded") ||
         (frappe.session.user == frm.doc.com_user_id &&
-          (frm.doc.com_user_status === "Pending" || frm.doc.com_user_status === "No Response") &&
+          (frm.doc.com_user_status === "Pending" ||
+            frm.doc.com_user_status === "No Response") &&
           frm.doc.dh_user_status === "Responded") ||
         (frappe.session.user == frm.doc.rm_user_id &&
-          (frm.doc.rm_user_status === "Pending" || frm.doc.rm_user_status === "No Response") &&
+          (frm.doc.rm_user_status === "Pending" ||
+            frm.doc.rm_user_status === "No Response") &&
           frm.doc.rom_user_status === "Responded") ||
         (frappe.session.user == frm.doc.rom_user_id &&
-          (frm.doc.rom_user_status === "Pending" || frm.doc.rom_user_status === "No Response") &&
+          (frm.doc.rom_user_status === "Pending" ||
+            frm.doc.rom_user_status === "No Response") &&
           frm.doc.rm_user_status === "Responded") ||
         (frappe.session.user == frm.doc.zm_user_id &&
-          (frm.doc.zm_user_status === "Pending" || frm.doc.zm_user_status === "No Response") &&
+          (frm.doc.zm_user_status === "Pending" ||
+            frm.doc.zm_user_status === "No Response") &&
           frm.doc.zom_user_status === "Responded") ||
         (frappe.session.user == frm.doc.zom_user_id &&
-          (frm.doc.zom_user_status === "Pending" || frm.doc.zom_user_status === "No Response") &&
+          (frm.doc.zom_user_status === "Pending" ||
+            frm.doc.zom_user_status === "No Response") &&
           frm.doc.zm_user_status === "Responded")
       ) {
         frm.trigger("show_sendResponse_btn");
@@ -510,50 +529,63 @@ frappe.ui.form.on("My Audits", {
           frm.trigger("show_sendToAll_withClose_btn");
         }
       }
-      if (frm.doc.status !== "Draft" && frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member")) {
+      if (
+        (frm.doc.status !== "Draft" && frappe.user.has_role("Audit Manager")) ||
+        frappe.user.has_role("Audit Member")
+      ) {
         frm.trigger("close_query");
       }
     }
   },
-  
+
   fetch_query_maker: function (frm) {
     console.log("Fetching query maker data...");
 
     // Prevent data fetching on refresh after save
     if (!frm.__is_fetched) {
-        frm.__is_fetched = true;
+      frm.__is_fetched = true;
 
-        let auditor_user = frappe.session.user;
-        let auditor_user_emp_id = auditor_user.match(/\d+/)[0];  // Extract digits from user ID
-        console.log("Employee ID:", auditor_user_emp_id);
+      let auditor_user = frappe.session.user;
+      let auditor_user_emp_id = auditor_user.match(/\d+/)[0]; // Extract digits from user ID
+      console.log("Employee ID:", auditor_user_emp_id);
 
-        frappe.call({
-            method: "audit_management.audit_management.doctype.my_audits.my_audits.fetch_employee_data",
-            args: {
-                employee_id: auditor_user_emp_id,
-            },
-            callback: function (r) {
-                if (!r.exc && r.message) {
-                    const employeeData = r.message;
-                    console.log("Employee Data:", employeeData);
+      frappe.call({
+        method:
+          "audit_management.audit_management.doctype.my_audits.my_audits.fetch_employee_data",
+        args: {
+          employee_id: auditor_user_emp_id,
+        },
+        callback: function (r) {
+          if (!r.exc && r.message) {
+            const employeeData = r.message;
+            console.log("Employee Data:", employeeData);
 
-                    frm.set_value("query_generated_by_empid", auditor_user_emp_id);
-                    frm.set_value("query_generated_by_name", employeeData.employee_name);
-                    frm.set_value("query_generated_by_designation", employeeData.designation);
-                    frm.set_value("query_generated_by_branch", employeeData.branch);
-                    frm.set_value("query_generated_by_mail", employeeData.company_email);
-                } else {
-                    frappe.msgprint("Failed to fetch employee data.");
-                    console.error("Error:", r.exc);
-                }
-            },
-            error: function (err) {
-                frappe.msgprint("Server error while fetching employee data.");
-                console.error("AJAX error:", err);
-            }
-        });
+            frm.set_value("query_generated_by_empid", auditor_user_emp_id);
+            frm.set_value(
+              "query_generated_by_name",
+              employeeData.employee_name
+            );
+            frm.set_value(
+              "query_generated_by_designation",
+              employeeData.designation
+            );
+            frm.set_value("query_generated_by_branch", employeeData.branch);
+            frm.set_value(
+              "query_generated_by_mail",
+              employeeData.company_email
+            );
+          } else {
+            frappe.msgprint("Failed to fetch employee data.");
+            console.error("Error:", r.exc);
+          }
+        },
+        error: function (err) {
+          frappe.msgprint("Server error while fetching employee data.");
+          console.error("AJAX error:", err);
+        },
+      });
     }
-},
+  },
   show_sendToBmWithClose_btn: function (frm) {
     console.log("audit work kar raha hai");
     if (
@@ -1305,7 +1337,8 @@ frappe.ui.form.on("My Audits", {
   },
   show_sendToAll_withClose_btn: function (frm) {
     if (
-      (frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member")) &&
+      (frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member")) &&
       (frm.doc.status === "Draft" || frm.doc.status === "Pending")
     ) {
       const userStatusMapping = [
@@ -1321,18 +1354,18 @@ frappe.ui.form.on("My Audits", {
         { userId: frm.doc.coo_user_id, statusField: "coo_user_status" },
         { userId: frm.doc.ceo_user_id, statusField: "ceo_user_status" },
       ];
-  
+
       const hasEmptyStatus = userStatusMapping.some((mapping) => {
         return !frm.doc[mapping.statusField];
       });
-  
+
       if (hasEmptyStatus) {
         frm
           .add_custom_button(
             __("<b>Send to ALL</b>"),
             async function () {
               let emp_branch = frm.doc.emp_branch || "the employee's branch";
-  
+
               frappe.confirm(
                 `<i><b>Do you want to send the query to the remaining levels from branch ${emp_branch} (BM to CEO)?</b></i>`,
                 async () => {
@@ -1355,22 +1388,26 @@ frappe.ui.form.on("My Audits", {
                             send_email: 0,
                           },
                         });
-  
+
                         // Update status field to "Pending"
                         await frm.set_value(mapping.statusField, "Pending");
                         await frm.save(); // Save after each update
                       } catch (error) {
-                        console.error(`Failed to send to user: ${mapping.userId}`, error);
+                        console.error(
+                          `Failed to send to user: ${mapping.userId}`,
+                          error
+                        );
                       }
                     }
                   }
-  
+
                   // Call server-side method for timestamps
                   const response = await frappe.call({
-                    method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all",
+                    method:
+                      "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all",
                     args: { record: frm.docname },
                   });
-  
+
                   if (response.message) {
                     const {
                       bm_timestamp,
@@ -1385,7 +1422,7 @@ frappe.ui.form.on("My Audits", {
                       coo_timestamp,
                       ceo_timestamp,
                     } = response.message;
-  
+
                     // Update pending timestamps
                     const timestampUpdates = {
                       bm_pending_time: bm_timestamp,
@@ -1400,27 +1437,30 @@ frappe.ui.form.on("My Audits", {
                       coo_pending_time: coo_timestamp,
                       ceo_pending_time: ceo_timestamp,
                     };
-  
-                    for (const [field, value] of Object.entries(timestampUpdates)) {
+
+                    for (const [field, value] of Object.entries(
+                      timestampUpdates
+                    )) {
                       if (value && !frm.doc[field]) {
                         await frm.set_value(field, value);
                         await frm.save(); // Save after each update
                       }
                     }
                   }
-  
+
                   // Check if all status fields are set to "Pending"
                   const allStatusPending = userStatusMapping.every(
                     (mapping) => frm.doc[mapping.statusField] === "Pending"
                   );
-  
+
                   if (allStatusPending) {
                     await frm.set_value("send_mail_to_all", "Yes");
                     await frm.save(); // Save after setting send_mail_to_all
                   }
-  
+
                   frappe.show_alert({
-                    message: "Your Query Request Sent to All stages Successfully",
+                    message:
+                      "Your Query Request Sent to All stages Successfully",
                     indicator: "green",
                   });
                 }
@@ -1433,7 +1473,7 @@ frappe.ui.form.on("My Audits", {
             color: "#ffffff",
             margin: "1px",
           });
-  
+
         $('.btn.btn-default.ellipsis:contains("Send to")').css({
           "background-color": "#28a745",
           color: "#ffffff",
@@ -1441,13 +1481,13 @@ frappe.ui.form.on("My Audits", {
           width: "100px",
         });
       }
-  
+
       if (frm.doc.status !== "Draft") {
         frm.trigger("close_query");
       }
     }
   },
-  
+
   show_sendResponse_btn: function (frm) {
     frm
       .add_custom_button(__("Send Response"), function () {
@@ -1488,16 +1528,21 @@ frappe.ui.form.on("My Audits", {
           function () {
             // Action if 'Yes' is selected
             // for BM
-            if (frm.doc.bm_user_status === "Pending" || frm.doc.bm_user_status === "No Response") {
+            if (
+              frm.doc.bm_user_status === "Pending" ||
+              frm.doc.bm_user_status === "No Response"
+            ) {
               frm.set_value("query_status", "Response From BM");
               frm.set_value("bm_user_status", "Responded");
             }
             // for DH and COM
             if (
-              ((frm.doc.dh_user_status === "Pending" || frm.doc.dh_user_status === "No Response") &&
+              ((frm.doc.dh_user_status === "Pending" ||
+                frm.doc.dh_user_status === "No Response") &&
                 frappe.session.user == frm.doc.dh_user_id) ||
               (frm.doc.query_status === "Response From COM" &&
-                (frm.doc.dh_user_status === "Pending" || frm.doc.dh_user_status === "No Response"))
+                (frm.doc.dh_user_status === "Pending" ||
+                  frm.doc.dh_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From DH");
               frm.set_value("dh_user_status", "Responded");
@@ -1510,10 +1555,12 @@ frappe.ui.form.on("My Audits", {
               frm.refresh_field("dh_user_status");
               frm.refresh_field("com_user_status");
             } else if (
-              ((frm.doc.com_user_status === "Pending" || frm.doc.com_user_status === "No Response") &&
+              ((frm.doc.com_user_status === "Pending" ||
+                frm.doc.com_user_status === "No Response") &&
                 frappe.session.user == frm.doc.com_user_id) ||
               (frm.doc.query_status === "Response From DH" &&
-                (frm.doc.com_user_status === "Pending" || frm.doc.com_user_status === "No Response" ))
+                (frm.doc.com_user_status === "Pending" ||
+                  frm.doc.com_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From COM");
               frm.set_value("com_user_status", "Responded");
@@ -1536,10 +1583,12 @@ frappe.ui.form.on("My Audits", {
 
             // for RM & ROM
             if (
-              ((frm.doc.rm_user_status === "Pending" || frm.doc.rm_user_status === "No Response") &&
+              ((frm.doc.rm_user_status === "Pending" ||
+                frm.doc.rm_user_status === "No Response") &&
                 frappe.session.user == frm.doc.rm_user_id) ||
               (frm.doc.query_status === "Response From ROM" &&
-                (frm.doc.rm_user_status === "Pending" || frm.doc.rm_user_status === "No Response"))
+                (frm.doc.rm_user_status === "Pending" ||
+                  frm.doc.rm_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From RM");
               frm.set_value("rm_user_status", "Responded");
@@ -1552,10 +1601,12 @@ frappe.ui.form.on("My Audits", {
               frm.refresh_field("rm_user_status");
               frm.refresh_field("rom_user_status");
             } else if (
-              ((frm.doc.rom_user_status === "Pending" || frm.doc.rom_user_status === "No Response") &&
+              ((frm.doc.rom_user_status === "Pending" ||
+                frm.doc.rom_user_status === "No Response") &&
                 frappe.session.user == frm.doc.rom_user_id) ||
               (frm.doc.query_status === "Response From RM" &&
-                (frm.doc.rom_user_status === "Pending" || frm.doc.rom_user_status === "No Response"))
+                (frm.doc.rom_user_status === "Pending" ||
+                  frm.doc.rom_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From ROM");
               frm.set_value("rom_user_status", "Responded");
@@ -1578,10 +1629,12 @@ frappe.ui.form.on("My Audits", {
 
             // for ZM & ZOM
             if (
-              ((frm.doc.zm_user_status === "Pending" || frm.doc.zm_user_status === "No Response")  &&
+              ((frm.doc.zm_user_status === "Pending" ||
+                frm.doc.zm_user_status === "No Response") &&
                 frappe.session.user == frm.doc.zm_user_id) ||
               (frm.doc.query_status === "Response From ZOM" &&
-                (frm.doc.zm_user_status === "Pending" || frm.doc.zm_user_status === "No Response"))
+                (frm.doc.zm_user_status === "Pending" ||
+                  frm.doc.zm_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From ZM");
               frm.set_value("zm_user_status", "Responded");
@@ -1594,10 +1647,12 @@ frappe.ui.form.on("My Audits", {
               frm.refresh_field("zm_user_status");
               frm.refresh_field("zom_user_status");
             } else if (
-              ((frm.doc.zom_user_status === "Pending" || frm.doc.zom_user_status === "No Response") &&
+              ((frm.doc.zom_user_status === "Pending" ||
+                frm.doc.zom_user_status === "No Response") &&
                 frappe.session.user == frm.doc.zom_user_id) ||
               (frm.doc.query_status === "Response From ZM" &&
-                (frm.doc.zom_user_status === "Pending" || frm.doc.zom_user_status === "No Response"))
+                (frm.doc.zom_user_status === "Pending" ||
+                  frm.doc.zom_user_status === "No Response"))
             ) {
               frm.set_value("query_status", "Response From ZOM");
               frm.set_value("zom_user_status", "Responded");
@@ -1619,25 +1674,37 @@ frappe.ui.form.on("My Audits", {
             }
 
             // for gm
-            if (frm.doc.gm_user_status === "Pending" || frm.doc.gm_user_status === "No Response") {
+            if (
+              frm.doc.gm_user_status === "Pending" ||
+              frm.doc.gm_user_status === "No Response"
+            ) {
               frm.set_value("query_status", "Response From GM");
               frm.set_value("gm_user_status", "Responded");
             }
 
             // for hr
-            if (frm.doc.hr_user_status === "Pending" || frm.doc.hr_user_status === "No Response") {
+            if (
+              frm.doc.hr_user_status === "Pending" ||
+              frm.doc.hr_user_status === "No Response"
+            ) {
               frm.set_value("query_status", "Response From HR");
               frm.set_value("hr_user_status", "Responded");
             }
 
             // for coo
-            if (frm.doc.coo_user_status === "Pending" || frm.doc.coo_user_status === "No Response") {
+            if (
+              frm.doc.coo_user_status === "Pending" ||
+              frm.doc.coo_user_status === "No Response"
+            ) {
               frm.set_value("query_status", "Response From COO");
               frm.set_value("coo_user_status", "Responded");
             }
 
             // for ceo
-            if (frm.doc.ceo_user_status === "Pending" || frm.doc.ceo_user_status === "No Response") {
+            if (
+              frm.doc.ceo_user_status === "Pending" ||
+              frm.doc.ceo_user_status === "No Response"
+            ) {
               frm.set_value("query_status", "Response From CEO");
               frm.set_value("ceo_user_status", "Responded");
             }

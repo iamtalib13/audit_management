@@ -4,7 +4,7 @@
  "creation": "2025-06-05 12:20:50.567526",
  "custom_blocks": [
   {
-   "custom_block_name": "Audit Management 2",
+   "custom_block_name": "Audit Management",
    "label": "Audit Management"
   }
  ],
@@ -18,7 +18,7 @@
  "is_hidden": 0,
  "label": "Audit Management",
  "links": [],
- "modified": "2025-07-04 12:35:00.416904",
+ "modified": "2025-07-04 15:12:04.987503",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Management",
