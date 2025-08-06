@@ -16,6 +16,10 @@ def get_columns():
         {"label": "Query Type", "fieldname": "query_type", "fieldtype": "Select", "width": 130},
         {"label": "Query Status", "fieldname": "status", "fieldtype": "Select", "width": 130},
 
+        {"label": "Subject", "fieldname": "audit_query_subject_box", "fieldtype": "Data", "width": 200},
+        {"label": "Description", "fieldname": "audit_query_box", "fieldtype": "Data", "width": 300},
+
+
         # BM Level
         {"label": "BM Name", "fieldname": "bm_name", "fieldtype": "Data", "width": 120},
         {"label": "BM Response", "fieldname": "bm_response_box", "fieldtype": "Data", "width": 180},
@@ -91,6 +95,7 @@ def get_data(filters):
         SELECT
             name,status,
             emp_branch, query_generated_by_empid, query_generated_by_name, query_type,
+            audit_query_subject_box, audit_query_box,
             bm_name, bm_response_box,
             dh_name, dh_response_box,
             com_name, com_response_box,
