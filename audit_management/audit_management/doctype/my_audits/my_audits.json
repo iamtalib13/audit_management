@@ -508,8 +508,7 @@
    "fieldname": "audit_attach_box",
    "fieldtype": "Attach",
    "label": "Audit Attachment",
-   "length": 2,
-   "read_only_depends_on": "eval:!frappe.user.has_role(\"Audit Manager\")"
+   "read_only_depends_on": "eval:!frappe.user.has_role(\"Audit Manager\") && !frappe.user.has_role(\"Audit Member\")"
   },
   {
    "depends_on": "eval:frappe.session.user==doc.bm_user_id && (doc.bm_user_status===\"Pending\" || doc.bm_user_status===\"Responded\" || doc.bm_user_status===\"No Response\") || (frappe.session.user!==doc.bm_user_id && doc.bm_attach_box != null )",
@@ -1107,7 +1106,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-03 11:11:55.667872",
+ "modified": "2025-09-25 11:54:47.952212",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
@@ -1164,7 +1163,6 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
