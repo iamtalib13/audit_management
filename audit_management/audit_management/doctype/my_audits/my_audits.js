@@ -28,13 +28,6 @@ frappe.ui.form.on("My Audits", {
       frm.disable_form();
     }
     if (
-      (frappe.user.has_role("Audit Manager") ||
-        frappe.user.has_role("Audit Member")) &&
-      frm.doc.status === "Draft"
-    ) {
-      frm.disable_form();
-    }
-    if (
       frm.doc.query_status !== "Pending From BM" &&
       frm.doc.bm_user_status === "Responded"
     ) {
@@ -286,6 +279,13 @@ frappe.ui.form.on("My Audits", {
     frm.trigger("check_field_read_only");
     frm.trigger("set_background_colors");
 
+    if (
+      !frappe.user.has_role("System Manager") &&
+      !frappe.user.has_role("Administrator")
+    ) {
+      $(".layout-side-section").hide();
+      $(".sidebar-toggle-btn").hide();
+    }
     // Show button only for Administrator
     if (frappe.session.user === "Administrator" && !frm.is_new()) {
       frm
