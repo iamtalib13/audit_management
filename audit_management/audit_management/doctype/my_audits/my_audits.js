@@ -283,9 +283,12 @@ frappe.ui.form.on("My Audits", {
       !frappe.user.has_role("System Manager") &&
       !frappe.user.has_role("Administrator")
     ) {
-      $(".layout-side-section").hide();
-      $(".sidebar-toggle-btn").hide();
+      // Hide sidebar sections
+      $(".form-tags").hide();
+      $(".form-shared").hide();
+      $(".form-attachments").hide(); // ⬅️ Hide attachments too
     }
+
     // Show button only for Administrator
     if (frappe.session.user === "Administrator" && !frm.is_new()) {
       frm
