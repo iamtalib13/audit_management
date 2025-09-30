@@ -286,7 +286,7 @@ frappe.ui.form.on("My Audits", {
       // Hide sidebar sections
       $(".form-tags").hide();
       $(".form-shared").hide();
-      $(".form-attachments").hide(); // ⬅️ Hide attachments too
+      $(".form-assignments").hide();
     }
 
     // Show button only for Administrator
