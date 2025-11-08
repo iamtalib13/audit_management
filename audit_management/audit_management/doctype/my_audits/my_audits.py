@@ -2,9 +2,9 @@
 # For license information, please see license.txt
 import re
 import frappe
+from frappe import _
 from frappe.model.document import Document
-from frappe.utils import now, time_diff_in_hours ,time_diff_in_seconds
-
+from frappe.utils import now
 class MyAudits(Document):
     pass
 
@@ -57,8 +57,8 @@ def get_status_tracker_html(docname):
         bm_color = "grey"
         bm_title = f"Stage 1 : Not sent to BM - {bm_name}"
     elif bm_status == "No Response":
-        bm_color = "#151515"
-        bm_title = f"Stage 1 : No Response from BM - {bm_name}"
+        bm_color = "#4b0a7d"
+        bm_title = f"Stage 1 : No Response from BM within TAT - {bm_name}"
     elif bm_status == "Skipped":
         bm_color = "#ffbe0b"
         bm_title = f"Stage 1 : Skipped - No BM set for {branch_name}"
@@ -78,8 +78,8 @@ def get_status_tracker_html(docname):
         dh_color = "grey"
         dh_title = f"Stage 2 : Not sent to DH - {dh_name}"
     elif dh_status == "No Response":
-        dh_color = "#151515"
-        dh_title = f"Stage 2 : No Response from DH - {dh_name}"
+        dh_color = "#4b0a7d"
+        dh_title = f"Stage 2 : No Response from DH within TAT - {dh_name}"
     elif dh_status == "Skipped":
         dh_color = "#ffbe0b"
         dh_title = f"Stage 2 : Skipped - No DH set for {branch_name}"
@@ -92,8 +92,8 @@ def get_status_tracker_html(docname):
         com_color = "grey"
         com_title = f"Stage 2 : Not sent to COM - {com_name}"
     elif com_status == "No Response":
-        com_color = "#151515"
-        com_title = f"Stage 2 : No Response from COM - {com_name}"
+        com_color = "#4b0a7d"
+        com_title = f"Stage 2 : No Response from COM within TAT - {com_name}"
     elif com_status == "Skipped":
         com_color = "#ffbe0b"
         com_title = f"Stage 2 : Skipped - No COM set for {branch_name}"
@@ -114,8 +114,8 @@ def get_status_tracker_html(docname):
         rm_color = "grey"
         rm_title = f"Stage 3 : Not sent to RM - {rm_name}"
     elif rm_status == "No Response":
-        rm_color = "#151515"
-        rm_title = f"Stage 3 : No Response from RM - {rm_name}"
+        rm_color = "#4b0a7d"
+        rm_title = f"Stage 3 : No Response from RM within TAT - {rm_name}"
     elif rm_status == "Skipped":
         rm_color = "#ffbe0b"
         rm_title = f"Stage 3 : Skipped - No RM set for {branch_name}"
@@ -128,8 +128,8 @@ def get_status_tracker_html(docname):
         rom_color = "grey"
         rom_title = f"Stage 3 : Not sent to ROM - {rom_name}"
     elif rom_status == "No Response":
-        rom_color = "#151515"
-        rom_title = f"Stage 3 : No Response from ROM - {rom_name}"
+        rom_color = "#4b0a7d"
+        rom_title = f"Stage 3 : No Response from ROM within TAT - {rom_name}"
     elif rom_status == "Skipped":
         rom_color = "#ffbe0b"
         rom_title = f"Stage 3 : Skipped - No ROM set for {branch_name}"
@@ -150,8 +150,8 @@ def get_status_tracker_html(docname):
         zm_color = "grey"
         zm_title = f"Stage 4 : Not sent to ZM - {zm_name}"
     elif zm_status == "No Response":
-        zm_color = "#151515"
-        zm_title = f"Stage 4 : No Response from ZM - {zm_name}"
+        zm_color = "#4b0a7d"
+        zm_title = f"Stage 4 : No Response from ZM within TAT - {zm_name}"
     elif zm_status == "Skipped":
         zm_color = "#ffbe0b"
         zm_title = f"Stage 4 : Skipped - No ZM set for {branch_name}"
@@ -164,8 +164,8 @@ def get_status_tracker_html(docname):
         zom_color = "grey"
         zom_title = f"Stage 4 : Not sent to ZOM - {zom_name}"
     elif zom_status == "No Response":
-        zom_color = "#151515"
-        zom_title = f"Stage 4 : No Response from ZOM - {zom_name}"
+        zom_color = "#4b0a7d"
+        zom_title = f"Stage 4 : No Response from ZOM within TAT - {zom_name}"
     elif zom_status == "Skipped":
         zom_color = "#ffbe0b"
         zom_title = f"Stage 4 : Skipped - No ZOM set for {branch_name}"
@@ -182,8 +182,8 @@ def get_status_tracker_html(docname):
         gm_color = "grey"
         gm_title = f"Stage 5 : Not sent to GM - {gm_name}"
     elif gm_status == "No Response":
-        gm_color = "#151515"
-        gm_title = f"Stage 5 : No Response from GM - {gm_name}"
+        gm_color = "#4b0a7d"
+        gm_title = f"Stage 5 : No Response from GM within TAT - {gm_name}"
     elif gm_status == "Skipped":
         gm_color = "#ffbe0b"
         gm_title = f"Stage 5 : Skipped - No GM set for {branch_name}"
@@ -200,8 +200,8 @@ def get_status_tracker_html(docname):
         hr_color = "grey"
         hr_title = f"Stage 5 : Not sent to HR - {hr_name}"
     elif hr_status == "No Response":
-        hr_color = "#151515"
-        hr_title = f"Stage 5 : No Response from HR - {hr_name}"
+        hr_color = "#4b0a7d"
+        hr_title = f"Stage 5 : No Response from HR within TAT - {hr_name}"
     elif hr_status == "Skipped":
         hr_color = "#ffbe0b"
         hr_title = f"Stage 5 : Skipped - No GM set for {branch_name}"
@@ -218,8 +218,8 @@ def get_status_tracker_html(docname):
         coo_color = "grey"
         coo_title = f"Stage 6 : Not sent to COO - {coo_name}"
     elif coo_status == "No Response":
-        coo_color = "#151515"
-        coo_title = f"Stage 6 : No Response from COO - {coo_name}"
+        coo_color = "#4b0a7d"
+        coo_title = f"Stage 6 : No Response from COO within TAT - {coo_name}"
     elif coo_status == "Skipped":
         coo_color = "#ffbe0b"
         coo_title = f"Stage 6 : Skipped - No COO set for {branch_name}"
@@ -236,8 +236,8 @@ def get_status_tracker_html(docname):
         ceo_color = "grey"
         ceo_title = f"Stage 7 : Not sent to CEO - {ceo_name}"
     elif ceo_status == "No Response":
-        ceo_color = "#151515"
-        ceo_title = f"Stage 7 : No Response from CEO - {ceo_name}"
+        ceo_color = "#4b0a7d"
+        ceo_title = f"Stage 7 : No Response from CEO within TAT - {ceo_name}"
     elif ceo_status == "Skipped":
         ceo_color = "#ffbe0b"
         ceo_title = f"Stage 7 : Skipped - No CEO set for {branch_name}"
@@ -249,15 +249,23 @@ def get_status_tracker_html(docname):
 
     return html_output
 
-
 @frappe.whitelist()
-def fetch_employee_data(employee_id):
-    # Use parameterized query to prevent SQL injection
-    sql_query = """SELECT employee_name, designation, branch, company_email FROM tabEmployee WHERE employee_id=%s"""
-    # Execute the query with the provided employee_id
-    result = frappe.db.sql(sql_query, (employee_id,), as_dict=True)
+def fetch_employee_data(employee_id=None):
+    if not employee_id:
+        frappe.throw(_("Employee ID is required."))
 
-    return result
+    employee = frappe.db.get_value(
+        "Employee",
+        {"employee": employee_id},
+        ["employee_name", "designation", "branch", "company_email"],
+        as_dict=True
+    )
+
+    if not employee:
+        frappe.throw(_("No employee found with ID: {0}").format(employee_id))
+
+    return employee  # returning a dictionary
+
 
 @frappe.whitelist()
 def send_to_specific_stage(record, stage):
@@ -344,46 +352,41 @@ def send_to_all(record):
         }
     return message  # Return the message containing timestamps
 
-import frappe
-from frappe.utils import now, time_diff_in_seconds
 
 @frappe.whitelist()
 def check_pending_tat():
-    """Check for pending statuses and trigger the next stage if the pending time exceeds the threshold."""
-
+    print("Checking pending TAT...")
+    
     def has_pending_exceeded(record, user_status_field, pending_time_field, now_time):
-        """Helper function to check if the pending time has exceeded the set threshold."""
+        print(f"Checking pending time for {user_status_field} in record {record.name}")
+        
         status = getattr(record, user_status_field)
         pending_time = getattr(record, pending_time_field)
         query_type = getattr(record, "query_type", None)
-
-        # Determine TAT based on conditions
+        
+        tat_time = 1 * 24 * 60
+        tat_day = "1 Day TAT"
+        
         if user_status_field == "bm_user_status":
             if query_type == "Audit Report Compliance":
-                tat_time = 15 * 24 * 60  # 15 days in minutes
+                tat_time = 15 * 24 * 60
                 tat_day = "15 Days then 1 Day TAT"
             elif query_type == "Critical Compliance":
-                tat_time = 1 * 24 * 60  # 1 day in minutes
+                tat_time = 1 * 24 * 60
                 tat_day = "1 Day TAT"
-            else:
-                tat_time = 1 * 24 * 60  # Default (1 day)
-                tat_day = "1 Day TAT"
-        else:
-            tat_time = 1 * 24 * 60  # Default (1 day)
-            tat_day = "1 Day TAT"
-
-        # Check if the pending time has exceeded the threshold
+        
         if status == "Pending" and pending_time:
-            time_diff_minutes = time_diff_in_seconds(now_time, pending_time) / 60  # Convert seconds to minutes
+            time_diff_minutes = frappe.utils.time_diff_in_seconds(now_time, pending_time) / 60
             if time_diff_minutes >= tat_time:
-                frappe.db.set_value("My Audits", record.name, "tat_day", tat_day, update_modified=False)
+                frappe.db.set_value("My Audits", record.name, "tat_day", tat_day)
+                print("True aaya")
                 return True
+        print("False aaya")
         return False
 
-    # Fetch current time
-    now_time = now()
-
-    # Fetch all records with any 'Pending' status
+    now_time = frappe.utils.now()
+    print(f"Current time: {now_time}")
+    
     pending_records = frappe.get_all(
         "My Audits",
         or_filters=[
@@ -400,74 +403,198 @@ def check_pending_tat():
             ["ceo_user_status", "=", "Pending"],
         ],
         fields=[
-            "name", "query_type", "bm_user_status", "bm_pending_time", "dh_user_status", "dh_pending_time",
-            "com_user_status", "com_pending_time", "rm_user_status", "rm_pending_time",
-            "rom_user_status", "rom_pending_time", "zm_user_status", "zm_pending_time",
-            "zom_user_status", "zom_pending_time", "gm_user_status", "gm_pending_time",
-            "hr_user_status", "hr_pending_time","coo_user_status", "coo_pending_time",
-            "ceo_user_status", "ceo_pending_time"
-        ],
-    )
-
-    updates = []  # Store updates for batch processing
-
-    # Level transition definitions
-    level_transitions = [
-        # BM level (no prior level)
-        ([("bm_user_status", "bm_pending_time")], 
-         [("dh_user_status", "dh_pending_time"), ("com_user_status", "com_pending_time")]),
-
-        # DH and COM level (depends on BM being completed)
-        ([("dh_user_status", "dh_pending_time"), ("com_user_status", "com_pending_time")],
-         [("rm_user_status", "rm_pending_time"), ("rom_user_status", "rom_pending_time")]),
-
-        # RM and ROM level
-        ([("rm_user_status", "rm_pending_time"), ("rom_user_status", "rom_pending_time")],
-         [("zm_user_status", "zm_pending_time"), ("zom_user_status", "zom_pending_time")]),
-
-        # ZM and ZOM level
-        ([("zm_user_status", "zm_pending_time"), ("zom_user_status", "zom_pending_time")],
-         [("gm_user_status", "gm_pending_time")]),
-
-        # GM level
-        ([("gm_user_status", "gm_pending_time")],
-         [("hr_user_status", "hr_pending_time")]),
-
-         # HR level
-        ([("hr_user_status", "hr_pending_time")],
-         [("coo_user_status", "coo_pending_time")]),
-
-        # COO level
-        ([("coo_user_status", "coo_pending_time")],
-         [("ceo_user_status", "ceo_pending_time")]),
-
-        # Last stage - CEO level (handle explicitly to set to "No Response" if TAT exceeded)
-        ([("ceo_user_status", "ceo_pending_time")], [])
+        "name",
+        "query_generated_by_name",
+        "query_generated_by_designation",
+        "query_generated_by_branch",
+        "audit_query_subject_box",
+        "query_type",
+        "emp_branch",                
+        "dh_name", "com_name",       
+        "rm_name", "rom_name",        
+        "zm_name", "zom_name",        
+        "gm_name",                   
+        "hr_name",                    
+        "coo_name",                
+        "ceo_name",
+        "bm_user_status", "bm_pending_time", "bm_mail",
+        "dh_user_status", "dh_pending_time", "dh_mail",
+        "com_user_status", "com_pending_time", "com_mail",
+        "rm_user_status", "rm_pending_time", "rm_mail",
+        "rom_user_status", "rom_pending_time", "rom_mail",
+        "zm_user_status", "zm_pending_time", "zm_mail",
+        "zom_user_status", "zom_pending_time", "zom_mail",
+        "gm_user_status", "gm_pending_time", "gm_mail",
+        "hr_user_status", "hr_pending_time", "hr_mail",
+        "coo_user_status", "coo_pending_time", "coo_mail",
+        "ceo_user_status", "ceo_pending_time", "ceo_mail"
     ]
-
+    )
+    
+    print(f"Total pending records found: {len(pending_records)}")
+    
+    updates = []
+    emails = []
+    
+    level_transitions = [
+        {
+            "current": ["bm_user_status", "bm_pending_time", "bm_mail"],
+            "next": [
+                ["dh_user_status", "dh_pending_time", "dh_mail"],
+                ["com_user_status", "com_pending_time", "com_mail"]
+            ]
+        },
+        {
+            "current": ["dh_user_status", "dh_pending_time", "dh_mail", "com_user_status", "com_pending_time", "com_mail"],
+            "next": [
+                ["rm_user_status", "rm_pending_time", "rm_mail"],
+                ["rom_user_status", "rom_pending_time", "rom_mail"]
+            ]
+        },
+        {
+            "current": ["rm_user_status", "rm_pending_time", "rm_mail", "rom_user_status", "rom_pending_time", "rom_mail"],
+            "next": [
+                ["zm_user_status", "zm_pending_time", "zm_mail"],
+                ["zom_user_status", "zom_pending_time", "zom_mail"]
+            ]
+        },
+        {
+            "current": ["zm_user_status", "zm_pending_time", "zm_mail", "zom_user_status", "zom_pending_time", "zom_mail"],
+            "next": [
+                ["gm_user_status", "gm_pending_time", "gm_mail"]
+            ]
+        },
+        {
+            "current": ["gm_user_status", "gm_pending_time", "gm_mail"],
+            "next": [
+                ["hr_user_status", "hr_pending_time", "hr_mail"]
+            ]
+        },
+        {
+            "current": ["hr_user_status", "hr_pending_time", "hr_mail"],
+            "next": [
+                ["coo_user_status", "coo_pending_time", "coo_mail"]
+            ]
+        },
+        {
+            "current": ["coo_user_status", "coo_pending_time", "coo_mail"],
+            "next": [
+                ["ceo_user_status", "ceo_pending_time", "ceo_mail"]
+            ]
+        }
+    ]
+    
+    # Loop through the transition
     for record in pending_records:
-        for current_level, next_level in level_transitions:
-            # Check if all current statuses are pending and have exceeded the TAT
-            if all(
-                has_pending_exceeded(record, status_field, time_field, now_time)
-                for status_field, time_field in current_level
-            ):
-                # Set current statuses to "No Response"
-                for status_field, _ in current_level:
-                    # Only set "No Response" if the status_field is not one of the excluded fields
-                    if status_field not in ["hr_user_status", "coo_user_status", "ceo_user_status"]:
-                        updates.append({"name": record.name, "field": status_field, "value": "No Response"})
+        print(f"Processing record: {record.name}")
 
-                # Set next statuses to "Pending" with updated pending time
-                for next_status_field, next_pending_field in next_level:
-                    updates.append({"name": record.name, "field": next_status_field, "value": "Pending"})
-                    updates.append({"name": record.name, "field": next_pending_field, "value": now_time})
+        dear_lines = {
+            "dh_user_status": f"Dear {record.dh_name} & {record.com_name},<br />DH & COM of {record.query_generated_by_branch},<br /><br />",
+            "com_user_status": f"Dear {record.dh_name} & {record.com_name},<br />DH & COM of {record.query_generated_by_branch},<br /><br />",
+            "rm_user_status": f"Dear {record.rm_name} & {record.rom_name},<br />RM & ROM for {record.query_generated_by_branch},<br /><br />",
+            "rom_user_status": f"Dear {record.rm_name} & {record.rom_name},<br />RM & ROM for {record.query_generated_by_branch},<br /><br />",
+            "zm_user_status": f"Dear {record.zm_name} & {record.zom_name},<br />ZM & ZOM for {record.query_generated_by_branch},<br /><br />",
+            "zom_user_status": f"Dear {record.zm_name} & {record.zom_name},<br />ZM & ZOM for {record.query_generated_by_branch},<br /><br />",
+            "gm_user_status": f"Dear {record.gm_name},<br />GM for {record.query_generated_by_branch},<br /><br />",
+            "hr_user_status": f"Dear {record.hr_name},<br />HR for {record.query_generated_by_branch},<br /><br />",
+            "coo_user_status": f"Dear {record.coo_name},<br />COO for {record.query_generated_by_branch},<br /><br />",
+            "ceo_user_status": f"Dear {record.ceo_name},<br />CEO for {record.query_generated_by_branch},<br /><br />",
+        }
 
-    # Apply updates to the database
-    for update in updates:
-        frappe.db.set_value("My Audits", update["name"], update["field"], update["value"], update_modified=False)
+        query_creator = f"""
+        <p>Name: {record.query_generated_by_name}</p>
+        <p>Designation: {record.query_generated_by_designation}</p>
+        <p>Branch: {record.query_generated_by_branch}</p>
+        """
+        
+        for transition in level_transitions:
+            current_level = transition["current"]
+            next_levels = transition["next"]
 
-    frappe.db.commit()
+            active_fields = []
+            skip_update = False
+
+            for i in range(0, len(current_level), 3):
+                status_field = current_level[i]
+                if getattr(record, status_field) == "Pending":
+                    active_fields.append(status_field)
+                elif getattr(record, status_field) == "Responded":
+                    skip_update = True
+                    break
+
+            if skip_update:
+                print(f"Skipping update for {record.name}, as one or more user statuses are 'Responded'.")
+                continue
+
+            if active_fields:
+                print(f"Active Fields: {active_fields}")
+
+                for active_field in active_fields:
+                    pending_time_field = current_level[current_level.index(active_field) + 1]
+
+                    if has_pending_exceeded(record, active_field, pending_time_field, now_time):
+                        print(f"Pending time exceeded for {active_field}, updating...")
+
+                        # Mark all current "Pending" fields as "No Response"
+                        for field in active_fields:
+                            updates.append({"name": record.name, "field": field, "value": "No Response"})
+                            print(f"Setting 'No Response' for {field} in record {record.name}")
+
+                        for next_level in next_levels:
+                            user_status_fields = [next_level[i] for i in range(0, len(next_level), 2)]
+
+                            for user_status_field in user_status_fields:
+                                if not user_status_field.endswith("_mail"):
+                                    updates.append({"name": record.name, "field": user_status_field, "value": "Pending"})
+                                    print(f"Setting 'Pending' for {user_status_field} in record {record.name}")
+
+                            for i in range(1, len(next_level), 2):
+                                pending_time_field = next_level[i]
+                                updates.append({"name": record.name, "field": pending_time_field, "value": now_time})
+                                print(f"Setting '{now_time}' for {pending_time_field} in record {record.name}")
+
+                            # ✅ Email details
+                            dear_line = dear_lines.get(next_level[0], "Dear Sir/Madam,<br /><br />")
+
+                            if len(next_level) > 2 and hasattr(record, next_level[2]):
+                                recipient = getattr(record, next_level[2])
+                                if recipient and recipient not in emails:
+                                    emails.append(recipient)
+                                    print(f"Added {recipient} to email list.")
+                        break  # Stop checking more fields in current transition
+                    else:
+                        print(f"Pending time not exceeded for {active_field}, skipping update...")
+                break  # Process only one transition level per record
+
+        # ✅ Send email for this record (after all transition logic)
+        if emails:
+            email_subject = f"For : {record.audit_query_subject_box}"
+            email_message = frappe.render_template(
+                "audit_management/templates/emails/audit_query.html",
+                {
+                    "doc": record,
+                    "dear_line": dear_line,
+                    "query_creator": query_creator
+                }
+            )
+            print(f"Sending email to recipients: {emails}")
+            frappe.sendmail(
+                recipients=emails,
+                subject=email_subject,
+                message=email_message
+            )
+            print("Email sending completed.")
+            emails = []  # Clear email list for next record
+
+    # ✅ Commit updates after loop
+    if updates:
+        print("Updating database...")
+        for update in updates:
+            frappe.db.set_value("My Audits", update["name"], update["field"], update["value"])
+            print(f"Updated {update['field']} in {update['name']} with {update['value']}")
+            print("======================")
+
+
 
 #this was for testing
 @frappe.whitelist()

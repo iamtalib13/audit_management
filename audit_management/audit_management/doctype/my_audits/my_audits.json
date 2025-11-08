@@ -292,7 +292,7 @@
    "label": "<b>BM Response : </b>"
   },
   {
-   "depends_on": "eval:doc.bm_response_box != null || frappe.session.user==doc.bm_user_id && doc.status==\"Pending\" && doc.bm_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.bm_response_box != null || frappe.session.user==doc.bm_user_id && doc.status==\"Pending\" && (doc.bm_user_status==\"Pending\" || doc.bm_user_status===\"No Response\")",
    "fieldname": "bm_response_box",
    "fieldtype": "Small Text",
    "label": "BM response box"
@@ -303,13 +303,13 @@
    "label": "<b>DH &amp; COM Response :</b>"
   },
   {
-   "depends_on": "eval:doc.dh_response_box != null || frappe.session.user==doc.dh_user_id && doc.status==\"Pending\" && doc.dh_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.dh_response_box != null || frappe.session.user==doc.dh_user_id && doc.status==\"Pending\" && (doc.dh_user_status==\"Pending\" || doc.dh_user_status===\"No Response\")",
    "fieldname": "dh_response_box",
    "fieldtype": "Small Text",
    "label": "DH response box"
   },
   {
-   "depends_on": "eval:doc.com_response_box != null || frappe.session.user==doc.com_user_id && doc.status==\"Pending\" && doc.com_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.com_response_box != null || frappe.session.user==doc.com_user_id && doc.status==\"Pending\" && (doc.com_user_status==\"Pending\" || doc.com_user_status===\"No Response\")",
    "fieldname": "com_response_box",
    "fieldtype": "Small Text",
    "label": "COM response box "
@@ -324,7 +324,7 @@
    "label": "<b>RM &amp; ROM Response :</b>"
   },
   {
-   "depends_on": "eval:doc.rm_response_box != null || frappe.session.user==doc.rm_user_id && doc.status==\"Pending\" && doc.rm_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.rm_response_box != null || frappe.session.user==doc.rm_user_id && doc.status==\"Pending\" && (doc.rm_user_status==\"Pending\" || doc.rm_user_status===\"No Response\")",
    "fieldname": "rm_response_box",
    "fieldtype": "Small Text",
    "label": "RM response box "
@@ -334,7 +334,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.rom_response_box != null || frappe.session.user==doc.rom_user_id && doc.status==\"Pending\" && doc.rom_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.rom_response_box != null || frappe.session.user==doc.rom_user_id && doc.status==\"Pending\" && (doc.rom_user_status==\"Pending\" || doc.rom_user_status===\"No Response\")",
    "fieldname": "rom_response_box",
    "fieldtype": "Small Text",
    "label": "ROM response box "
@@ -345,7 +345,7 @@
    "label": "<b>ZM &amp; ZOM Response :</b>"
   },
   {
-   "depends_on": "eval:doc.zm_response_box != null || frappe.session.user==doc.zm_user_id && doc.status==\"Pending\" && doc.zm_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.zm_response_box != null || frappe.session.user==doc.zm_user_id && doc.status==\"Pending\" && (doc.zm_user_status==\"Pending\" || doc.zm_user_status===\"No Response\")",
    "fieldname": "zm_response_box",
    "fieldtype": "Small Text",
    "label": "ZM response box "
@@ -355,7 +355,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.zom_response_box != null || frappe.session.user==doc.zom_user_id && doc.status==\"Pending\" && doc.zom_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.zom_response_box != null || frappe.session.user==doc.zom_user_id && doc.status==\"Pending\" && (doc.zom_user_status==\"Pending\" || doc.zom_user_status===\"No Response\")",
    "fieldname": "zom_response_box",
    "fieldtype": "Small Text",
    "label": "ZOM response box "
@@ -387,19 +387,19 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.gm_response_box != null || frappe.session.user==doc.gm_user_id && doc.status==\"Pending\" && doc.gm_user_status==\"Pending\"",
+   "depends_on": "eval:doc.gm_response_box != null || frappe.session.user==doc.gm_user_id && doc.status==\"Pending\" && (doc.gm_user_status==\"Pending\" || doc.gm_user_status===\"No Response\")",
    "fieldname": "gm_response_box",
    "fieldtype": "Small Text",
    "label": "GM response box "
   },
   {
-   "depends_on": "eval:doc.coo_response_box != null || frappe.session.user==doc.coo_user_id && doc.status==\"Pending\" && doc.coo_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.coo_response_box != null || frappe.session.user==doc.coo_user_id && doc.status==\"Pending\" && (doc.coo_user_status==\"Pending\" || doc.coo_user_status===\"No Response\")",
    "fieldname": "coo_response_box",
    "fieldtype": "Small Text",
    "label": "COO response box "
   },
   {
-   "depends_on": "eval:doc.ceo_response_box != null || frappe.session.user==doc.ceo_user_id && doc.status==\"Pending\" && doc.ceo_user_status==\"Pending\" ",
+   "depends_on": "eval:doc.ceo_response_box != null || frappe.session.user==doc.ceo_user_id && doc.status==\"Pending\" && (doc.ceo_user_status==\"Pending\" || doc.ceo_user_status===\"No Response\")",
    "fieldname": "ceo_response_box",
    "fieldtype": "Small Text",
    "label": "CEO response box "
@@ -508,74 +508,73 @@
    "fieldname": "audit_attach_box",
    "fieldtype": "Attach",
    "label": "Audit Attachment",
-   "length": 2,
-   "read_only_depends_on": "eval:!frappe.user.has_role(\"Audit Manager\")"
+   "read_only_depends_on": "eval:!frappe.user.has_role(\"Audit Manager\") && !frappe.user.has_role(\"Audit Member\")"
   },
   {
-   "depends_on": "eval:frappe.session.user==doc.bm_user_id && (doc.bm_user_status===\"Pending\" || doc.bm_user_status===\"Responded\" ) || (frappe.session.user!==doc.bm_user_id && doc.bm_attach_box != null )",
+   "depends_on": "eval:frappe.session.user==doc.bm_user_id && (doc.bm_user_status===\"Pending\" || doc.bm_user_status===\"Responded\" || doc.bm_user_status===\"No Response\") || (frappe.session.user!==doc.bm_user_id && doc.bm_attach_box != null )",
    "fieldname": "bm_attach_box",
    "fieldtype": "Attach",
    "label": "BM attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.bm_user_id && doc.bm_attach_box != null && doc.bm_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval: frappe.session.user==doc.dh_user_id && (doc.dh_user_status===\"Pending\" || doc.dh_user_status===\"Responded\") || (frappe.session.user!==doc.dh_user_id && doc.dh_attach_box != null)\n",
+   "depends_on": "eval: frappe.session.user==doc.dh_user_id && (doc.dh_user_status===\"Pending\" || doc.dh_user_status===\"Responded\" || doc.dh_user_status===\"No Response\") || (frappe.session.user!==doc.dh_user_id && doc.dh_attach_box != null)\n",
    "fieldname": "dh_attach_box",
    "fieldtype": "Attach",
    "label": "DH attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.dh_user_id && doc.dh_attach_box != null && doc.dh_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval: frappe.session.user==doc.com_user_id && (doc.com_user_status===\"Pending\" || doc.com_user_status===\"Responded\") || (frappe.session.user!==doc.com_user_id && doc.com_attach_box != null)\n",
+   "depends_on": "eval: frappe.session.user==doc.com_user_id && (doc.com_user_status===\"Pending\" || doc.com_user_status===\"Responded\" || doc.com_user_status===\"No Response\") || (frappe.session.user!==doc.com_user_id && doc.com_attach_box != null)\n",
    "fieldname": "com_attach_box",
    "fieldtype": "Attach",
    "label": "COM Attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.com_user_id && doc.com_attach_box != null && doc.com_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval: frappe.session.user==doc.rm_user_id && (doc.rm_user_status===\"Pending\" || doc.rm_user_status===\"Responded\") || (frappe.session.user!==doc.rm_user_id && doc.rm_attach_box != null)\n",
+   "depends_on": "eval: frappe.session.user==doc.rm_user_id && (doc.rm_user_status===\"Pending\" || doc.rm_user_status===\"Responded\" || doc.rm_user_status===\"No Response\") || (frappe.session.user!==doc.rm_user_id && doc.rm_attach_box != null)\n",
    "fieldname": "rm_attach_box",
    "fieldtype": "Attach",
    "label": "RM attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.rm_user_id && doc.rm_attach_box != null && doc.rm_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval: frappe.session.user==doc.rom_user_id && (doc.rom_user_status===\"Pending\" || doc.rom_user_status===\"Responded\") || (frappe.session.user!==doc.rom_user_id && doc.rom_attach_box != null)\n",
+   "depends_on": "eval: frappe.session.user==doc.rom_user_id && (doc.rom_user_status===\"Pending\" || doc.rom_user_status===\"Responded\" || doc.rom_user_status===\"No Response\") || (frappe.session.user!==doc.rom_user_id && doc.rom_attach_box != null)\n",
    "fieldname": "rom_attach_box",
    "fieldtype": "Attach",
    "label": "ROM attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.rom_user_id && doc.rom_attach_box != null && doc.rom_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval: frappe.session.user==doc.zm_user_id && (doc.zm_user_status===\"Pending\" || doc.zm_user_status===\"Responded\") || (frappe.session.user!==doc.zm_user_id && doc.zm_attach_box != null)\n",
+   "depends_on": "eval: frappe.session.user==doc.zm_user_id && (doc.zm_user_status===\"Pending\" || doc.zm_user_status===\"Responded\" || doc.zm_user_status===\"No Response\") || (frappe.session.user!==doc.zm_user_id && doc.zm_attach_box != null)\n",
    "fieldname": "zm_attach_box",
    "fieldtype": "Attach",
    "label": "ZM attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.zm_user_id && doc.zm_attach_box != null && doc.zm_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval: frappe.session.user==doc.zom_user_id && (doc.zom_user_status===\"Pending\" || doc.zom_user_status===\"Responded\") || (frappe.session.user!==doc.zom_user_id && doc.zom_attach_box != null)\n",
+   "depends_on": "eval: frappe.session.user==doc.zom_user_id && (doc.zom_user_status===\"Pending\" || doc.zom_user_status===\"Responded\" || doc.zom_user_status===\"No Response\") || (frappe.session.user!==doc.zom_user_id && doc.zom_attach_box != null)\n",
    "fieldname": "zom_attach_box",
    "fieldtype": "Attach",
    "label": "ZOM attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.zom_user_id && doc.zom_attach_box != null && doc.zom_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval:frappe.session.user==doc.gm_user_id && (doc.gm_user_status===\"Pending\" || doc.gm_user_status===\"Responded\" ) || (frappe.session.user!==doc.gm_user_id && doc.gm_attach_box != null )",
+   "depends_on": "eval:frappe.session.user==doc.gm_user_id && (doc.gm_user_status===\"Pending\" || doc.gm_user_status===\"Responded\" || doc.gm_user_status===\"No Response\") || (frappe.session.user!==doc.gm_user_id && doc.gm_attach_box != null )",
    "fieldname": "gm_attach_box",
    "fieldtype": "Attach",
    "label": "GM attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.gm_user_id && doc.gm_attach_box != null && doc.gm_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval: frappe.session.user==doc.coo_user_id && (doc.coo_user_status===\"Pending\" || doc.coo_user_status===\"Responded\") || (frappe.session.user!==doc.coo_user_id && doc.coo_attach_box != null)\n",
+   "depends_on": "eval: frappe.session.user==doc.coo_user_id && (doc.coo_user_status===\"Pending\" || doc.coo_user_status===\"Responded\" || doc.coo_user_status===\"No Response\") || (frappe.session.user!==doc.coo_user_id && doc.coo_attach_box != null)\n",
    "fieldname": "coo_attach_box",
    "fieldtype": "Attach",
    "label": "COO attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.coo_user_id && doc.coo_attach_box != null && doc.coo_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval: frappe.session.user==doc.ceo_user_id && (doc.ceo_user_status===\"Pending\" || doc.ceo_user_status===\"Responded\") || (frappe.session.user!==doc.ceo_user_id && doc.ceo_attach_box != null)\n",
+   "depends_on": "eval: frappe.session.user==doc.ceo_user_id && (doc.ceo_user_status===\"Pending\" || doc.ceo_user_status===\"Responded\" || doc.ceo_user_status===\"No Response\") || (frappe.session.user!==doc.ceo_user_id && doc.ceo_attach_box != null)\n",
    "fieldname": "ceo_attach_box",
    "fieldtype": "Attach",
    "label": "CEO attachment",
@@ -1081,14 +1080,14 @@
    "label": "<b>HR Response : </b>"
   },
   {
-   "depends_on": "eval:frappe.session.user==doc.hr_user_id && (doc.hr_user_status===\"Pending\" || doc.hr_user_status===\"Responded\" ) || (frappe.session.user!==doc.hr_user_id && doc.hr_attach_box != null )",
+   "depends_on": "eval:frappe.session.user==doc.hr_user_id && (doc.hr_user_status===\"Pending\" || doc.hr_user_status===\"Responded\" || doc.hr_user_status===\"No Response\") || (frappe.session.user!==doc.hr_user_id && doc.hr_attach_box != null )",
    "fieldname": "hr_attach_box",
    "fieldtype": "Attach",
    "label": "HR attachment",
    "read_only_depends_on": "eval:frappe.session.user!==doc.hr_user_id && doc.hr_attach_box != null && doc.hr_user_status===\"Responded\""
   },
   {
-   "depends_on": "eval:doc.hr_response_box != null || frappe.session.user==doc.hr_user_id && doc.status==\"Pending\" && doc.hr_user_status==\"Pending\"",
+   "depends_on": "eval:doc.hr_response_box != null || frappe.session.user==doc.hr_user_id && doc.status==\"Pending\" && (doc.hr_user_status==\"Pending\" || doc.hr_user_status===\"No Response\")",
    "fieldname": "hr_response_box",
    "fieldtype": "Small Text",
    "label": "HR response box "
@@ -1123,6 +1122,43 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Audit Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Audit Member",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Employee",
+   "select": 1,
    "share": 1,
    "write": 1
   }
@@ -1143,5 +1179,6 @@
    "color": "Red",
    "title": "Pending"
   }
- ]
+ ],
+ "track_changes": 1
 }
