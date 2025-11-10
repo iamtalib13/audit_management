@@ -2,10 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="description"
-      content="New Audit Query: Please review and respond promptly."
-    />
+    <meta name="description" content="New Audit Query: Please review and respond promptly." />
     <title>Audit Query Mail</title>
     <style>
       body {
@@ -85,25 +82,24 @@
   <body>
     <div class="container">
       <div class="header">Audit Query: {{ doc.name }}</div>
+
       <div class="content">
-        Dear {{ doc.gm_name }},<br />
-        GM for {{ doc.emp_branch }},<br /><br />
+        {{ dear_line | safe }}
 
-        A new audit query has been sent to you from the Audit Department. Please
-        review the query and respond
-        <span style="color: red">as soon as possible, within 24 hours</span>.
+        A new audit query has been sent to you from the Audit Department.<br />
+        Please review the query and respond 
+        <span style="color: red;"><strong>within 24 hours</strong></span>.
+
         <br /><br />
 
-        <p><b>Audit Query:</b></p>
+        <b>Audit Query:</b>
         <div class="query-box">{{ doc.audit_query_box }}</div>
-        <br /><br />
 
-        Query Creator:<br />
-        <p>
-          Name: {{ doc.query_generated_by_name }}<br />
-          Designation: {{ doc.query_generated_by_designation }}<br />
-          Branch: {{ doc.query_generated_by_branch }}
-        </p>
+        <br /><br />
+        <b>Query Creator:</b>
+        <div>
+          {{ query_creator | safe }}
+        </div>
       </div>
 
       <div class="button-container">
@@ -112,13 +108,11 @@
           class="button"
           target="_blank"
           aria-label="Click to reply to the audit query"
-          >Click here to reply</a
-        >
+        >Click here to reply</a>
       </div>
 
       <div class="footer">
-        This is an automated email sent from the Audit Management System. If you
-        have any questions, please contact the Audit Department.
+        This is an automated email sent from the Audit Management System. If you have any questions, please contact the Audit Department.
       </div>
     </div>
   </body>

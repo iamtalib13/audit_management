@@ -63,6 +63,9 @@ app_license = "xyz"
 
 # before_install = "audit_management.install.before_install"
 # after_install = "audit_management.install.after_install"
+after_migrate = [
+        #"audit_management.patches.fixtures.create_audit_dashboard.execute",
+]
 
 # Uninstallation
 # ------------
@@ -203,3 +206,15 @@ scheduler_events = {
 # auth_hooks = [
 # 	"audit_management.auth.validate"
 # ]
+fixtures = [
+    {"dt": "Custom HTML Block", "filters": [
+        [
+            "name",
+            "in",
+            {
+				"Audit Management"
+			}
+        ]
+    ]},
+
+]
