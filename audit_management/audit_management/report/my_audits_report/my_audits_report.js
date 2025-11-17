@@ -4,6 +4,16 @@
 
 frappe.query_reports["My Audits Report"] = {
 	"filters": [
+			{
+			fieldname: "from_date",
+			label: "From Date",
+			fieldtype: "Date"
+		},
+		{
+			fieldname: "to_date",
+			label: "To Date",
+			fieldtype: "Date"
+		},
 		{
 			fieldname: "emp_branch",
 			label: "Branch",
@@ -116,5 +126,13 @@ frappe.query_reports["My Audits Report"] = {
 			fieldtype: "Select",
 			options: "\nResponded\nNo response"
 		}
-	]
+	],
+
+	// clear filters button
+    onload: function (report) {
+        report.page.add_inner_button(__('Clear Filters'), function () {
+            report.filters.forEach(f => f.set_value(''));
+            report.refresh();
+        });
+    }
 };
