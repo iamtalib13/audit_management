@@ -995,7 +995,7 @@
    "fieldname": "query_type",
    "fieldtype": "Select",
    "label": "Query Type",
-   "options": "\nAudit Report Compliance\nCritical Compliance\nOperational Compliance",
+   "options": "\nBranch Compliance\nCritical Compliance\nOperational compliance",
    "reqd": 1
   },
   {
@@ -1106,7 +1106,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-10 12:27:27.544584",
+ "modified": "2025-11-08 12:54:20.135823",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
