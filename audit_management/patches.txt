@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 audit_management.patches.fixtures.add_audit_roles
 audit_management.patches.fixtures.audit_permission_patch
+audit_management.patches.migrate_audit_level_to_child
