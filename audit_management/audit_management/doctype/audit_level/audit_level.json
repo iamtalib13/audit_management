@@ -96,7 +96,9 @@
   "column_break_ryavi",
   "stage_8_ceo_name",
   "column_break_z7ayy",
-  "stage_8_ceo_mail"
+  "stage_8_ceo_mail",
+  "audit_items_section",
+  "audit_stages"
  ],
  "fields": [
   {
@@ -580,11 +582,22 @@
    "fieldname": "stage_1_bm_section",
    "fieldtype": "Section Break",
    "label": "Stage 1 (BM)"
+  },
+  {
+   "fieldname": "audit_items_section",
+   "fieldtype": "Section Break",
+   "label": "Audit Items"
+  },
+  {
+   "fieldname": "audit_stages",
+   "fieldtype": "Table",
+   "label": "Audit Stages",
+   "options": "Audit Items"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-03 11:16:20.692305",
+ "modified": "2026-02-16 16:17:51.541555",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",
