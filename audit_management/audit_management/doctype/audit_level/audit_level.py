@@ -7,7 +7,62 @@ from frappe.model.document import Document
 class AuditLevel(Document):
     def on_change(self):
         # Call method to update related records in "My Audits"
-        self.update_my_audit()
+        self.update_my_audit()  
+    
+    def validate(self):
+        print("🔥 ON UPDATE RUNNING FOR:", self.name)
+        frappe.msgprint("ON UPDATE RUNNING")
+        self.sync_audit_stages()
+
+    def sync_audit_stages(self):
+
+        STAGE_MAP = [
+            ("stage_1_bm_emp_id", "stage_1_bm_mail", "Stage 1 - BM"),
+            ("stage_2_dh_emp_id", "stage_2_dh_mail", "Stage 2 - DH"),
+            ("stage_2_com_emp_id", "stage_2_com_mail", "Stage 2 - COM"),
+            ("stage_3_rm_emp_id", "stage_3_rm_mail", "Stage 3 - RM"),
+            ("stage_3_rom_emp_id", "stage_3_rom_mail", "Stage 3 - ROM"),
+            ("stage_4_zm_emp_id", "stage_4_zm_mail", "Stage 4 - ZM"),
+            ("stage_4_zom_emp_id", "stage_4_zom_mail", "Stage 4 - ZOM"),
+            ("stage_5_gm_emp_id", "stage_5_gm_mail", "Stage 5 - GM"),
+            ("stage_6_hr_emp_id", "stage_6_hr_mail", "Stage 6 - HR"),
+            ("stage_7_coo_emp_id", "stage_7_coo_mail", "Stage 7 - COO"),
+            ("stage_8_ceo_emp_id", "stage_8_ceo_mail", "Stage 8 - CEO"),
+        ]
+
+        existing_employees = [d.employee for d in self.audit_stages]
+
+        for emp_field, mail_field, stage_name in STAGE_MAP:
+
+            employee = self.get(emp_field)
+            email = self.get(mail_field)
+
+            if not employee:
+                continue
+
+            # Add if not exists
+            if employee not in existing_employees:
+                self.append("audit_stages", {
+                    "stage_name": stage_name,
+                    "employee": employee,
+                    "email": email
+                })
+
+            # Update email if exists
+            else:
+                for row in self.audit_stages:
+                    if row.employee == employee:
+                        row.email = email
+
+        # Remove rows not present in static fields
+        valid_employees = [
+            self.get(emp[0]) for emp in STAGE_MAP if self.get(emp[0])
+        ]
+
+        self.audit_stages = [
+            row for row in self.audit_stages
+            if row.employee in valid_employees
+        ] 
 
     def update_my_audit(self):  # Moved method into the class
         try:
@@ -103,7 +158,7 @@ class AuditLevel(Document):
         except Exception as e:
             frappe.log_error(f"Error updating My Audits: {str(e)}", "AuditLevel")
             frappe.msgprint(f"An error occurred: {str(e)}")
-
+ 
 @frappe.whitelist()
 def fetch_employee(employee_id):
     # Use parameterized query to prevent SQL injection
