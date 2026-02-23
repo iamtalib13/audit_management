@@ -15,6 +15,7 @@
  ],
  "fields": [
   {
+   "columns": 1,
    "fieldname": "stage",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -23,6 +24,7 @@
    "reqd": 1
   },
   {
+   "columns": 1,
    "fieldname": "stage_name",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -31,6 +33,7 @@
    "reqd": 1
   },
   {
+   "columns": 2,
    "fieldname": "employee",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
@@ -47,14 +50,15 @@
    "read_only": 1
   },
   {
+   "columns": 2,
    "fetch_from": "employee.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Employee Name",
    "read_only": 1
   },
   {
+   "columns": 2,
    "fieldname": "email",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -65,7 +69,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-17 11:18:07.808477",
+ "modified": "2026-02-23 13:35:13.202653",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Items",
