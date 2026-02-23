@@ -127,6 +127,8 @@
   "ceo_user_id",
   "column_break_yvwil",
   "ceo_mail",
+  "audit_items_section",
+  "audit_stages",
   "new_request_tab",
   "enter_branch_section",
   "emp_branch",
@@ -1102,15 +1104,26 @@
    "fieldtype": "Select",
    "label": "send mail to all ?",
    "options": "\nNo\nYes"
+  },
+  {
+   "fieldname": "audit_items_section",
+   "fieldtype": "Section Break",
+   "label": "Audit Items"
+  },
+  {
+   "fieldname": "audit_stages",
+   "fieldtype": "Table",
+   "label": "Audit Stages",
+   "options": "Audit Items"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-10 12:27:27.544584",
+ "modified": "2026-02-23 15:45:48.381781",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
