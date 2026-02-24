@@ -6,6 +6,94 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now
 class MyAudits(Document):
+    def before_save(self):
+        # Call the new function to populate audit stages
+        populate_audit_stages_on_save(self)
+
+@frappe.whitelist()
+def populate_audit_stages_on_save(doc):
+    """
+    Populates the 'audit_stages' child table of a My Audits document
+    from the linked Audit Level document.
+    This function is intended to be called as a DocType hook (e.g., before_save).
+    """
+
+    if not doc.emp_branch:
+        # If no Audit Level is linked, clear the child table and return
+        doc.set("audit_stages", [])
+        return
+
+    # Define the mapping from Audit Level fields to Audit Items child table fields
+    # Format: (emp_id_field, mail_field, stage_number, stage_name_label)
+    STAGE_MAP = [
+        ("stage_1_bm_emp_id", "stage_1_bm_mail", 1, "BM"),
+        ("stage_2_dh_emp_id", "stage_2_dh_mail", 2, "DH"),
+        ("stage_2_com_emp_id", "stage_2_com_mail", 2, "COM"), # Assuming COM is also stage 2
+        ("stage_3_rm_emp_id", "stage_3_rm_mail", 3, "RM"),
+        ("stage_3_rom_emp_id", "stage_3_rom_mail", 3, "ROM"), # Assuming ROM is also stage 3
+        ("stage_4_zm_emp_id", "stage_4_zm_mail", 4, "ZM"),
+        ("stage_4_zom_emp_id", "stage_4_zom_mail", 4, "ZOM"), # Assuming ZOM is also stage 4
+        ("stage_5_gm_emp_id", "stage_5_gm_mail", 5, "GM"),
+        ("stage_6_hr_emp_id", "stage_6_hr_mail", 6, "HR"),
+        ("stage_7_coo_emp_id", "stage_7_coo_mail", 7, "COO"),
+        ("stage_8_ceo_emp_id", "stage_8_ceo_mail", 8, "CEO"),
+    ]
+
+    try:
+        # Check if the linked Audit Level document exists
+        if not frappe.db.exists("Audit Level", doc.emp_branch):
+            frappe.log_error(f"Audit Level document '{doc.emp_branch}' linked in 'My Audits' '{doc.name}' not found.",
+                             "Populate Audit Stages Hook")
+            doc.set("audit_stages", []) # Clear child table if linked Audit Level is missing
+            return
+
+        audit_level_doc = frappe.get_doc("Audit Level", doc.emp_branch)
+
+        # Clear existing child table entries for idempotency
+        # Only clear if emp_branch has changed or if it's a new document
+        # if doc.has_changed("emp_branch") or doc.is_new():
+        doc.set("audit_stages", [])
+
+        new_audit_stages_entries = []
+
+        for emp_field_id, mail_field, stage_number, stage_name_label in STAGE_MAP:
+            employee_id = audit_level_doc.get(emp_field_id)
+            employee_mail = audit_level_doc.get(mail_field)
+
+            if employee_id:
+                emp_user_id_field = emp_field_id.replace("_emp_id", "_user_id")
+                emp_name_field = emp_field_id.replace("_emp_id", "_name")
+
+                employee_user_id = audit_level_doc.get(emp_user_id_field)
+                employee_name = audit_level_doc.get(emp_name_field)
+
+                new_audit_stages_entries.append({
+                    "doctype": "Audit Items",
+                    "stage": stage_number,
+                    "stage_name": frappe.db.get_value("Audit Stage", {"name": stage_name_label}, "name") or stage_name_label,
+                    "employee": employee_id,
+                    "user_id": employee_user_id,
+                    "employee_name": employee_name,
+                    "email": employee_mail
+                })
+
+        # Sort the entries by stage number
+        new_audit_stages_entries = sorted(
+            new_audit_stages_entries,
+            key=lambda x: int(x.get("stage", 0))
+        )
+
+        # Append sorted entries to the child table and fix idx
+        for i, row_data in enumerate(new_audit_stages_entries, start=1):
+            row = doc.append("audit_stages", row_data)
+            row.idx = i
+
+    except Exception as e:
+        frappe.log_error(f"Error populating 'audit_stages' for 'My Audits' {doc.name}: {e}", "Populate Audit Stages Hook")
+        # Ensure child table is cleared or not populated on error
+        doc.set("audit_stages", [])
+
+class MyAudits(Document):
     pass
 
 @frappe.whitelist()
