@@ -2,10 +2,6 @@ import frappe
 
 def execute():
 
-    print("\n==============================")
-    print("🚀 Starting Audit Level Migration Patch")
-    print("==============================\n")
-
     STAGE_MAP = [
         ("stage_1_bm_emp_id", "stage_1_bm_mail", 1, "BM"),
         ("stage_2_dh_emp_id", "stage_2_dh_mail", 2, "DH"),
@@ -21,11 +17,13 @@ def execute():
     ]
 
     audit_levels = frappe.get_all("Audit Level", fields=["name"])
-    print(f"🔎 Total Audit Level Records Found: {len(audit_levels)}\n")
 
     for level in audit_levels:
+        
+        # 🔴 EXCLUDE THIS RECORD
+        if level.name == "Gondia TW (Operation)":
+            continue
 
-        print(f"➡ Processing Audit Level: {level.name}")
         doc = frappe.get_doc("Audit Level", level.name)
 
         doc.set("audit_stages", [])  # Reset child table completely
@@ -66,10 +64,4 @@ def execute():
         doc.flags.ignore_validate = True
         doc.save(ignore_permissions=True)
 
-        print("   ✅ Rebuilt & Sorted Correctly\n")
-
     frappe.db.commit()
-
-    print("======================================")
-    print("🎯 Audit Level Migration Patch Completed")
-    print("======================================\n")
