@@ -1,5 +1,7 @@
-// Copyright (c) 2024, Sahayog and contributors
-// For license information, please see license.txt
-frappe.ui.form.on("Audit Level", {
-  // your code here
+frappe.ui.form.on('Audit Level', {
+    refresh: function(frm) {
+        if (!frappe.user.has_role("System Manager")) {
+            frm.toggle_display("audit_stages", false);
+        }
+    }
 });

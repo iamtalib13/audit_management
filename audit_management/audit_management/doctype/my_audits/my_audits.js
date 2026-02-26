@@ -539,6 +539,10 @@ frappe.ui.form.on("My Audits", {
         frm.trigger("close_query");
       }
     }
+    // Show Audit Stages child table only to System Manager
+     if (!frappe.user.has_role("System Manager")) {
+            frm.toggle_display("audit_stages", false);
+        }
   },
 
   fetch_query_maker: function (frm) {
