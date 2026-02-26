@@ -7,9 +7,7 @@ def execute():
     Ensures idempotency and proper sorting.
     """
 
-    print("=======================================================")
-    print("🚀 Starting Migration Patch: Audit Level to My Audits Child Table")
-    print("=======================================================")
+
 
     # Define the mapping from Audit Level fields to Audit Items child table fields
     # Format: (emp_id_field, mail_field, stage_number, stage_name_label)
@@ -34,13 +32,9 @@ def execute():
         fields=["name", "emp_branch"]
     )
 
-    print(f"🔎 Found {len(my_audits_list)} 'My Audits' documents with linked 'Audit Level'.\n")
-
     for my_audit_data in my_audits_list:
         my_audit_name = my_audit_data.name
         audit_level_name = my_audit_data.emp_branch
-
-        print(f"➡ Processing 'My Audits' document: {my_audit_name} (Linked to 'Audit Level': {audit_level_name})")
 
         try:
             # Load the My Audits document
@@ -50,7 +44,6 @@ def execute():
             if not frappe.db.exists("Audit Level", audit_level_name):
                 frappe.log_error(f"Audit Level document '{audit_level_name}' linked in 'My Audits' '{my_audit_name}' not found. Skipping.",
                                  "Audit Level to My Audits Migration")
-                print(f"   ⚠️  Audit Level '{audit_level_name}' not found. Skipping 'My Audits': {my_audit_name}\n")
                 continue # Skip to the next My Audits document
 
             audit_level_doc = frappe.get_doc("Audit Level", audit_level_name)
@@ -102,15 +95,8 @@ def execute():
             my_audit_doc.flags.ignore_validate = True
             my_audit_doc.save(ignore_permissions=True)
 
-            print(f"   ✅ Successfully migrated stages for 'My Audits': {my_audit_name}\n")
-
         except Exception as e:
             frappe.log_error(f"Error migrating 'My Audits' {my_audit_name}: {e}", "Audit Level to My Audits Migration")
-            print(f"   ❌ Failed to migrate stages for 'My Audits': {my_audit_name}. Error: {e}\n")
             frappe.db.rollback() # Rollback changes for this document on error
 
     frappe.db.commit() # Final commit for all successful operations
-
-    print("=========================================================")
-    print("🎯 Audit Level to My Audits Child Table Migration Patch Completed")
-    print("=========================================================\n")
