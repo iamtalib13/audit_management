@@ -195,7 +195,7 @@
    "options": "Employee"
   },
   {
-   "depends_on": "eval:frappe.session.user==\"Administrator\"",
+   "depends_on": "eval:frappe.session.user==\"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "admin_tab_tab",
    "fieldtype": "Tab Break",
    "label": "Admin Tab"
