@@ -70,14 +70,8 @@ class AuditLevel(Document):
 
         parent_fields = [df.fieldname for df in self.meta.fields]
 
-        # First clear all stage fields
-        for field in parent_fields:
-            if field.startswith("stage_") and (
-                field.endswith("_emp_id") or field.endswith("_mail")
-            ):
-                setattr(self, field, None)
+        # 🔹 DO NOT CLEAR ALL FIELDS
 
-        # Then re-fill from child
         for row in self.audit_stages:
 
             if not row.stage or not row.stage_name:
@@ -90,10 +84,11 @@ class AuditLevel(Document):
             mail_field = f"stage_{stage_number}_{role}_mail"
 
             if emp_field in parent_fields:
-                setattr(self, emp_field, row.employee)
+                setattr(self, emp_field, row.employee or None)
 
             if mail_field in parent_fields:
-                setattr(self, mail_field, row.email)
+                setattr(self, mail_field, row.email or None)
+            
                 
     def remove_blank_rows(self):
         self.audit_stages = [
