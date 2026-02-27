@@ -12,6 +12,7 @@ class AuditLevel(Document):
     def validate(self):
         print("🔥 ON UPDATE RUNNING FOR:", self.name)
         frappe.msgprint("ON UPDATE RUNNING")
+        # Always normalize data in same order
         self.sync_parent_to_child()
         self.sync_child_to_parent()
         self.remove_blank_rows()
@@ -28,7 +29,6 @@ class AuditLevel(Document):
             if field.endswith("_emp_id") and field.startswith("stage_"):
 
                 parts = field.split("_")
-
                 if len(parts) < 4:
                     continue
 
@@ -37,47 +37,49 @@ class AuditLevel(Document):
 
                 employee = getattr(self, field)
                 mail_field = f"stage_{stage_number}_{role}_mail"
-                email = getattr(self, mail_field, None)
+                user_field = f"stage_{stage_number}_{role}_user_id"
+                name_field = f"stage_{stage_number}_{role}_name"
 
-                # Find existing child row
-                existing_row = next(
-                    (row for row in self.audit_stages
-                     if str(row.stage) == stage_number
-                     and row.stage_name.lower() == role),
-                    None
-                )
+                email = getattr(self, mail_field, None)
+                user_id = getattr(self, user_field, None)
+                employee_name = getattr(self, name_field, None)
+
+                existing_row = None
+                for row in self.audit_stages:
+                    if (
+                        str(row.stage) == str(stage_number)
+                        and row.stage_name
+                        and row.stage_name.strip().lower() == role.strip().lower()
+                    ):
+                        existing_row = row
+                        break
 
                 if employee:
                     if existing_row:
                         existing_row.employee = employee
                         existing_row.email = email
+                        existing_row.user_id = user_id
+                        existing_row.employee_name = employee_name
                     else:
                         self.append("audit_stages", {
                             "stage": stage_number,
                             "stage_name": role.upper(),
                             "employee": employee,
+                            "user_id": user_id,
+                            "employee_name": employee_name,
                             "email": email
                         })
                 else:
-                    # If parent cleared → remove child row
                     if existing_row:
                         self.audit_stages.remove(existing_row)
-
     # -----------------------------------------
     # 2️⃣ Child → Parent Sync
     # -----------------------------------------
     def sync_child_to_parent(self):
 
         parent_fields = [df.fieldname for df in self.meta.fields]
+        child_keys = set()
 
-        # First clear all stage fields
-        for field in parent_fields:
-            if field.startswith("stage_") and (
-                field.endswith("_emp_id") or field.endswith("_mail")
-            ):
-                setattr(self, field, None)
-
-        # Then re-fill from child
         for row in self.audit_stages:
 
             if not row.stage or not row.stage_name:
@@ -88,18 +90,49 @@ class AuditLevel(Document):
 
             emp_field = f"stage_{stage_number}_{role}_emp_id"
             mail_field = f"stage_{stage_number}_{role}_mail"
+            user_field = f"stage_{stage_number}_{role}_user_id"
+            name_field = f"stage_{stage_number}_{role}_name"
+
+            child_keys.update([emp_field, mail_field, user_field, name_field])
 
             if emp_field in parent_fields:
-                setattr(self, emp_field, row.employee)
+                setattr(self, emp_field, row.employee or None)
 
             if mail_field in parent_fields:
-                setattr(self, mail_field, row.email)
+                setattr(self, mail_field, row.email or None)
+
+            if user_field in parent_fields:
+                setattr(self, user_field, row.user_id or None)
+
+            if name_field in parent_fields:
+                setattr(self, name_field, row.employee_name or None)
+
+        # Clear parent fields only if child table actually changed
+        if self.get_doc_before_save() and self.get_doc_before_save().audit_stages != self.audit_stages:
+            for field in parent_fields:
+                if (
+                    field.startswith("stage_")
+                    and (
+                        field.endswith("_emp_id")
+                        or field.endswith("_mail")
+                        or field.endswith("_user_id")
+                        or field.endswith("_name")
+                    )
+                ):
+                    if field not in child_keys:
+                        setattr(self, field, None)
+                    
                 
     def remove_blank_rows(self):
-        self.audit_stages = [
-            row for row in self.audit_stages
-            if row.stage
-        ]
+        cleaned_rows = []
+
+        for row in self.audit_stages:
+            if row.stage and row.stage_name:
+                # Only remove row if completely empty
+                if row.employee or row.email or row.user_id or row.employee_name:
+                    cleaned_rows.append(row)
+
+        self.audit_stages = cleaned_rows
                         
                 
     def update_my_audit(self):  # Moved method into the class
