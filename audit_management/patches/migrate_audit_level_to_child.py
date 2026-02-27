@@ -34,23 +34,32 @@ def execute():
         for emp_field, mail_field, stage_number, stage_name in STAGE_MAP:
 
             employee = doc.get(emp_field)
-            email = doc.get(mail_field)
+            old_email = doc.get(mail_field)
 
             if not employee:
                 continue
 
+            # 🔥 Step 1: Try old email
+            final_email = old_email
+
+            # 🔥 Step 2: If old email empty → fetch company_email
+            if not final_email:
+                final_email = frappe.db.get_value(
+                    "Employee",
+                    employee,
+                    "company_email"
+                )
+
             doc.append("audit_stages", {
-                "stage": stage_number,
+                "stage": str(stage_number),
                 "stage_name": stage_name,
                 "employee": employee,
-                "email": email
+                "email": final_email
             })
-
         # ----------------------------------
         # SORT PROPERLY
         # ----------------------------------
-        doc.audit_stages = sorted(
-            doc.audit_stages,
+        doc.audit_stages.sort(
             key=lambda x: (int(x.stage), x.stage_name)
         )
 
