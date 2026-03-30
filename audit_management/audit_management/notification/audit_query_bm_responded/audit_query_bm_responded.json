@@ -26,8 +26,8 @@
  ],
  "send_system_notification": 0,
  "send_to_all_assignees": 0,
- "sender": "Sahayog Support System",
- "sender_email": "support@sahayogmulstistate.com",
+ "sender": "MySahayog",
+ "sender_email": "mysahayog@sahayogmultistate.com",
  "subject": "BM Responded: {{ doc.name }}",
  "value_changed": "bm_user_status"
 }
