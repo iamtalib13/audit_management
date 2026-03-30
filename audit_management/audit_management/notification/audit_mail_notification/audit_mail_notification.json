@@ -27,8 +27,8 @@
  ],
  "send_system_notification": 0,
  "send_to_all_assignees": 0,
- "sender": "",
- "sender_email": "",
+ "sender": "MySahayog",
+ "sender_email": "mysahayog@sahayogmultistate.com",
  "subject": "For : {{doc.audit_query_subject_box}}",
  "value_changed": "bm_user_status"
 }

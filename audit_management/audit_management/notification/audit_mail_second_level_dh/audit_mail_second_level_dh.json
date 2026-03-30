@@ -32,8 +32,8 @@
  ],
  "send_system_notification": 0,
  "send_to_all_assignees": 0,
- "sender": "Sahayog Support System",
- "sender_email": "support@sahayogmulstistate.com",
+ "sender": "MySahayog",
+ "sender_email": "mysahayog@sahayogmultistate.com",
  "set_property_after_alert": "",
  "subject": "For : {{doc.audit_query_subject_box}}",
  "value_changed": "dh_user_status"
