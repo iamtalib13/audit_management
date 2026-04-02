@@ -20,7 +20,7 @@
  "recipients": [
   {
    "cc": "criticalreview@sahayogmultistate.com\ngondiaaudit@sahayogmultistate.com\nkamraj.mahapatra@sahayogmultistate.com\n{% if doc.owner in [\"3649@sahayog.com\", \"6105@sahayog.com\", \"6929@sahayog.com\"] %}kaveri.a@sahayogmultistate.com,{% endif %}",
-   "condition": "doc.gm_user_status == \"Responded\"",
+   "condition": "doc.gm_user_status == \"Responded\" and doc.gm_response_box",
    "receiver_by_document_field": "query_generated_by_mail"
   }
  ],
