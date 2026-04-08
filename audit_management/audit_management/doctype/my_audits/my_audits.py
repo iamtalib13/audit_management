@@ -496,6 +496,7 @@ def check_pending_tat():
         "query_generated_by_designation",
         "query_generated_by_branch",
         "audit_query_subject_box",
+        "audit_query_box",
         "query_type",
         "emp_branch",                
         "dh_name", "com_name",       
@@ -505,17 +506,17 @@ def check_pending_tat():
         "hr_name",                    
         "coo_name",                
         "ceo_name",
-        "bm_user_status", "bm_pending_time", "bm_mail",
-        "dh_user_status", "dh_pending_time", "dh_mail",
-        "com_user_status", "com_pending_time", "com_mail",
-        "rm_user_status", "rm_pending_time", "rm_mail",
-        "rom_user_status", "rom_pending_time", "rom_mail",
-        "zm_user_status", "zm_pending_time", "zm_mail",
-        "zom_user_status", "zom_pending_time", "zom_mail",
-        "gm_user_status", "gm_pending_time", "gm_mail",
-        "hr_user_status", "hr_pending_time", "hr_mail",
-        "coo_user_status", "coo_pending_time", "coo_mail",
-        "ceo_user_status", "ceo_pending_time", "ceo_mail"
+        "bm_user_status", "bm_pending_time", "bm_mail", "bm_response_box",
+        "dh_user_status", "dh_pending_time", "dh_mail", "dh_response_box",
+        "com_user_status", "com_pending_time", "com_mail", "com_response_box",
+        "rm_user_status", "rm_pending_time", "rm_mail", "rm_response_box",
+        "rom_user_status", "rom_pending_time", "rom_mail", "rom_response_box",
+        "zm_user_status", "zm_pending_time", "zm_mail", "zm_response_box",
+        "zom_user_status", "zom_pending_time", "zom_mail", "zom_response_box",
+        "gm_user_status", "gm_pending_time", "gm_mail", "gm_response_box",
+        "hr_user_status", "hr_pending_time", "hr_mail", "hr_response_box",
+        "coo_user_status", "coo_pending_time", "coo_mail", "coo_response_box",
+        "ceo_user_status", "ceo_pending_time", "ceo_mail", "ceo_response_box"
     ]
     )
     
