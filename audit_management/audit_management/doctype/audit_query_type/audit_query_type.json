@@ -7,8 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "query_type",
-  "bm_tat_days",
-  "other_tat_days"
+  "default_tat_days",
+  "tat_config_section",
+  "tat_config"
  ],
  "fields": [
   {
@@ -20,23 +21,28 @@
    "unique": 1
   },
   {
-   "fieldname": "bm_tat_days",
+   "fieldname": "default_tat_days",
    "fieldtype": "Int",
-   "label": "BM TAT (Days)",
+   "label": "Default TAT (Days)",
    "default": "1",
+   "description": "Used if no specific stage TAT is defined below.",
    "reqd": 1
   },
   {
-   "fieldname": "other_tat_days",
-   "fieldtype": "Int",
-   "label": "Other Stages TAT (Days)",
-   "default": "1",
-   "reqd": 1
+   "fieldname": "tat_config_section",
+   "fieldtype": "Section Break",
+   "label": "Stage-wise TAT Configuration"
+  },
+  {
+   "fieldname": "tat_config",
+   "fieldtype": "Table",
+   "label": "TAT Config",
+   "options": "Audit TAT Config"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-10 13:00:00.000000",
+ "modified": "2026-04-10 13:20:00.000000",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Query Type",
