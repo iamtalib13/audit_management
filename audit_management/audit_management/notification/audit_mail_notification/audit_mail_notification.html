@@ -93,7 +93,7 @@
         review the query and respond
         <span style="color: red"
           >as soon as possible, within {{ '24 hours' if doc.query_type ==
-          'Critical Compliance' else '15 days' }}</span
+          'Critical Compliance' else '7 days' if doc.query_type == 'Operational Compliance' else '15 days' }}</span
         >.<br /><br />
 
         <p><b>Audit Query:</b></p>
