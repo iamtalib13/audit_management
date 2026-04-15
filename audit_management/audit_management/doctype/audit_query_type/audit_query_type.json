@@ -3,6 +3,8 @@
  "allow_rename": 1,
  "autoname": "field:query_type",
  "creation": "2026-04-10 13:00:00",
+ "custom": 0,
+ "docstatus": 0,
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -40,7 +42,9 @@
    "options": "Audit TAT Config"
   }
  ],
+ "idx": 0,
  "index_web_pages_for_search": 1,
+ "is_standard": 1,
  "links": [],
  "modified": "2026-04-13 13:51:46.346644",
  "modified_by": "Administrator",
@@ -83,5 +87,6 @@
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
