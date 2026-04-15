@@ -2,6 +2,8 @@
  "actions": [],
  "allow_rename": 1,
  "creation": "2026-04-10 13:10:00.000000",
+ "custom": 0,
+ "docstatus": 0,
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -19,15 +21,17 @@
    "reqd": 1
   },
   {
+   "default": "1",
    "fieldname": "tat_days",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "TAT Days",
-   "reqd": 1,
-   "default": "1"
+   "reqd": 1
   }
  ],
+ "idx": 0,
  "index_web_pages_for_search": 1,
+ "is_standard": 1,
  "istable": 1,
  "links": [],
  "modified": "2026-04-10 13:10:00.000000",
