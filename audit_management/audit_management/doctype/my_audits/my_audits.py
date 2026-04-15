@@ -452,16 +452,25 @@ def check_pending_tat():
         pending_time = getattr(record, pending_time_field)
         query_type = getattr(record, "query_type", None)
         
-        tat_time = 1 * 24 * 60
-        tat_day = "1 Day TAT"
+        # Default fallback
+        days = 1
         
-        if user_status_field == "bm_user_status":
-            if query_type == "Audit Report Compliance":
-                tat_time = 15 * 24 * 60
-                tat_day = "15 Days then 1 Day TAT"
-            elif query_type == "Critical Compliance":
-                tat_time = 1 * 24 * 60
-                tat_day = "1 Day TAT"
+        if query_type:
+            # Fetch TAT configuration document
+            tat_config_doc = frappe.get_cached_doc("Audit Query Type", query_type)
+            days = tat_config_doc.default_tat_days
+            
+            # Map status field to stage name (BM, DH, COM, etc.)
+            current_stage_label = user_status_field.split('_')[0].upper()
+            
+            # Check if specific TAT is defined for this stage in child table
+            for row in tat_config_doc.tat_config:
+                if row.stage.strip().upper() == current_stage_label:
+                    days = row.tat_days
+                    break
+        
+        tat_time = days * 24 * 60
+        tat_day = f"{days} Day(s) TAT"
         
         if status == "Pending" and pending_time:
             time_diff_minutes = frappe.utils.time_diff_in_seconds(now_time, pending_time) / 60
