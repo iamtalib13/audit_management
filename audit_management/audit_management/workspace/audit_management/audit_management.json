@@ -17,7 +17,14 @@
  "indicator_color": "green",
  "is_hidden": 0,
  "label": "Audit Management",
- "links": [],
+ "links": [
+  {
+   "label": "Settings",
+   "link_type": "DocType",
+   "link_to": "Audit Management Settings",
+   "type": "Link"
+  }
+ ],
  "modified": "2025-07-04 15:12:04.987503",
  "modified_by": "Administrator",
  "module": "Audit Management",
