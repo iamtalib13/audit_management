@@ -131,12 +131,10 @@ after_migrate = [
 # ---------------
 
 scheduler_events = {
-    "cron": {
         # Run every minute
         "daily": [
             "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat"
         ]
-    }
 }
 # Testing
 # -------
