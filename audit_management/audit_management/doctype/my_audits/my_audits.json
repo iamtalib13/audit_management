@@ -962,9 +962,9 @@
   },
   {
    "fieldname": "query_type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Query Type",
-   "options": "\nAudit Report Compliance\nCritical Compliance\nOperational Compliance",
+   "options": "Audit Query Type",
    "reqd": 1
   },
   {
