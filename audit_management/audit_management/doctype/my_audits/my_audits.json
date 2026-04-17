@@ -147,10 +147,23 @@
   "audit_query_subject_box",
   "section_break_7cwgo",
   "audit_query_box",
+  "categorization_section",
+  "primary_nature",
+  "column_break_cat_1",
+  "department_alignment",
+  "tracking_section",
+  "aging",
+  "column_break_track_1",
+  "current_escalation_level",
+  "resolution_section",
+  "rca_category",
+  "action_point_with_tat",
+  "recommendations",
+  "column_break_res_1",
+  "root_cause_analysis",
   "response_section",
   "current_response_attach",
   "current_response_box",
-  "bm_response_section",
   "bm_attach_box",
   "bm_response_box",
   "dh_com_response_section",
@@ -272,14 +285,89 @@
   {
    "columns": 8,
    "fieldname": "audit_query_box",
-   "fieldtype": "Small Text",
+   "fieldtype": "Text Editor",
    "label": "Query Description :",
    "reqd": 1
   },
   {
-   "fieldname": "bm_response_section",
+   "fieldname": "categorization_section",
    "fieldtype": "Section Break",
-   "label": "<b>BM Response : </b>"
+   "label": "<b>Categorization</b>"
+  },
+  {
+   "fieldname": "primary_nature",
+   "fieldtype": "Link",
+   "label": "Primary Nature of Query",
+   "options": "Audit Primary Nature",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_cat_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "department_alignment",
+   "fieldtype": "Link",
+   "label": "Departmental & Product Alignment",
+   "options": "Audit Department",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tracking_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Operational Tracking</b>"
+  },
+  {
+   "fieldname": "aging",
+   "fieldtype": "Int",
+   "label": "Aging (Days)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_track_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "current_escalation_level",
+   "fieldtype": "Select",
+   "label": "Current Escalation Level",
+   "options": "\nLevel 1\nLevel 2\nLevel 3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolution_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Resolution Details</b>"
+  },
+  {
+   "fieldname": "rca_category",
+   "fieldtype": "Link",
+   "label": "RCA Category",
+   "options": "Audit RCA Category"
+  },
+  {
+   "fieldname": "column_break_res_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "action_point_with_tat",
+   "fieldtype": "Data",
+   "label": "Action Point with TAT and Closure"
+  },
+  {
+   "fieldname": "root_cause_analysis",
+   "fieldtype": "Small Text",
+   "label": "Root Cause Analysis (RCA)"
+  },
+  {
+   "fieldname": "recommendations",
+   "fieldtype": "Small Text",
+   "label": "Recommendations"
+  },
+  {
+   "fieldname": "response_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Active Response : </b>"
   },
   {
    "depends_on": "eval:doc.bm_response_box != null || frappe.session.user==doc.bm_user_id && doc.status==\"Pending\" && (doc.bm_user_status==\"Pending\" || doc.bm_user_status===\"No Response\")",
@@ -1105,7 +1193,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-15 15:52:07.884919",
+ "modified": "2026-04-17 12:09:17.895739",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

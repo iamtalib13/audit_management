@@ -130,7 +130,8 @@ after_migrate = [
 
 scheduler_events = {
     "daily": [
-        "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat"
+        "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat",
+        "audit_management.audit_management.doctype.my_audits.my_audits.send_daily_reminders"
     ]
 }
 # Testing
