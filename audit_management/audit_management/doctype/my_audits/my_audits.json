@@ -143,9 +143,10 @@
   "audit_attach_box",
   "column_break_dmena",
   "query_type",
-  "column_break_l8yey",
+  "query_subject_section",
   "audit_query_subject_box",
-  "section_break_7cwgo",
+  "query_description_section",
+  "column_break_chtt",
   "audit_query_box",
   "categorization_section",
   "primary_nature",
@@ -164,6 +165,7 @@
   "response_section",
   "current_response_attach",
   "current_response_box",
+  "bm_response",
   "bm_attach_box",
   "bm_response_box",
   "dh_com_response_section",
@@ -579,7 +581,8 @@
    "in_list_view": 1,
    "label": "Branch",
    "options": "Audit Level",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "audit_attach_box",
@@ -931,7 +934,7 @@
   },
   {
    "fieldname": "audit_query_subject_box",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Query Subject :",
    "reqd": 1
   },
@@ -1039,14 +1042,6 @@
   {
    "fieldname": "column_break_dmena",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_l8yey",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_7cwgo",
-   "fieldtype": "Section Break"
   },
   {
    "fieldname": "query_type",
@@ -1189,11 +1184,30 @@
    "fieldname": "audit_details_tab",
    "fieldtype": "Tab Break",
    "label": "Audit Details"
+  },
+  {
+   "fieldname": "column_break_chtt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "query_subject_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Query Subject :</b>"
+  },
+  {
+   "fieldname": "bm_response",
+   "fieldtype": "Section Break",
+   "label": "<b>BM Response : </b>"
+  },
+  {
+   "fieldname": "query_description_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Query Description :</b>"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-17 12:09:17.895739",
+ "modified": "2026-04-17 13:58:39.518091",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
