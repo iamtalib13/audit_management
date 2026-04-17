@@ -4,12 +4,30 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import now, time_diff_in_seconds
+from frappe.utils import now, time_diff_in_seconds, getdate, nowdate
+from audit_management.audit_management.utils import get_working_days, update_audit_aging
 
 class MyAudits(Document):
+    def validate(self):
+        update_audit_aging(self)
+        if self.status == "Close":
+            self.validate_resolution_fields()
+
     def before_save(self):
         if self.is_new() or self.has_value_changed("emp_branch"):
             populate_audit_stages(self)
+
+    def validate_resolution_fields(self):
+        """Mandatory for Requirement 4: RCA, Recommendations, etc."""
+        mandatory_fields = [
+            "root_cause_analysis",
+            "rca_category",
+            "recommendations",
+            "action_point_with_tat"
+        ]
+        for field in mandatory_fields:
+            if not self.get(field):
+                frappe.throw(_("Field '{0}' is mandatory for query resolution.").format(self.meta.get_label(field)))
 
 def populate_audit_stages(doc):
     """Populates audit_stages from Audit Level."""
@@ -167,35 +185,64 @@ def submit_response(docname, response_text, attachment=None):
         frappe.throw(_("You are not authorized to respond at this stage or the query is not pending for you."))
 @frappe.whitelist()
 def check_pending_tat():
-    now_time = now()
-    pending_audits = frappe.get_all("My Audits", filters={"status": "Pending"}, fields=["name"])
+    """
+    Handles automated escalation based on working days.
+    Requirement 2: Level 2 (3 days), Level 3 (7 days) post-observation.
+    """
+    now_date = nowdate()
+    pending_audits = frappe.get_all("My Audits", filters={"status": "Pending"}, fields=["name", "creation", "current_escalation_level"])
     
     for audit in pending_audits:
         doc = frappe.get_doc("My Audits", audit.name)
-        updated = False
+        days_diff = get_working_days(doc.creation, now_date)
         
-        for i, row in enumerate(doc.audit_stages):
-            if row.status == "Pending" and row.pending_time:
-                # Default 1 day TAT, special logic can be added here
-                tat_days = 15 if doc.query_type == "Audit Report Compliance" and i == 0 else 1
-                
-                if time_diff_in_seconds(now_time, row.pending_time) > (tat_days * 24 * 3600):
-                    row.status = "No Response"
-                    updated = True
-                    
-                    # Move to next stage automatically if exists
-                    if i + 1 < len(doc.audit_stages):
-                        next_row = doc.audit_stages[i+1]
-                        next_row.status = "Pending"
-                        next_row.pending_time = now_time
-                        doc.query_status = f"Pending From {next_row.stage_name} (Auto-escalated)"
-                        
-                        frappe.share.add(doc.doctype, doc.name, next_row.user_id, read=1, write=1, notify=1)
-                        send_stage_notification(doc, next_row)
-                    break 
-        
-        if updated:
-            doc.save()
+        new_escalation = "Level 1"
+        if days_diff >= 7:
+            new_escalation = "Level 3"
+        elif days_diff >= 3:
+            new_escalation = "Level 2"
+            
+        if doc.current_escalation_level != new_escalation:
+            doc.current_escalation_level = new_escalation
+            doc.save(ignore_permissions=True)
+            # Notify on escalation
+            send_escalation_notification(doc, new_escalation)
+
+def send_escalation_notification(doc, level):
+    """Sends email when escalation level changes."""
+    # Logic to find relevant recipient based on level (Dept Head for L2, Senior Mgmt for L3)
+    # For now, we use the standard stage notification or a dedicated escalation template
+    subject = f"Audit Escalation [{level}]: {doc.name}"
+    message = f"Audit Query {doc.name} has been escalated to {level} due to inactivity ({doc.aging} working days)."
+    
+    # Send to active pending user
+    for row in doc.audit_stages:
+        if row.status == "Pending" and row.email:
+            frappe.sendmail(
+                recipients=[row.email],
+                subject=subject,
+                message=message,
+                reference_doctype=doc.doctype,
+                reference_name=doc.name
+            )
+
+@frappe.whitelist()
+def send_daily_reminders():
+    """Sends daily follow-up emails for all pending queries."""
+    pending_audits = frappe.get_all("My Audits", filters={"status": "Pending"}, fields=["name"])
+    for audit in pending_audits:
+        doc = frappe.get_doc("My Audits", audit.name)
+        for row in doc.audit_stages:
+            if row.status == "Pending" and row.email:
+                subject = f"REMINDER: Audit Query Pending - {doc.name}"
+                message = f"This is a daily reminder for pending audit query: {doc.name}. Please address it soon."
+                frappe.sendmail(
+                    recipients=[row.email],
+                    subject=subject,
+                    message=message,
+                    reference_doctype=doc.doctype,
+                    reference_name=doc.name
+                )
 
 @frappe.whitelist()
 def fetch_employee_data(employee_id):
