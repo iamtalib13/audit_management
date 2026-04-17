@@ -125,16 +125,13 @@ after_migrate = [
 # 		"on_cancel": "method",
 # 		"on_trash": "method"
 # 	}
-# }
-
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
-        # Run every minute
-        "daily": [
-            "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat"
-        ]
+    "daily": [
+        "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat"
+    ]
 }
 # Testing
 # -------
