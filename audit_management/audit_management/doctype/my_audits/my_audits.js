@@ -453,6 +453,13 @@ frappe.ui.form.on("My Audits", {
     );
   },
 
+  audit_query_subject_box: function(frm) {
+    if (frm.doc.audit_query_subject_box) {
+      const current_value = frm.doc.audit_query_subject_box;
+      frm.set_value('audit_query_subject_box', current_value.charAt(0).toUpperCase() + current_value.slice(1));
+    }
+  },
+
   fetch_query_maker_data_new: function (frm) {
     const user_id = frappe.session.user;
     const emp_id = user_id.match(/\d+/) ? user_id.match(/\d+/)[0] : user_id;
@@ -479,9 +486,7 @@ frappe.ui.form.on("My Audits", {
       .get_single_value("Audit Management Settings", "use_new_system")
       .then((use_new_system) => {
         if (use_new_system) {
-          frm.save();
-        } else {
-          frappe.db
+          frm.db
             .get_doc("Audit Level", frm.doc.emp_branch)
             .then((audit_level) => {
               const mapping = {
