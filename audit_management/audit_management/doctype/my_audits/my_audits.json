@@ -1173,11 +1173,13 @@
   {
    "fieldname": "current_response_attach",
    "fieldtype": "Attach",
+   "hidden": 1,
    "label": "Attachment"
   },
   {
    "fieldname": "current_response_box",
    "fieldtype": "Small Text",
+   "hidden": 1,
    "label": "Response"
   },
   {
@@ -1207,7 +1209,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-17 13:58:39.518091",
+ "modified": "2026-04-18 13:29:33.530100",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

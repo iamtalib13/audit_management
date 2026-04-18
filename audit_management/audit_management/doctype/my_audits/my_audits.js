@@ -3,6 +3,7 @@
 
 frappe.ui.form.on("My Audits", {
   onload: function (frm) {
+    frm.is_intro_set = false;
     // Define the old system common function inside the onload event
     frm.frappecalltopendingtimefunction = function (frm, record, stage) {
       frappe.call({
@@ -50,7 +51,13 @@ frappe.ui.form.on("My Audits", {
   },
 
   refresh: function (frm) {
+    frm.is_intro_set = false;
     frm.set_intro("");
+
+    frm.page.wrapper.find(".form-message-container").empty();
+    frm.page.wrapper.find(".custom-status-tracker").remove();
+    frm.page.wrapper.find(".alert.alert-info").remove();
+
     frappe.db
       .get_single_value("Audit Management Settings", "use_new_system")
       .then((use_new_system) => {
@@ -108,7 +115,6 @@ frappe.ui.form.on("My Audits", {
   },
 
   old_system_refresh: function (frm) {
-    frm.is_intro_set = false;
     frm.trigger("call_html_intro");
     frm.trigger("check_field_read_only");
     frm.trigger("set_background_colors");
@@ -302,14 +308,32 @@ frappe.ui.form.on("My Audits", {
   },
 
   render_status_tracker: function (frm) {
-    if (!frm.is_new()) {
+    frm.trigger("render_audit_status_tracker");
+  },
+
+  render_audit_status_tracker: function (frm) {
+    if (!frm.is_new() && !frm.is_intro_set) {
+      frm.is_intro_set = true;
+
+      // Clear all existing message containers
+      frm.set_intro("");
+      frm.page.wrapper.find(".form-message-container").empty();
+      frm.page.wrapper.find(".custom-status-tracker").remove();
+
       frappe.call({
         method:
           "audit_management.audit_management.doctype.my_audits.my_audits.get_status_tracker_html",
         args: { docname: frm.doc.name },
         callback: function (r) {
           if (r.message) {
-            frm.set_intro(r.message, true);
+            // Check again if it's already there to be absolutely sure
+            if (frm.page.wrapper.find(".custom-status-tracker").length === 0) {
+              frm.set_intro(
+                `<div class="custom-status-tracker">${r.message}</div>`,
+              );
+            }
+          } else {
+            frm.is_intro_set = false;
           }
         },
       });
@@ -453,10 +477,13 @@ frappe.ui.form.on("My Audits", {
     );
   },
 
-  audit_query_subject_box: function(frm) {
+  audit_query_subject_box: function (frm) {
     if (frm.doc.audit_query_subject_box) {
       const current_value = frm.doc.audit_query_subject_box;
-      frm.set_value('audit_query_subject_box', current_value.charAt(0).toUpperCase() + current_value.slice(1));
+      frm.set_value(
+        "audit_query_subject_box",
+        current_value.charAt(0).toUpperCase() + current_value.slice(1),
+      );
     }
   },
 
@@ -536,18 +563,7 @@ frappe.ui.form.on("My Audits", {
   },
 
   call_html_intro: function (frm) {
-    if (!frm.is_new()) {
-      frappe.call({
-        method:
-          "audit_management.audit_management.doctype.my_audits.my_audits.get_status_tracker_html",
-        args: { docname: frm.doc.name },
-        callback: function (r) {
-          if (r.message) {
-            frm.set_intro(r.message, true);
-          }
-        },
-      });
-    }
+    frm.trigger("render_audit_status_tracker");
   },
 
   set_background_colors: function (frm) {
