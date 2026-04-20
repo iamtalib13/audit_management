@@ -186,27 +186,90 @@ def submit_response(docname, response_text, attachment=None):
 @frappe.whitelist()
 def check_pending_tat():
     """
-    Handles automated escalation based on working days.
-    Requirement 2: Level 2 (3 days), Level 3 (7 days) post-observation.
+    Fully dynamic, metadata-driven TAT check and escalation.
+    Uses 'audit_stages' table as source of truth for flow.
     """
-    now_date = nowdate()
-    pending_audits = frappe.get_all("My Audits", filters={"status": "Pending"}, fields=["name", "creation", "current_escalation_level"])
+    print("Checking pending TAT (Dynamic Mode)...")
+    now_time = frappe.utils.now()
+    
+    # Fetch all audits that are currently Pending
+    pending_audits = frappe.get_all("My Audits", filters={"status": "Pending"}, fields=["name", "query_type"])
     
     for audit in pending_audits:
         doc = frappe.get_doc("My Audits", audit.name)
-        days_diff = get_working_days(doc.creation, now_date)
-        
-        new_escalation = "Level 1"
-        if days_diff >= 7:
-            new_escalation = "Level 3"
-        elif days_diff >= 3:
-            new_escalation = "Level 2"
+        if not doc.query_type or not doc.audit_stages:
+            continue
+
+        # Fetch TAT configuration for this Query Type
+        tat_config_doc = frappe.get_cached_doc("Audit Query Type", doc.query_type)
+        tat_map = {row.stage: row.tat_days for row in tat_config_doc.tat_config}
+        default_tat = tat_config_doc.default_tat_days or 1
+
+        # Find currently active rows in the child table
+        active_rows = [row for row in doc.audit_stages if row.status == "Pending"]
+        if not active_rows:
+            continue
+
+        # Get current stage level (e.g., '1', '2')
+        current_stage_level = active_rows[0].stage
+        exceeded = False
+        max_days_found = 0
+
+        for row in active_rows:
+            if not row.pending_time:
+                continue
             
-        if doc.current_escalation_level != new_escalation:
-            doc.current_escalation_level = new_escalation
+            # Map TAT using stage_name (Link to Audit Stage)
+            days = tat_map.get(row.stage_name, default_tat)
+            max_days_found = max(max_days_found, days)
+            tat_minutes = days * 24 * 60
+            
+            time_diff_minutes = time_diff_in_seconds(now_time, row.pending_time) / 60
+            
+            print(f"Record {doc.name}, Stage {row.stage_name}: Diff {time_diff_minutes}m, TAT {tat_minutes}m")
+            
+            if time_diff_minutes >= tat_minutes:
+                exceeded = True
+                break
+
+        if exceeded:
+            print(f"TAT Exceeded for {doc.name} at Level {current_stage_level}. Escalating...")
+            
+            # Update tat_day label in main doc
+            doc.tat_day = f"{max_days_found} Day(s) TAT"
+            
+            # 1. Mark current pending rows as 'No Response'
+            for row in doc.audit_stages:
+                if row.stage == current_stage_level and row.status == "Pending":
+                    row.status = "No Response"
+            
+            # 2. Find rows for the next level (current + 1)
+            next_stage_level = str(int(current_stage_level) + 1)
+            next_rows = [row for row in doc.audit_stages if row.stage == next_stage_level]
+            
+            if next_rows:
+                stage_names = []
+                for n_row in next_rows:
+                    n_row.status = "Pending"
+                    n_row.pending_time = now_time
+                    
+                    # Share doc with next users
+                    frappe.share.add(doc.doctype, doc.name, n_row.user_id, read=1, write=1, notify=0)
+                    
+                    # Send Notification
+                    send_stage_notification(doc, n_row)
+                    
+                    if n_row.stage_name not in stage_names:
+                        stage_names.append(n_row.stage_name)
+                
+                doc.query_status = f"Pending From {', '.join(stage_names)}"
+            else:
+                # No more stages found, close or complete
+                doc.status = "Close"
+                doc.query_status = "Completed"
+            
             doc.save(ignore_permissions=True)
-            # Notify on escalation
-            send_escalation_notification(doc, new_escalation)
+            print(f"Escalation complete for {doc.name}")
 
 def send_escalation_notification(doc, level):
     """Sends email when escalation level changes."""
