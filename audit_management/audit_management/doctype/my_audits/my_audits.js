@@ -418,12 +418,15 @@ frappe.ui.form.on("My Audits", {
     const is_audit_team =
       frappe.user.has_role("Audit Manager") ||
       frappe.user.has_role("Audit Member");
+
     const current_user = frappe.session.user;
-    const is_pending_for_me = (frm.doc.audit_stages || []).some(
+
+    const pending_row = (frm.doc.audit_stages || []).find(
       (row) => row.status === "Pending" && row.user_id === current_user,
     );
 
-    // Disable main fields if not audit team and not draft
+    const is_pending_for_me = !!pending_row;
+
     if (!is_audit_team && frm.doc.status !== "Draft") {
       [
         "audit_query_box",
@@ -436,21 +439,41 @@ frappe.ui.form.on("My Audits", {
       });
     }
 
-    // Always keep audit_stages read-only to prevent manual tampering
     frm.set_df_property("audit_stages", "read_only", 1);
 
-    // Explicitly show the section for Audit Team
     if (is_audit_team) {
       frm.toggle_display("audit_items_section", true);
       frm.toggle_display("audit_stages", true);
     }
 
-    // Only show the active response section if it's currently pending for the logged-in user
+    // Show response section only for current pending stage user
     frm.toggle_display("response_section", is_pending_for_me);
 
-    if (frm.doc.status === "Close") frm.disable_form();
-  },
+    // IMPORTANT: hidden fields ko runtime par unhide karo
+    frm.set_df_property("current_response_box", "hidden", !is_pending_for_me);
 
+    frm.set_df_property(
+      "current_response_attach",
+      "hidden",
+      !is_pending_for_me,
+    );
+
+    // Optional: existing response populate kar do
+    if (pending_row) {
+      frm.set_value("current_response_box", pending_row.response || "");
+      frm.set_value("current_response_attach", pending_row.attachment || "");
+    } else {
+      frm.set_value("current_response_box", "");
+      frm.set_value("current_response_attach", "");
+    }
+
+    frm.refresh_field("current_response_box");
+    frm.refresh_field("current_response_attach");
+
+    if (frm.doc.status === "Close") {
+      frm.disable_form();
+    }
+  },
   handle_close_query: function (frm) {
     frappe.prompt(
       [
