@@ -150,32 +150,6 @@ def submit_response(docname, response_text, attachment=None):
             row.response_time = now()
             doc.query_status = f"Response From {row.stage_name}"
             found = True
-
-            # Next stage auto-escalation after response
-            if i + 1 < len(doc.audit_stages):
-                next_row = doc.audit_stages[i + 1]
-
-                if not next_row.status:
-                    next_row.status = "Pending"
-                    next_row.pending_time = now()
-                    doc.query_status = f"Pending From {next_row.stage_name}"
-
-                    frappe.share.add(
-                        doc.doctype,
-                        doc.name,
-                        next_row.user_id,
-                        read=1,
-                        write=1,
-                        notify=1
-                    )
-
-                    send_stage_notification(doc, next_row)
-
-            else:
-                # Last stage responded
-                doc.status = "Close"
-                doc.query_status = "Completed"
-
             break
 
     if found:
