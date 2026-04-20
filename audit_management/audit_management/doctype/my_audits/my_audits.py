@@ -257,7 +257,10 @@ def check_pending_tat():
                     frappe.share.add(doc.doctype, doc.name, n_row.user_id, read=1, write=1, notify=0)
                     
                     # Send Notification
-                    send_stage_notification(doc, n_row)
+                    try:
+                        send_stage_notification(doc, n_row)
+                    except Exception:
+                        frappe.log_error(frappe.get_traceback(), _("Escalation Email Failed"))
                     
                     if n_row.stage_name not in stage_names:
                         stage_names.append(n_row.stage_name)
