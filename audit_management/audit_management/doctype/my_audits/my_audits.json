@@ -158,10 +158,10 @@
   "current_escalation_level",
   "resolution_section",
   "rca_category",
-  "recommendations",
+  "root_cause_analysis",
   "column_break_res_1",
   "action_point_with_tat",
-  "root_cause_analysis",
+  "recommendations",
   "response_section",
   "current_response_attach",
   "current_response_box",
@@ -353,7 +353,7 @@
   },
   {
    "fieldname": "action_point_with_tat",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Action Point with TAT and Closure"
   },
   {
@@ -1207,7 +1207,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-20 12:37:43.459184",
+ "modified": "2026-04-21 10:36:31.098589",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
