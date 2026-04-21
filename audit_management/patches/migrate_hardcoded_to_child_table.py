@@ -87,6 +87,7 @@ def execute():
         if updated:
             doc.flags.ignore_validate = True
             doc.flags.ignore_mandatory = True
+            doc.flags.ignore_links = True
             doc.save(ignore_permissions=True)
 
     frappe.db.commit()
