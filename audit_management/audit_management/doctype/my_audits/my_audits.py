@@ -192,41 +192,87 @@ def send_to_next_stage(docname):
         
         doc.save()
         
-        # Send Custom Email immediately
-        send_stage_notification(doc, next_row)
+        # Send Custom Email immediately (New System)
+        send_stage_notification(doc, next_row, action="assign")
         return _("Query sent to {0}").format(next_row.stage_name)
     else:
         return _("No more stages to send to.")
 
-def send_stage_notification(doc, stage_row):
-    if not stage_row.email:
-        frappe.msgprint(_("Notification email not sent: No email address found for {0}").format(stage_row.employee_name))
-        return
-        
-    subject = f"Audit Query Pending: {doc.audit_query_subject_box}"
-    
-    query_creator = f"""
-        <p>Name: {doc.query_generated_by_name or 'N/A'}</p>
-        <p>Designation: {doc.query_generated_by_designation or 'N/A'}</p>
-        <p>Branch: {doc.query_generated_by_branch or 'N/A'}</p>
+def send_stage_notification(doc, stage_row, action="assign"):
     """
+    Sends dynamic notification using Email Template.
+    action: "assign" (when query is sent to a stage) or "respond" (when a stage responds)
+    """
+    settings = frappe.get_single("Audit Management Settings")
+    template_name = settings.use_new_email_template
     
-    message = frappe.render_template("audit_management/templates/emails/audit_query.html", {
-        "doc": doc,
-        "stage": stage_row,
-        "dear_line": f"Dear {stage_row.employee_name},<br><br>",
-        "query_creator": query_creator
-    })
+    if not template_name:
+        frappe.msgprint(_("Default Email Template not set in Audit Management Settings."))
+        return
+
+    # 1. Determine Recipients
+    recipients = []
+    if action == "assign":
+        recipients = [stage_row.email]
+    else:
+        # When someone responds, notification goes to the query generator
+        recipients = [doc.query_generated_by_mail]
+
+    if not any(recipients):
+        return
+
+    # 2. Collect CC Emails
+    cc_list = []
     
-    frappe.sendmail(
-        recipients=[stage_row.email],
-        subject=subject,
-        message=message,
-        reference_doctype=doc.doctype,
-        reference_name=doc.name,
-        now=True
-    )
-    frappe.msgprint(_("Email notification sent to {0} ({1})").format(stage_row.employee_name, stage_row.email))
+    # A. Static CC from settings (Action specific)
+    static_cc = ""
+    if action == "assign":
+        static_cc = settings.query_cc_emails
+    elif action == "respond":
+        static_cc = settings.response_cc_emails
+    
+    if static_cc:
+        static_emails = [e.strip() for e in static_cc.split(",") if e.strip()]
+        cc_list.extend(static_emails)
+        
+    # B. All users from Audit Stages child table
+    for row in doc.audit_stages:
+        if row.email and row.email not in recipients:
+            cc_list.append(row.email)
+            
+    # C. Add query generator to CC if it's an assignment mail
+    if action == "assign" and doc.query_generated_by_mail:
+        if doc.query_generated_by_mail not in recipients:
+            cc_list.append(doc.query_generated_by_mail)
+
+    # De-duplicate CC list
+    cc_list = list(set(cc_list))
+
+    # 3. Render and Send
+    try:
+        from frappe.email.doctype.email_template.email_template import get_email_template
+        
+        # We pass context to the template
+        email_data = get_email_template(template_name, {
+            "doc": doc,
+            "stage": stage_row,
+            "action": action
+        })
+
+        frappe.sendmail(
+            recipients=recipients,
+            cc=cc_list,
+            subject=email_data.get("subject") or f"Audit Update: {doc.name}",
+            message=email_data.get("message"),
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+            now=True
+        )
+        frappe.msgprint(_("Email notification sent to {0}").format(", ".join(recipients)))
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), _("Audit Notification Failed"))
+        frappe.msgprint(_("Failed to send email notification. Check Error Log."))
 
 @frappe.whitelist()
 def submit_response(docname, response_text, attachment=None):
@@ -243,6 +289,9 @@ def submit_response(docname, response_text, attachment=None):
             row.response_time = now()
             doc.query_status = f"Response From {row.stage_name}"
             found = True
+            
+            # Send notification on response
+            send_stage_notification(doc, row, action="respond")
             break
 
     if found:
