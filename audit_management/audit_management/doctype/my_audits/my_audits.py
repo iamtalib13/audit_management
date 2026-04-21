@@ -330,3 +330,36 @@ def fetch_employee_data(employee_id):
     if not employee:
         frappe.throw(_("Employee for {0} not found").format(employee_id))
     return employee
+
+def send_escalation_notification(doc, level):
+    """Sends email when escalation level changes."""
+    subject = f"Audit Escalation [{level}]: {doc.name}"
+    message = f"Audit Query {doc.name} has been escalated to {level} due to inactivity ({doc.aging} working days)."
+    
+    for row in doc.audit_stages:
+        if row.status == "Pending" and row.email:
+            frappe.sendmail(
+                recipients=[row.email],
+                subject=subject,
+                message=message,
+                reference_doctype=doc.doctype,
+                reference_name=doc.name
+            )
+
+@frappe.whitelist()
+def send_daily_reminders():
+    """Sends daily follow-up emails for all pending queries."""
+    pending_audits = frappe.get_all("My Audits", filters={"status": "Pending"}, fields=["name"])
+    for audit in pending_audits:
+        doc = frappe.get_doc("My Audits", audit.name)
+        for row in doc.audit_stages:
+            if row.status == "Pending" and row.email:
+                subject = f"REMINDER: Audit Query Pending - {doc.name}"
+                message = f"This is a daily reminder for pending audit query: {doc.name}. Please address it soon."
+                frappe.sendmail(
+                    recipients=[row.email],
+                    subject=subject,
+                    message=message,
+                    reference_doctype=doc.doctype,
+                    reference_name=doc.name
+                )
