@@ -7,7 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "system_settings_sb",
-  "use_new_system"
+  "use_new_system",
+  "use_new_email_template",
+  "query_cc_emails",
+  "response_cc_emails"
  ],
  "fields": [
   {
@@ -20,12 +23,30 @@
    "fieldname": "use_new_system",
    "fieldtype": "Check",
    "label": "Use New System"
+  },
+  {
+   "fieldname": "use_new_email_template",
+   "fieldtype": "Link",
+   "label": "Default Email Template",
+   "options": "Email Template"
+  },
+  {
+   "fieldname": "query_cc_emails",
+   "fieldtype": "Small Text",
+   "label": "Query CC Emails",
+   "description": "CC recipients for when a new query is assigned (comma separated)."
+  },
+  {
+   "fieldname": "response_cc_emails",
+   "fieldtype": "Small Text",
+   "label": "Response CC Emails",
+   "description": "CC recipients for when a response is submitted (comma separated)."
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-13 12:00:00.000000",
+ "modified": "2026-04-21 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Management Settings",
