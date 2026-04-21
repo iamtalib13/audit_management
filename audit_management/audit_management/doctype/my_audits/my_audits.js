@@ -427,6 +427,14 @@ frappe.ui.form.on("My Audits", {
 
     const is_pending_for_me = !!pending_row;
 
+    // Hide Save button if pending for me (to show only Submit Response)
+    // But keep it for Audit Team who might need to save resolution details
+    if (is_pending_for_me && !is_audit_team) {
+      frm.disable_save();
+    } else if (is_audit_team || frm.doc.status === "Draft") {
+      frm.enable_save();
+    }
+
     if (!is_audit_team && frm.doc.status !== "Draft") {
       [
         "audit_query_box",
@@ -487,12 +495,16 @@ frappe.ui.form.on("My Audits", {
       function (data) {
         frm.set_value("closing_remark", data.closing_remark);
         frm.set_value("status", "Close");
-        frm.save().then(() => {
-          frappe.show_alert({
-            message: __("Query Closed Successfully"),
-            indicator: "green",
-          });
-          frm.reload_doc();
+        frm.save(null, {
+          callback: function (r) {
+            if (!r.exc) {
+              frappe.show_alert({
+                message: __("Query Closed Successfully"),
+                indicator: "green",
+              });
+              frm.reload_doc();
+            }
+          },
         });
       },
       __("Enter Closing Remark"),
