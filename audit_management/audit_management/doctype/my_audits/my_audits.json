@@ -131,6 +131,8 @@
   "enter_branch_section",
   "emp_branch",
   "employee_id",
+  "column_break_xurg",
+  "emp_division",
   "generated_by_section",
   "query_generated_by_empid",
   "query_generated_by_mail",
@@ -140,18 +142,18 @@
   "column_break_eophe",
   "query_generated_by_branch",
   "audit_query_section",
-  "audit_attach_box",
-  "column_break_dmena",
   "query_type",
+  "column_break_dmena",
+  "audit_attach_box",
+  "categorization_section",
+  "primary_nature",
+  "column_break_cat_1",
+  "department_alignment",
   "query_subject_section",
   "audit_query_subject_box",
   "query_description_section",
   "column_break_chtt",
   "audit_query_box",
-  "categorization_section",
-  "primary_nature",
-  "column_break_cat_1",
-  "department_alignment",
   "tracking_section",
   "aging",
   "column_break_track_1",
@@ -1166,11 +1168,6 @@
    "options": "Audit Items"
   },
   {
-   "fieldname": "response_section",
-   "fieldtype": "Section Break",
-   "label": "<b>Active Response : </b>"
-  },
-  {
    "fieldname": "current_response_attach",
    "fieldtype": "Attach",
    "label": "Attachment"
@@ -1203,11 +1200,26 @@
    "fieldname": "query_description_section",
    "fieldtype": "Section Break",
    "label": "<b>Query Description :</b>"
+  },
+  {
+   "fieldname": "column_break_xurg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "emp_division",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Division",
+   "options": "Audit Level",
+   "read_only": 1,
+   "reqd": 1,
+   "set_only_once": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-21 10:36:31.098589",
+ "modified": "2026-04-22 17:54:20.260490",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

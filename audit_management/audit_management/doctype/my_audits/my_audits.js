@@ -51,6 +51,30 @@ frappe.ui.form.on("My Audits", {
   },
 
   refresh: function (frm) {
+
+    let logged_in_user = frappe.session.user;
+        console.log("Logged In User ID:", logged_in_user);
+
+        frappe.db.get_value(
+            'Employee',
+            { user_id: logged_in_user },
+            ['name', 'employee_name', 'user_id', 'company_email', 'designation', 'branch', 'department', 'custom_division'], // ✅ added custom_division
+            function(employee) {
+                if (employee && employee.name) {
+                    // console.log("Employee Details:", employee);
+                    console.log("Custom Division:", employee.custom_division); // ✅ correct key
+                    // frm.set_df_property('custom_division', 'read_only', 1);
+
+
+                    // ✅ Set emp_division field on the form
+                    frm.set_value('emp_division', employee.custom_division);
+
+                } else {
+                    console.warn("No Employee found for:", logged_in_user);
+                }
+            }
+        );
+
     frm.is_intro_set = false;
     frm.set_intro("");
 
