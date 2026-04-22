@@ -9,6 +9,8 @@
  "engine": "InnoDB",
  "field_order": [
   "emp_branch",
+  "column_break_usmq",
+  "division",
   "stage_1_bm_section",
   "stage_1_bm_emp_id",
   "column_break_4v6eo",
@@ -420,8 +422,14 @@
    "fieldname": "emp_branch",
    "fieldtype": "Link",
    "label": "Branch",
-   "options": "Branch",
+   "options": "Sahayog Branch",
    "unique": 1
+  },
+  {
+   "fieldname": "division",
+   "fieldtype": "Data",
+   "label": "Division",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_v1upb",
@@ -737,12 +745,16 @@
   {
    "fieldname": "column_break_dmkb",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_usmq",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-08 12:42:13.544744",
- "modified_by": "9517@sahayog.com",
+ "modified": "2026-04-22 17:34:41.916520",
+ "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",
  "naming_rule": "By fieldname",
