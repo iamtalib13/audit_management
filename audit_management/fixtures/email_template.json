@@ -1,0 +1,12 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-04-21 15:37:05.987372",
+  "name": "Audit Query Activity Notification",
+  "response": null,
+  "response_html": "<p>Dear Sir,</p>\n   {% if action == \"assign\" %}\n      <p>A new audit query (<b>{{ doc.name }}</b>) has been assigned to {{ stage.stage_name }} <b>{{ stage.employee_name }}</b> of\n      {{ doc.emp_branch }}.</p>\n     <p>The query has been raised by {{ doc.query_generated_by_name }} ({{ doc.query_generated_by_designation }}, {{\n      doc.query_generated_by_branch }}).</p>\n     <p>{{ stage.stage_name }} is requested to review and respond within \n     <b>\n         {% if doc.query_type == 'Critical Compliance' %} 24 hours \n         {% elif doc.query_type == 'Operational Compliance' %} 7 days \n         {% else %} 15 days {% endif %}\n      </b>.</p>\n   {% else %}\n      <p>{{ stage.stage_name }} <b>{{ stage.employee_name }}</b> from {{ doc.emp_branch }} has responded to audit query <b>{{\n      doc.name }}</b>.</p>\n      <p>You are requested to review the response and take necessary action if required.</p>\n   {% endif %}\n      <p>Please click below link to review: <br>\n      <a href=\"http://mysahayog.com/app/my-audits/{{ doc.name }}\">http://mysahayog.com/app/my-audits/{{ doc.name }}</a></p>\n      <p>Thanks,<br>Audit Management System</p>",
+  "subject": "Audit Update: {{ doc.name }} - {{ stage.stage_name }}",
+  "use_html": 1
+ }
+]
