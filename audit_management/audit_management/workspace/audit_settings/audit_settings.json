@@ -1,0 +1,105 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"MKlkhtKljW\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Audit Management\",\"col\":12}},{\"id\":\"p1n26giu2O\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Settings</span>\",\"col\":12}},{\"id\":\"Xci2NWrop2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New System Setting\",\"col\":3}},{\"id\":\"WXD3YZYEP2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Audit Stage\",\"col\":3}},{\"id\":\"y6Jsmeyasl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Audit Level\",\"col\":3}},{\"id\":\"9yl9jcnKea\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Query Type\",\"col\":3}},{\"id\":\"klyEUeXv6O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Query Category\",\"col\":3}},{\"id\":\"JRZb0B7W7g\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Audit Department\",\"col\":3}},{\"id\":\"vE20YhZ75X\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add RCA Category\",\"col\":3}}]",
+ "creation": "2026-04-22 13:34:12.997723",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Audit Management",
+   "label": "Audit Management"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "setting-gear",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Audit Settings",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 0,
+   "link_to": "Audit Management Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-04-22 14:02:45.289640",
+ "modified_by": "Administrator",
+ "module": "Audit Management",
+ "name": "Audit Settings",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Administrator"
+  }
+ ],
+ "sequence_id": 52.1,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "New System Setting",
+   "link_to": "Audit Management Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Add Audit Stage",
+   "link_to": "Audit Stage",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Add Audit Level",
+   "link_to": "Audit Level",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Add Query Type",
+   "link_to": "Audit Query Type",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Add Query Category",
+   "link_to": "Audit Primary Nature",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Add Audit Department",
+   "link_to": "Audit Department",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Add RCA Category",
+   "link_to": "Audit RCA Category",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "Audit Settings"
+}
