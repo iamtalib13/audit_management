@@ -23,6 +23,11 @@ class MyAudits(Document):
         # 3. Populate Stages from Audit Level only if needed
         if (self.is_new() or self.has_value_changed("emp_branch")) and not self.audit_stages:
             populate_audit_stages(self)
+            
+        # 4. Disable standard notifications if new system is active
+        settings = frappe.get_single("Audit Management Settings")
+        if settings.use_new_system:
+            self.flags.ignore_notifications = True
 
     def sync_old_to_new(self):
         """Syncs hardcoded fields to the child table."""
