@@ -1,4 +1,24 @@
 frappe.ui.form.on('Audit Level', {
+    onload: function(frm) {
+        // Set query for branch to show sol_id and branch_name
+        frm.set_query("emp_branch", function() {
+            return {
+                query: "audit_management.audit_management.doctype.audit_level.audit_level.branch_query"
+            };
+        });
+
+        // Auto-populate division if new record
+        if (frm.is_new() && !frm.doc.division) {
+            frappe.call({
+                method: "audit_management.audit_management.doctype.audit_level.audit_level.get_user_division",
+                callback: function(r) {
+                    if (r.message) {
+                        frm.set_value("division", r.message);
+                    }
+                }
+            });
+        }
+    },
     refresh: function(frm) {
         // audit_stages should be always visible now
         frm.toggle_display("audit_stages", true);
