@@ -23,6 +23,11 @@ class MyAudits(Document):
         # 3. Populate Stages from Audit Level only if needed
         if (self.is_new() or self.has_value_changed("emp_branch")) and not self.audit_stages:
             populate_audit_stages(self)
+            
+        # 4. Disable standard notifications if new system is active
+        settings = frappe.get_single("Audit Management Settings")
+        if settings.use_new_system:
+            self.flags.ignore_notifications = True
 
     def sync_old_to_new(self):
         """Syncs hardcoded fields to the child table."""
@@ -232,13 +237,26 @@ def send_stage_notification(doc, stage_row, action="assign"):
         static_cc = settings.response_cc_emails
     
     if static_cc:
-        static_emails = [e.strip() for e in static_cc.split(",") if e.strip()]
-        cc_list.extend(static_emails)
+        try:
+            import re
+            # Render Jinja logic if present in CC fields
+            rendered_cc = frappe.render_template(static_cc, {"doc": doc})
+            # Split by comma, space, newline, or semicolon
+            static_emails = re.split(r'[,\s\n;]+', rendered_cc)
+            static_emails = [e.strip() for e in static_emails if e.strip() and "@" in e]
+            cc_list.extend(static_emails)
+        except Exception:
+            # Fallback if rendering fails
+            import re
+            static_emails = re.split(r'[,\s\n;]+', static_cc)
+            static_emails = [e.strip() for e in static_emails if e.strip() and "@" in e]
         
-    # B. All users from Audit Stages child table
-    for row in doc.audit_stages:
-        if row.email and row.email not in recipients:
-            cc_list.append(row.email)
+    # B. Add users from Audit Stages child table ONLY if NOT using new system
+    # (In the new system, we rely purely on dynamic CC fields from settings)
+    if not settings.use_new_system:
+        for row in doc.audit_stages:
+            if row.email and row.email not in recipients:
+                cc_list.append(row.email)
             
     # C. Add query generator to CC if it's an assignment mail
     if action == "assign" and doc.query_generated_by_mail:
@@ -277,12 +295,16 @@ def send_stage_notification(doc, stage_row, action="assign"):
 @frappe.whitelist()
 def submit_response(docname, response_text, attachment=None):
     doc = frappe.get_doc("My Audits", docname)
-    current_user = frappe.session.user
+    current_user = frappe.session.user.lower()
 
     found = False
 
     for i, row in enumerate(doc.audit_stages):
-        if row.status == "Pending" and row.user_id == current_user:
+        row_user = (row.user_id or "").lower()
+        row_email = (row.email or "").lower()
+        
+        # Match by user_id or email
+        if row.status == "Pending" and (row_user == current_user or row_email == current_user):
             row.status = "Responded"
             row.response = response_text
             row.attachment = attachment
@@ -295,6 +317,10 @@ def submit_response(docname, response_text, attachment=None):
             break
 
     if found:
+        settings = frappe.get_single("Audit Management Settings")
+        if settings.use_new_system:
+            doc.flags.ignore_notifications = True
+            
         doc.save(ignore_permissions=True)
         return _("Response submitted successfully.")
     else:
