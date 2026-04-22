@@ -402,6 +402,8 @@ frappe.ui.form.on("My Audits", {
               response_text: frm.doc.current_response_box,
               attachment: frm.doc.current_response_attach,
             },
+            freeze: true,
+            freeze_message: __("Submitting Response..."),
             callback: function (r) {
               if (r.message) {
                 frappe.show_alert({ message: r.message, indicator: "green" });
