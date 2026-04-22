@@ -290,12 +290,16 @@ def send_stage_notification(doc, stage_row, action="assign"):
 @frappe.whitelist()
 def submit_response(docname, response_text, attachment=None):
     doc = frappe.get_doc("My Audits", docname)
-    current_user = frappe.session.user
+    current_user = frappe.session.user.lower()
 
     found = False
 
     for i, row in enumerate(doc.audit_stages):
-        if row.status == "Pending" and row.user_id == current_user:
+        row_user = (row.user_id or "").lower()
+        row_email = (row.email or "").lower()
+        
+        # Match by user_id or email
+        if row.status == "Pending" and (row_user == current_user or row_email == current_user):
             row.status = "Responded"
             row.response = response_text
             row.attachment = attachment

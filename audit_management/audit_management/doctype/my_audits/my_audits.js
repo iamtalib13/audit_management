@@ -737,7 +737,7 @@ frappe.ui.form.on("My Audits", {
                   read: 1,
                   write: 1,
                   share: 1,
-                  notify: 1,
+                  notify: 0,
                 },
                 callback: function () {
                   frm.set_value("status", "Pending");
@@ -773,7 +773,7 @@ frappe.ui.form.on("My Audits", {
                     read: 1,
                     write: 1,
                     share: 1,
-                    notify: 1,
+                    notify: 0,
                   },
                 }),
                 frappe.call({
@@ -785,7 +785,7 @@ frappe.ui.form.on("My Audits", {
                     read: 1,
                     write: 1,
                     share: 1,
-                    notify: 1,
+                    notify: 0,
                   },
                 }),
               ]).then(() => {
@@ -822,7 +822,7 @@ frappe.ui.form.on("My Audits", {
                     read: 1,
                     write: 1,
                     share: 1,
-                    notify: 1,
+                    notify: 0,
                   },
                 }),
                 frappe.call({
@@ -834,7 +834,7 @@ frappe.ui.form.on("My Audits", {
                     read: 1,
                     write: 1,
                     share: 1,
-                    notify: 1,
+                    notify: 0,
                   },
                 }),
               ]).then(() => {
@@ -871,7 +871,7 @@ frappe.ui.form.on("My Audits", {
                     read: 1,
                     write: 1,
                     share: 1,
-                    notify: 1,
+                    notify: 0,
                   },
                 }),
                 frappe.call({
@@ -883,7 +883,7 @@ frappe.ui.form.on("My Audits", {
                     read: 1,
                     write: 1,
                     share: 1,
-                    notify: 1,
+                    notify: 0,
                   },
                 }),
               ]).then(() => {
@@ -919,7 +919,7 @@ frappe.ui.form.on("My Audits", {
                   read: 1,
                   write: 1,
                   share: 1,
-                  notify: 1,
+                  notify: 0,
                 },
                 callback: function () {
                   frm.set_value("status", "Pending");
@@ -1065,7 +1065,7 @@ frappe.ui.form.on("My Audits", {
                       read: 1,
                       write: 1,
                       share: 1,
-                      notify: 1,
+                      notify: 0,
                     },
                   });
               }
