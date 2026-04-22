@@ -317,6 +317,10 @@ def submit_response(docname, response_text, attachment=None):
             break
 
     if found:
+        settings = frappe.get_single("Audit Management Settings")
+        if settings.use_new_system:
+            doc.flags.ignore_notifications = True
+            
         doc.save(ignore_permissions=True)
         return _("Response submitted successfully.")
     else:
