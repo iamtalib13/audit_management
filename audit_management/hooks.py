@@ -212,5 +212,15 @@ fixtures = [
 			}
         ]
     ]},
+    
+# email templates fixtures
+{
+    "dt": "Email Template",
+    "filters": [
+        ["name", "in", [
+            "Audit Query Activity Notification"
+        ]]
+    ],
+},
 
 ]
