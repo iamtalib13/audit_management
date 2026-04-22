@@ -232,8 +232,15 @@ def send_stage_notification(doc, stage_row, action="assign"):
         static_cc = settings.response_cc_emails
     
     if static_cc:
-        static_emails = [e.strip() for e in static_cc.split(",") if e.strip()]
-        cc_list.extend(static_emails)
+        try:
+            # Render Jinja logic if present in CC fields
+            rendered_cc = frappe.render_template(static_cc, {"doc": doc})
+            static_emails = [e.strip() for e in rendered_cc.split(",") if e.strip() and "@" in e]
+            cc_list.extend(static_emails)
+        except Exception:
+            # Fallback if rendering fails
+            static_emails = [e.strip() for e in static_cc.split(",") if e.strip() and "@" in e]
+            cc_list.extend(static_emails)
         
     # B. All users from Audit Stages child table
     for row in doc.audit_stages:
