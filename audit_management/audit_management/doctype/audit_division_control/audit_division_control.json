@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "creation": "2026-04-23 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source_division",
+  "allowed_division"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_division",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User's Division",
+   "options": "Division",
+   "reqd": 1
+  },
+  {
+   "fieldname": "allowed_division",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Allowed Division",
+   "options": "Division",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "modified": "2026-04-23 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Audit Management",
+ "name": "Audit Division Control",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -438,3 +438,57 @@ def send_daily_reminders():
                     reference_doctype=doc.doctype,
                     reference_name=doc.name
                 )
+
+def get_user_allowed_divisions(user):
+    """
+    1. Get User's Division from Employee doctype.
+    2. Map it to allowed divisions using Audit Management Settings.
+    """
+    from audit_management.audit_management.doctype.audit_level.audit_level import get_user_division
+    user_div = get_user_division()
+    
+    if not user_div:
+        return []
+
+    settings = frappe.get_single("Audit Management Settings")
+    
+    # Find all divisions mapped to the user's division
+    allowed = [row.allowed_division for row in settings.division_permissions if row.source_division == user_div]
+    
+    # If no mapping is found in settings, default to allowing them to see ONLY their own division
+    if not allowed:
+        allowed = [user_div]
+        
+    return allowed
+
+def get_permission_query_conditions(user=None):
+    if not user:
+        user = frappe.session.user
+
+    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+        return ""
+
+    allowed_divisions = get_user_allowed_divisions(user)
+    
+    if not allowed_divisions:
+        # No division found for user, and no mapping. Deny access.
+        return "1=0"
+
+    # Convert list to SQL format
+    divisions_sql = ", ".join([frappe.db.escape(d) for d in allowed_divisions])
+    return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
+
+def has_permission(doc, ptype, user=None):
+    if not user:
+        user = frappe.session.user
+
+    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+        return True
+
+    allowed_divisions = get_user_allowed_divisions(user)
+    
+    if not allowed_divisions:
+        return False
+    
+    doc_division = doc.get("emp_division")
+    return doc_division in allowed_divisions
