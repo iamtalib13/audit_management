@@ -7,24 +7,131 @@ from frappe.model.document import Document
 from frappe.utils import now, time_diff_in_seconds, getdate, nowdate
 from audit_management.audit_management.utils import get_working_days, update_audit_aging
 
+
 class MyAudits(Document):
     def validate(self):
         update_audit_aging(self)
         if self.status == "Close":
             self.validate_resolution_fields()
 
+    # def before_insert(self):
+    #     # Only populate the stages child table when the document is first created
+    #     if not self.emp_branch or not self.emp_division:
+    #         self.set("audit_stages", [])
+    #         return
+
+    #     # Find the Audit Level that matches BOTH branch and division
+    #     # UPDATE: Changed 'branch' to 'emp_branch' to match your Audit Level Doctype columns
+    #     audit_level_name = frappe.db.get_value(
+    #         "Audit Level",
+    #         {
+    #             "emp_branch": self.emp_branch,  # <--- Changed this to emp_branch
+    #             "division": self.emp_division
+    #         },
+    #         "name"
+    #     )
+
+    #     if not audit_level_name:
+    #         self.set("audit_stages", [])
+    #         frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
+    #             self.emp_branch, self.emp_division))
+
+    #     # Fetch the exact Audit Level document
+    #     audit_level = frappe.get_doc("Audit Level", audit_level_name)
+    #     self.set("audit_stages", [])
+
+    #     # Loop through the master table and push it to the transaction document
+    #     for row in audit_level.audit_stages:  # Assuming child table in Audit Level is named 'audit_stages'
+    #         self.append("audit_stages", {
+    #             "stage": row.stage,
+    #             "stage_name": row.stage_name,
+    #             "employee": row.employee,
+    #             "user_id": row.user_id,
+    #             "employee_name": row.employee_name,
+    #             "email": row.email,
+    #             "status": "Pending"  # Force status to Pending for new stages
+    #         })
+
+    def before_insert(self):
+        # Step 1: Get logged-in user and fetch their Employee record
+        logged_in_user = frappe.session.user
+
+        employee = frappe.db.get_value(
+            "Employee",
+            {"user_id": logged_in_user},
+            ["name", "employee_name", "branch", "company_email",
+                "designation", "custom_division"],
+            as_dict=True
+        )
+
+        if not employee:
+            frappe.throw(
+                _("No Employee record found for logged-in user: <b>{0}</b>. Please check HR master data.").format(logged_in_user))
+
+        # Step 2: Set emp_division on the document from the Employee's custom_division
+        self.emp_division = employee.custom_division
+
+        if not self.emp_division:
+            frappe.throw(
+                _("Division is not set for Employee: <b>{0}</b>. Please update HR master data.").format(employee.employee_name))
+
+        # Step 3: Validate emp_branch is also filled
+        if not self.emp_branch:
+            frappe.throw(_("Branch is mandatory to create an Audit Query."))
+
+        # Step 4: Find matching Audit Level using emp_branch AND division
+        audit_level_name = frappe.db.get_value(
+            "Audit Level",
+            {
+                "emp_branch": self.emp_branch,
+                "division": self.emp_division
+            },
+            "name"
+        )
+
+        if not audit_level_name:
+            frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
+                self.emp_branch, self.emp_division))
+
+        # Step 5: Fetch the Audit Level document and populate audit_stages
+        audit_level = frappe.get_doc("Audit Level", audit_level_name)
+        self.set("audit_stages", [])
+
+        for row in audit_level.audit_stages:
+            self.append("audit_stages", {
+                "stage": row.stage,
+                "stage_name": row.stage_name,
+                "employee": row.employee,
+                "user_id": row.user_id,
+                "employee_name": row.employee_name,
+                "email": row.email,
+                "status": "Pending"
+            })
+
+    # def before_save(self):
+    #     # 1. Sync Hardcoded Fields to Child Table (Priority for Legacy updates)
+    #     self.sync_old_to_new()
+
+    #     # 2. Sync Child Table to Hardcoded Fields (Priority for UI/Reporting)
+    #     self.sync_new_to_old()
+
+    #     # 3. Populate Stages from Audit Level only if needed
+    #     if (self.is_new() or self.has_value_changed("emp_branch")) and not self.audit_stages:
+    #         populate_audit_stages(self)
+
+    #     # 4. Disable standard notifications if new system is active
+    #     settings = frappe.get_single("Audit Management Settings")
+    #     if settings.use_new_system:
+    #         self.flags.ignore_notifications = True
+
     def before_save(self):
         # 1. Sync Hardcoded Fields to Child Table (Priority for Legacy updates)
         self.sync_old_to_new()
-        
+
         # 2. Sync Child Table to Hardcoded Fields (Priority for UI/Reporting)
         self.sync_new_to_old()
-        
-        # 3. Populate Stages from Audit Level only if needed
-        if (self.is_new() or self.has_value_changed("emp_branch")) and not self.audit_stages:
-            populate_audit_stages(self)
-            
-        # 4. Disable standard notifications if new system is active
+
+        # 3. Disable standard notifications if new system is active
         settings = frappe.get_single("Audit Management Settings")
         if settings.use_new_system:
             self.flags.ignore_notifications = True
@@ -42,16 +149,17 @@ class MyAudits(Document):
                 continue
 
             # Find matching row in child table
-            row = self.find_matching_row(user_id, m["stage"], m["label"], prefix)
+            row = self.find_matching_row(
+                user_id, m["stage"], m["label"], prefix)
             if row:
                 old_status = self.get(f"{prefix}_user_status")
                 if old_status and row.status != old_status:
                     row.status = old_status
-                
+
                 old_resp = self.get(f"{prefix}_response_box")
                 if old_resp and row.response != old_resp:
                     row.response = old_resp
-                
+
                 old_pend = self.get(f"{prefix}_pending_time")
                 if old_pend and row.pending_time != old_pend:
                     row.pending_time = old_pend
@@ -63,7 +171,7 @@ class MyAudits(Document):
 
         mapping = {m["label"]: m["prefix"] for m in self.get_prefix_mapping()}
         max_level = 0
-        
+
         for row in self.audit_stages:
             prefix = mapping.get(row.stage_name)
             if prefix:
@@ -80,7 +188,7 @@ class MyAudits(Document):
                             max_level = lvl
                     except:
                         pass
-        
+
         # Update Operational Tracking Level
         if max_level > 0:
             if max_level <= 1:
@@ -125,7 +233,9 @@ class MyAudits(Document):
         ]
         for field in mandatory_fields:
             if not self.get(field):
-                frappe.throw(_("Field '{0}' is mandatory for query resolution.").format(self.meta.get_label(field)))
+                frappe.throw(_("Field '{0}' is mandatory for query resolution.").format(
+                    self.meta.get_label(field)))
+
 
 def populate_audit_stages(doc):
     """Populates audit_stages from Audit Level."""
@@ -135,7 +245,7 @@ def populate_audit_stages(doc):
 
     audit_level = frappe.get_doc("Audit Level", doc.emp_branch)
     doc.set("audit_stages", [])
-    
+
     for row in audit_level.audit_stages:
         doc.append("audit_stages", {
             "stage": row.stage,
@@ -147,19 +257,21 @@ def populate_audit_stages(doc):
             "status": ""
         })
 
+
 @frappe.whitelist()
 def get_status_tracker_html(docname):
     audit_doc = frappe.get_doc("My Audits", docname)
-    
+
     def create_status_box(text, color, title):
         return f"<div style='display:inline-block; padding: 2px 6px; border-radius: 10px; border: 2px solid {color}; color: {color}; cursor: pointer;' title='{title}'>{text}</div>"
 
-    html_output = create_status_box("AUDIT TEAM", '#1E6EB2', 'Stage 0 : Audit Query') + " <b>--></b> "
-    
+    html_output = create_status_box(
+        "AUDIT TEAM", '#1E6EB2', 'Stage 0 : Audit Query') + " <b>--></b> "
+
     for i, row in enumerate(audit_doc.audit_stages):
         color = "grey"
         title = f"Stage {row.stage} : {row.stage_name} - {row.status or 'Waiting'}"
-        
+
         if row.status == "Pending":
             color = "red"
         elif row.status == "Responded":
@@ -168,40 +280,43 @@ def get_status_tracker_html(docname):
             color = "#4b0a7d"
         elif row.status == "Skipped":
             color = "#ffbe0b"
-            
+
         html_output += create_status_box(row.stage_name, color, title)
         if i < len(audit_doc.audit_stages) - 1:
             html_output += " <b>--></b> "
-            
+
     return html_output
+
 
 @frappe.whitelist()
 def send_to_next_stage(docname):
     doc = frappe.get_doc("My Audits", docname)
     next_row = None
-    
+
     # Find first row that is not responded/skipped and not pending
     for row in doc.audit_stages:
         if not row.status:
             next_row = row
             break
-            
+
     if next_row:
         next_row.status = "Pending"
         next_row.pending_time = now()
         doc.query_status = f"Pending From {next_row.stage_name}"
         doc.status = "Pending"
-        
+
         # Share document with the user (notify=0 to prevent redundant background queue emails)
-        frappe.share.add(doc.doctype, doc.name, next_row.user_id, read=1, write=1, notify=0)
-        
+        frappe.share.add(doc.doctype, doc.name,
+                         next_row.user_id, read=1, write=1, notify=0)
+
         doc.save()
-        
+
         # Send Custom Email immediately (New System)
         send_stage_notification(doc, next_row, action="assign")
         return _("Query sent to {0}").format(next_row.stage_name)
     else:
         return _("No more stages to send to.")
+
 
 def send_stage_notification(doc, stage_row, action="assign"):
     """
@@ -210,9 +325,10 @@ def send_stage_notification(doc, stage_row, action="assign"):
     """
     settings = frappe.get_single("Audit Management Settings")
     template_name = settings.use_new_email_template
-    
+
     if not template_name:
-        frappe.msgprint(_("Default Email Template not set in Audit Management Settings."))
+        frappe.msgprint(
+            _("Default Email Template not set in Audit Management Settings."))
         return
 
     # 1. Determine Recipients
@@ -228,14 +344,14 @@ def send_stage_notification(doc, stage_row, action="assign"):
 
     # 2. Collect CC Emails
     cc_list = []
-    
+
     # A. Static CC from settings (Action specific)
     static_cc = ""
     if action == "assign":
         static_cc = settings.query_cc_emails
     elif action == "respond":
         static_cc = settings.response_cc_emails
-    
+
     if static_cc:
         try:
             import re
@@ -243,21 +359,23 @@ def send_stage_notification(doc, stage_row, action="assign"):
             rendered_cc = frappe.render_template(static_cc, {"doc": doc})
             # Split by comma, space, newline, or semicolon
             static_emails = re.split(r'[,\s\n;]+', rendered_cc)
-            static_emails = [e.strip() for e in static_emails if e.strip() and "@" in e]
+            static_emails = [e.strip()
+                             for e in static_emails if e.strip() and "@" in e]
             cc_list.extend(static_emails)
         except Exception:
             # Fallback if rendering fails
             import re
             static_emails = re.split(r'[,\s\n;]+', static_cc)
-            static_emails = [e.strip() for e in static_emails if e.strip() and "@" in e]
-        
+            static_emails = [e.strip()
+                             for e in static_emails if e.strip() and "@" in e]
+
     # B. Add users from Audit Stages child table ONLY if NOT using new system
     # (In the new system, we rely purely on dynamic CC fields from settings)
     if not settings.use_new_system:
         for row in doc.audit_stages:
             if row.email and row.email not in recipients:
                 cc_list.append(row.email)
-            
+
     # C. Add query generator to CC if it's an assignment mail
     if action == "assign" and doc.query_generated_by_mail:
         if doc.query_generated_by_mail not in recipients:
@@ -269,7 +387,7 @@ def send_stage_notification(doc, stage_row, action="assign"):
     # 3. Render and Send
     try:
         from frappe.email.doctype.email_template.email_template import get_email_template
-        
+
         # We pass context to the template
         email_data = get_email_template(template_name, {
             "doc": doc,
@@ -286,11 +404,15 @@ def send_stage_notification(doc, stage_row, action="assign"):
             reference_name=doc.name,
             now=True
         )
-        frappe.msgprint(_("Email notification sent to {0}").format(", ".join(recipients)))
-        
+        frappe.msgprint(_("Email notification sent to {0}").format(
+            ", ".join(recipients)))
+
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), _("Audit Notification Failed"))
-        frappe.msgprint(_("Failed to send email notification. Check Error Log."))
+        frappe.log_error(frappe.get_traceback(),
+                         _("Audit Notification Failed"))
+        frappe.msgprint(
+            _("Failed to send email notification. Check Error Log."))
+
 
 @frappe.whitelist()
 def submit_response(docname, response_text, attachment=None):
@@ -302,7 +424,7 @@ def submit_response(docname, response_text, attachment=None):
     for i, row in enumerate(doc.audit_stages):
         row_user = (row.user_id or "").lower()
         row_email = (row.email or "").lower()
-        
+
         # Match by user_id or email
         if row.status == "Pending" and (row_user == current_user or row_email == current_user):
             row.status = "Responded"
@@ -311,7 +433,7 @@ def submit_response(docname, response_text, attachment=None):
             row.response_time = now()
             doc.query_status = f"Response From {row.stage_name}"
             found = True
-            
+
             # Send notification on response
             send_stage_notification(doc, row, action="respond")
             break
@@ -320,11 +442,13 @@ def submit_response(docname, response_text, attachment=None):
         settings = frappe.get_single("Audit Management Settings")
         if settings.use_new_system:
             doc.flags.ignore_notifications = True
-            
+
         doc.save(ignore_permissions=True)
         return _("Response submitted successfully.")
     else:
-        frappe.throw(_("You are not authorized to respond at this stage or the query is not pending for you."))
+        frappe.throw(
+            _("You are not authorized to respond at this stage or the query is not pending for you."))
+
 
 @frappe.whitelist()
 def check_pending_tat():
@@ -333,18 +457,21 @@ def check_pending_tat():
     Uses 'audit_stages' table as source of truth for flow.
     """
     now_time = frappe.utils.now()
-    pending_audits = frappe.get_all("My Audits", filters={"status": "Pending"}, fields=["name", "query_type"])
-    
+    pending_audits = frappe.get_all(
+        "My Audits", filters={"status": "Pending"}, fields=["name", "query_type"])
+
     for audit in pending_audits:
         doc = frappe.get_doc("My Audits", audit.name)
         if not doc.query_type or not doc.audit_stages:
             continue
 
-        tat_config_doc = frappe.get_cached_doc("Audit Query Type", doc.query_type)
+        tat_config_doc = frappe.get_cached_doc(
+            "Audit Query Type", doc.query_type)
         tat_map = {row.stage: row.tat_days for row in tat_config_doc.tat_config}
         default_tat = tat_config_doc.default_tat_days or 1
 
-        active_rows = [row for row in doc.audit_stages if row.status == "Pending"]
+        active_rows = [
+            row for row in doc.audit_stages if row.status == "Pending"]
         if not active_rows:
             continue
 
@@ -355,12 +482,13 @@ def check_pending_tat():
         for row in active_rows:
             if not row.pending_time:
                 continue
-            
+
             days = tat_map.get(row.stage_name, default_tat)
             max_days_found = max(max_days_found, days)
             tat_minutes = days * 24 * 60
-            time_diff_minutes = time_diff_in_seconds(now_time, row.pending_time) / 60
-            
+            time_diff_minutes = time_diff_in_seconds(
+                now_time, row.pending_time) / 60
+
             if time_diff_minutes >= tat_minutes:
                 exceeded = True
                 break
@@ -370,47 +498,54 @@ def check_pending_tat():
             for row in doc.audit_stages:
                 if row.stage == current_stage_level and row.status == "Pending":
                     row.status = "No Response"
-            
+
             next_stage_level = str(int(current_stage_level) + 1)
-            next_rows = [row for row in doc.audit_stages if row.stage == next_stage_level]
-            
+            next_rows = [
+                row for row in doc.audit_stages if row.stage == next_stage_level]
+
             if next_rows:
                 stage_names = []
                 for n_row in next_rows:
                     n_row.status = "Pending"
                     n_row.pending_time = now_time
-                    frappe.share.add(doc.doctype, doc.name, n_row.user_id, read=1, write=1, notify=0)
-                    
+                    frappe.share.add(doc.doctype, doc.name,
+                                     n_row.user_id, read=1, write=1, notify=0)
+
                     # Send Notification
                     try:
                         send_stage_notification(doc, n_row)
                     except Exception:
-                        frappe.log_error(frappe.get_traceback(), _("Escalation Email Failed"))
-                    
+                        frappe.log_error(frappe.get_traceback(), _(
+                            "Escalation Email Failed"))
+
                     if n_row.stage_name not in stage_names:
                         stage_names.append(n_row.stage_name)
                 doc.query_status = f"Pending From {', '.join(stage_names)}"
             else:
                 doc.status = "Close"
                 doc.query_status = "Completed"
-            
+
             doc.save(ignore_permissions=True)
+
 
 @frappe.whitelist()
 def fetch_employee_data(employee_id):
-    employee = frappe.db.get_value("Employee", employee_id, ["employee_name", "designation", "branch", "company_email"], as_dict=True)
+    employee = frappe.db.get_value("Employee", employee_id, [
+                                   "employee_name", "designation", "branch", "company_email"], as_dict=True)
     if not employee:
-        employee = frappe.db.get_value("Employee", {"user_id": employee_id}, ["employee_name", "designation", "branch", "company_email"], as_dict=True)
-    
+        employee = frappe.db.get_value("Employee", {"user_id": employee_id}, [
+                                       "employee_name", "designation", "branch", "company_email"], as_dict=True)
+
     if not employee:
         frappe.throw(_("Employee for {0} not found").format(employee_id))
     return employee
+
 
 def send_escalation_notification(doc, level):
     """Sends email when escalation level changes."""
     subject = f"Audit Escalation [{level}]: {doc.name}"
     message = f"Audit Query {doc.name} has been escalated to {level} due to inactivity ({doc.aging} working days)."
-    
+
     for row in doc.audit_stages:
         if row.status == "Pending" and row.email:
             frappe.sendmail(
@@ -421,10 +556,12 @@ def send_escalation_notification(doc, level):
                 reference_name=doc.name
             )
 
+
 @frappe.whitelist()
 def send_daily_reminders():
     """Sends daily follow-up emails for all pending queries."""
-    pending_audits = frappe.get_all("My Audits", filters={"status": "Pending"}, fields=["name"])
+    pending_audits = frappe.get_all(
+        "My Audits", filters={"status": "Pending"}, fields=["name"])
     for audit in pending_audits:
         doc = frappe.get_doc("My Audits", audit.name)
         for row in doc.audit_stages:
