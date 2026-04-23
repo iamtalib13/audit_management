@@ -1435,9 +1435,70 @@ function render_interactive_tracker(frm, can_edit) {
     }
 }
 
+// function open_stages_modal(frm) {
+//     let d = new frappe.ui.Dialog({
+//         title: 'Edit Audit Stages for this Document',
+//         size: 'large',
+//         fields: [
+//             {
+//                 fieldname: 'temp_stages',
+//                 fieldtype: 'Table',
+//                 label: 'Stages',
+//                 cannot_add_rows: false,
+//                 in_place_edit: true,
+//                 data: [],
+//                 fields: [
+//                     { fieldtype: 'Link', fieldname: 'stage_name', options: 'Audit Stage', in_list_view: 1, label: 'Stage Name', reqd: 1 },
+//                     { fieldtype: 'Link', fieldname: 'employee', options: 'Employee', in_list_view: 1, label: 'Employee ID', reqd: 1 },
+//                     { fieldtype: 'Data', fieldname: 'employee_name', in_list_view: 1, label: 'Employee Name', read_only: 1 }
+//                 ]
+//             }
+//         ],
+//         primary_action_label: 'Save Changes',
+//         primary_action: function() {
+//             let values = d.get_values();
+            
+//             // Clear current form table
+//             frm.clear_table('audit_stages');
+
+//             // Push new rows from the modal back into the form
+//             values.temp_stages.forEach((row, idx) => {
+//                 let new_row = frm.add_child('audit_stages');
+//                 new_row.stage = idx + 1; // Auto-sequence 1, 2, 3...
+//                 new_row.stage_name = row.stage_name;
+//                 new_row.employee = row.employee;
+//                 new_row.employee_name = row.employee_name;
+//                 new_row.status = 'Pending'; // Default status for new additions
+//             });
+
+//             frm.refresh_field('audit_stages');
+//             frm.save().then(() => {
+//                 frappe.show_alert({message: 'Stages updated for this document', indicator: 'green'});
+//                 render_interactive_tracker(frm, true);
+//                 d.hide();
+//             });
+//         }
+//     });
+
+//     // Populate the modal with the current stages from the document
+//     let existing_data = frm.doc.audit_stages.map(row => {
+//         return {
+//             stage_name: row.stage_name,
+//             employee: row.employee,
+//             employee_name: row.employee_name
+//         };
+//     });
+    
+//     d.fields_dict.temp_stages.df.data = existing_data;
+//     d.fields_dict.temp_stages.grid.refresh();
+    
+//     d.show();
+// }
+
+
 function open_stages_modal(frm) {
     let d = new frappe.ui.Dialog({
-        title: 'Edit Audit Stages for this Document',
+        title: 'Edit Audit Stages',
         size: 'large',
         fields: [
             {
@@ -1448,6 +1509,10 @@ function open_stages_modal(frm) {
                 in_place_edit: true,
                 data: [],
                 fields: [
+                    // Hidden field to permanently track the exact database ID
+                    { fieldtype: 'Data', fieldname: 'stage_id', hidden: 1 }, 
+                    
+                    // Visible fields
                     { fieldtype: 'Link', fieldname: 'stage_name', options: 'Audit Stage', in_list_view: 1, label: 'Stage Name', reqd: 1 },
                     { fieldtype: 'Link', fieldname: 'employee', options: 'Employee', in_list_view: 1, label: 'Employee ID', reqd: 1 },
                     { fieldtype: 'Data', fieldname: 'employee_name', in_list_view: 1, label: 'Employee Name', read_only: 1 }
@@ -1456,33 +1521,64 @@ function open_stages_modal(frm) {
         ],
         primary_action_label: 'Save Changes',
         primary_action: function() {
-            let values = d.get_values();
+            // Force grid to commit any active edits
+            if (document.activeElement) document.activeElement.blur();
             
-            // Clear current form table
-            frm.clear_table('audit_stages');
-
-            // Push new rows from the modal back into the form
-            values.temp_stages.forEach((row, idx) => {
-                let new_row = frm.add_child('audit_stages');
-                new_row.stage = idx + 1; // Auto-sequence 1, 2, 3...
-                new_row.stage_name = row.stage_name;
-                new_row.employee = row.employee;
-                new_row.employee_name = row.employee_name;
-                new_row.status = 'Pending'; // Default status for new additions
+            let grid_data = d.fields_dict.temp_stages.grid.get_data();
+            
+            // 1. Store EXACT references to existing memory objects so we don't lose responses!
+            let old_rows_map = {};
+            (frm.doc.audit_stages || []).forEach(r => {
+                old_rows_map[r.name] = r;
             });
-
+            
+            // 2. Empty the array WITHOUT deleting from frappe.locals memory
+            // This completely prevents the "Missing Fields" framework error
+            frm.doc.audit_stages = [];
+            
+            // 3. Rebuild the child table perfectly
+            grid_data.forEach((row, idx) => {
+                let target_row;
+                
+                if (row.stage_id && old_rows_map[row.stage_id]) {
+                    // Re-use the existing Frappe object (retains responses, attachments, status)
+                    target_row = old_rows_map[row.stage_id];
+                    // Push it manually back into the form array
+                    frm.doc.audit_stages.push(target_row);
+                } else {
+                    // It's a completely new row added via the modal
+                    // This automatically creates it in memory and pushes it to doc.audit_stages
+                    target_row = frm.add_child('audit_stages');
+                }
+                
+                // 4. Update the values from the modal safely
+                target_row.stage_name = row.stage_name;
+                target_row.employee = row.employee;
+                target_row.employee_name = row.employee_name;
+                target_row.stage = idx + 1;
+                target_row.idx = idx + 1; // Required by Frappe for sequence tracking
+                
+                if (!target_row.status) {
+                    target_row.status = 'Pending';
+                }
+            });
+            
             frm.refresh_field('audit_stages');
+            frm.dirty(); // Tell Frappe the document has unsaved changes
+            
+            // Save the document and refresh the UI tracker
             frm.save().then(() => {
-                frappe.show_alert({message: 'Stages updated for this document', indicator: 'green'});
+                frappe.show_alert({message: 'Stages updated successfully', indicator: 'green'});
                 render_interactive_tracker(frm, true);
                 d.hide();
             });
         }
     });
 
-    // Populate the modal with the current stages from the document
-    let existing_data = frm.doc.audit_stages.map(row => {
+    // Populate the modal with data, binding the exact Database ID to 'stage_id'
+    let existing_data = (frm.doc.audit_stages || []).map(row => {
         return {
+            stage_id: row.name, // Link to the original memory row
             stage_name: row.stage_name,
             employee: row.employee,
             employee_name: row.employee_name
@@ -1491,6 +1587,38 @@ function open_stages_modal(frm) {
     
     d.fields_dict.temp_stages.df.data = existing_data;
     d.fields_dict.temp_stages.grid.refresh();
-    
     d.show();
+    
+    // --- ENABLE DRAG AND DROP IN THE MODAL ---
+    setTimeout(() => {
+        let grid_body = d.$wrapper.find('.grid-body .rows')[0];
+        
+        if (grid_body && typeof Sortable !== 'undefined') {
+            d.$wrapper.find('.grid-row').css('cursor', 'grab');
+
+            new Sortable(grid_body, {
+                animation: 150,
+                handle: '.grid-row', 
+                ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    let old_index = evt.oldIndex;
+                    let new_index = evt.newIndex;
+
+                    if (old_index === new_index) return;
+
+                    let data_array = d.fields_dict.temp_stages.grid.data;
+                    let moved_item = data_array.splice(old_index, 1)[0];
+                    data_array.splice(new_index, 0, moved_item);
+
+                    data_array.forEach((row, i) => {
+                        row.idx = i + 1;
+                        row._idx = i + 1;
+                    });
+
+                    d.fields_dict.temp_stages.grid.refresh();
+                    d.$wrapper.find('.grid-row').css('cursor', 'grab');
+                }
+            });
+        }
+    }, 300);
 }
