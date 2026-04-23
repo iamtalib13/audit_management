@@ -506,7 +506,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_5_gm_emp_id.company_email",
    "fieldname": "stage_5_gm_mail",
    "fieldtype": "Data",
    "hidden": 1,
@@ -561,7 +560,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_6_hr_emp_id.company_email",
    "fieldname": "stage_6_hr_mail",
    "fieldtype": "Data",
    "hidden": 1,
@@ -612,7 +610,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "stage_8_coo_emp_id.company_email",
    "fieldname": "stage_8_coo_mail",
    "fieldtype": "Data",
    "hidden": 1,
@@ -658,7 +655,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_7_chro_emp_id.company_email",
    "fieldname": "stage_7_chro_mail",
    "fieldtype": "Data",
    "hidden": 1,
@@ -693,7 +689,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "stage_10_ceo_emp_id.company_email",
    "fieldname": "stage_10_ceo_mail",
    "fieldtype": "Data",
    "hidden": 1,
@@ -727,7 +722,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "stage_9_cfo_emp_id.company_email",
    "fieldname": "stage_9_cfo_mail",
    "fieldtype": "Data",
    "hidden": 1,
