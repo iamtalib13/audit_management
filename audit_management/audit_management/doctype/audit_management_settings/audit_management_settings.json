@@ -10,9 +10,22 @@
   "use_new_system",
   "use_new_email_template",
   "query_cc_emails",
-  "response_cc_emails"
+  "response_cc_emails",
+  "division_permissions_section",
+  "division_permissions"
  ],
  "fields": [
+  {
+   "fieldname": "division_permissions_section",
+   "fieldtype": "Section Break",
+   "label": "Division Permissions"
+  },
+  {
+   "fieldname": "division_permissions",
+   "fieldtype": "Table",
+   "label": "Division Permissions",
+   "options": "Audit Division Control"
+  },
   {
    "fieldname": "system_settings_sb",
    "fieldtype": "Section Break",

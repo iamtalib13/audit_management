@@ -1211,7 +1211,7 @@
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Division",
-   "options": "Audit Level",
+   "options": "Division",
    "read_only": 1,
    "reqd": 1,
    "set_only_once": 1
@@ -1219,7 +1219,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-22 17:54:20.260490",
+ "modified": "2026-04-23 11:26:30.319454",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

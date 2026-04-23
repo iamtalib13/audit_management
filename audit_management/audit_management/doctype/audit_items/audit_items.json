@@ -64,7 +64,6 @@
   },
   {
    "columns": 2,
-   "fetch_from": "employee.company_email",
    "fieldname": "email",
    "fieldtype": "Data",
    "in_list_view": 1,
