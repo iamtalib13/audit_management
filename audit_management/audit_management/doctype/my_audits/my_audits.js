@@ -392,8 +392,86 @@ frappe.ui.form.on("My Audits", {
     }
   },
 
-  setup_dynamic_buttons: function (frm) {
+  // setup_dynamic_buttons: function (frm) {
+  //   if (frm.is_new() || frm.doc.status === "Close") return;
+  //   const is_audit_team =
+  //     frappe.user.has_role("Audit Manager") ||
+  //     frappe.user.has_role("Audit Member");
+  //   const current_user = frappe.session.user;
+
+  //   if (is_audit_team) {
+  //     const next_row = (frm.doc.audit_stages || []).find((row) => !row.status);
+  //     if (next_row) {
+  //       frm
+  //         .add_custom_button(
+  //           __("Send to {0}", [next_row.stage_name]),
+  //           function () {
+  //             frappe.call({
+  //               method:
+  //                 "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
+  //               args: { docname: frm.doc.name },
+  //               callback: function (r) {
+  //                 if (r.message) {
+  //                   frappe.show_alert({
+  //                     message: r.message,
+  //                     indicator: "green",
+  //                   });
+  //                   frm.reload_doc();
+  //                 }
+  //               },
+  //             });
+  //           },
+  //           __("Actions"),
+  //         )
+  //         .css({ "background-color": "#28a745", color: "white" });
+  //     }
+  //     frm
+  //       .add_custom_button(
+  //         __("Close Query"),
+  //         function () {
+  //           frm.trigger("handle_close_query");
+  //         },
+  //         __("Actions"),
+  //       )
+  //       .css({ "background-color": "#dc3545", color: "white" });
+  //   }
+
+  //   const pending_row = (frm.doc.audit_stages || []).find(
+  //     (row) => row.status === "Pending" && row.user_id === current_user,
+  //   );
+  //   if (pending_row) {
+  //     frm
+  //       .add_custom_button(__("Submit Response"), function () {
+  //         if (!frm.doc.current_response_box) {
+  //           frappe.msgprint(__("Please enter your response first."));
+  //           return;
+  //         }
+  //         frappe.call({
+  //           method:
+  //             "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
+  //           args: {
+  //             docname: frm.doc.name,
+  //             response_text: frm.doc.current_response_box,
+  //             attachment: frm.doc.current_response_attach,
+  //           },
+  //           freeze: true,
+  //           freeze_message: __("Submitting Response..."),
+  //           callback: function (r) {
+  //             if (r.message) {
+  //               frappe.show_alert({ message: r.message, indicator: "green" });
+  //               frm.reload_doc();
+  //             }
+  //           },
+  //         });
+  //       })
+  //       .css({ "background-color": "#1e6eb2", color: "white" });
+  //   }
+  // },
+
+
+    setup_dynamic_buttons: function (frm) {
     if (frm.is_new() || frm.doc.status === "Close") return;
+    
     const is_audit_team =
       frappe.user.has_role("Audit Manager") ||
       frappe.user.has_role("Audit Member");
@@ -436,39 +514,133 @@ frappe.ui.form.on("My Audits", {
         .css({ "background-color": "#dc3545", color: "white" });
     }
 
+    // --- NEW MODAL LOGIC FOR SUBMIT RESPONSE ---
     const pending_row = (frm.doc.audit_stages || []).find(
       (row) => row.status === "Pending" && row.user_id === current_user,
     );
+    
     if (pending_row) {
       frm
         .add_custom_button(__("Submit Response"), function () {
-          if (!frm.doc.current_response_box) {
-            frappe.msgprint(__("Please enter your response first."));
-            return;
-          }
-          frappe.call({
-            method:
-              "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
-            args: {
-              docname: frm.doc.name,
-              response_text: frm.doc.current_response_box,
-              attachment: frm.doc.current_response_attach,
-            },
-            freeze: true,
-            freeze_message: __("Submitting Response..."),
-            callback: function (r) {
-              if (r.message) {
-                frappe.show_alert({ message: r.message, indicator: "green" });
-                frm.reload_doc();
-              }
-            },
+            
+          // Create the Modal Dialog
+          let d = new frappe.ui.Dialog({
+            title: __("Submit Audit Response"),
+            fields: [
+                {
+                    label: __("Your Response"),
+                    fieldname: "response_text",
+                    fieldtype: "Small Text", // Uses rich text for better formatting
+                    reqd: 1, // Makes it mandatory
+                    default: frm.doc.current_response_box || "" // Pre-fill if they typed something before clicking
+                },
+                {
+                    label: __("Attachment (Optional)"),
+                    fieldname: "attachment",
+                    fieldtype: "Attach",
+                    default: frm.doc.current_response_attach || ""
+                }
+            ],
+            primary_action_label: __("Submit"),
+            primary_action(values) {
+                // When the user clicks Submit inside the modal
+                frappe.call({
+                  method: "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
+                  args: {
+                    docname: frm.doc.name,
+                    response_text: values.response_text,
+                    attachment: values.attachment || "",
+                  },
+                  freeze: true,
+                  freeze_message: __("Submitting Response..."),
+                  callback: function (r) {
+                    if (r.message) {
+                      frappe.show_alert({ message: r.message, indicator: "green" });
+                      d.hide(); // Close the modal
+                      frm.reload_doc(); // Reload page to show updated status
+                    }
+                  },
+                });
+            }
           });
+
+          d.show(); // Display the modal to the user
+
         })
         .css({ "background-color": "#1e6eb2", color: "white" });
     }
   },
 
-  handle_read_only_new: function (frm) {
+  // handle_read_only_new: function (frm) {
+  //   const is_audit_team =
+  //     frappe.user.has_role("Audit Manager") ||
+  //     frappe.user.has_role("Audit Member");
+
+  //   const current_user = frappe.session.user;
+
+  //   const pending_row = (frm.doc.audit_stages || []).find(
+  //     (row) => row.status === "Pending" && row.user_id === current_user,
+  //   );
+
+  //   const is_pending_for_me = !!pending_row;
+
+  //   // Hide Save button if pending for me (to show only Submit Response)
+  //   // But keep it for Audit Team who might need to save resolution details
+  //   if (is_pending_for_me && !is_audit_team) {
+  //     frm.disable_save();
+  //   } else if (is_audit_team || frm.doc.status === "Draft") {
+  //     frm.enable_save();
+  //   }
+
+  //   if (!is_audit_team && frm.doc.status !== "Draft") {
+  //     [
+  //       "audit_query_box",
+  //       "audit_query_subject_box",
+  //       "emp_branch",
+  //       "query_type",
+  //       "audit_attach_box",
+  //     ].forEach((f) => {
+  //       frm.set_df_property(f, "read_only", 1);
+  //     });
+  //   }
+
+  //   frm.set_df_property("audit_stages", "read_only", 1);
+
+  //   if (is_audit_team) {
+  //     frm.toggle_display("audit_items_section", true);
+  //     frm.toggle_display("audit_stages", true);
+  //   }
+
+  //   // Show response section only for current pending stage user
+  //   frm.toggle_display("response_section", is_pending_for_me);
+
+  //   // IMPORTANT: hidden fields ko runtime par unhide karo
+  //   frm.set_df_property("current_response_box", "hidden", !is_pending_for_me);
+
+  //   frm.set_df_property(
+  //     "current_response_attach",
+  //     "hidden",
+  //     !is_pending_for_me,
+  //   );
+
+  //   // Optional: existing response populate kar do
+  //   if (pending_row) {
+  //     frm.set_value("current_response_box", pending_row.response || "");
+  //     frm.set_value("current_response_attach", pending_row.attachment || "");
+  //   } else {
+  //     frm.set_value("current_response_box", "");
+  //     frm.set_value("current_response_attach", "");
+  //   }
+
+  //   frm.refresh_field("current_response_box");
+  //   frm.refresh_field("current_response_attach");
+
+  //   if (frm.doc.status === "Close") {
+  //     frm.disable_form();
+  //   }
+  // },
+  
+      handle_read_only_new: function (frm) {
     const is_audit_team =
       frappe.user.has_role("Audit Manager") ||
       frappe.user.has_role("Audit Member");
@@ -481,14 +653,14 @@ frappe.ui.form.on("My Audits", {
 
     const is_pending_for_me = !!pending_row;
 
-    // Hide Save button if pending for me (to show only Submit Response)
-    // But keep it for Audit Team who might need to save resolution details
+    // 1. Save Button Logic
     if (is_pending_for_me && !is_audit_team) {
       frm.disable_save();
     } else if (is_audit_team || frm.doc.status === "Draft") {
       frm.enable_save();
     }
 
+    // 2. Audit Details Read-Only Logic
     if (!is_audit_team && frm.doc.status !== "Draft") {
       [
         "audit_query_box",
@@ -503,39 +675,48 @@ frappe.ui.form.on("My Audits", {
 
     frm.set_df_property("audit_stages", "read_only", 1);
 
+    // 3. Section Visibility
     if (is_audit_team) {
       frm.toggle_display("audit_items_section", true);
       frm.toggle_display("audit_stages", true);
     }
 
-    // Show response section only for current pending stage user
-    frm.toggle_display("response_section", is_pending_for_me);
+    // --- 4. NEW: FREEZE ALL COMPLETED STAGE RESPONSE BOXES ---
+    // If a stage has already responded, lock their specific response box permanently.
+    const stages_mapping = [
+      { status_field: "bm_user_status", box_field: "bm_response_box" },
+      { status_field: "dh_user_status", box_field: "dh_response_box" },
+      { status_field: "com_user_status", box_field: "com_response_box" },
+      { status_field: "rm_user_status", box_field: "rm_response_box" },
+      { status_field: "rom_user_status", box_field: "rom_response_box" },
+      { status_field: "zm_user_status", box_field: "zm_response_box" },
+      { status_field: "zom_user_status", box_field: "zom_response_box" },
+      { status_field: "gm_user_status", box_field: "gm_response_box" },
+      { status_field: "hr_user_status", box_field: "hr_response_box" },
+      { status_field: "coo_user_status", box_field: "coo_response_box" },
+      { status_field: "ceo_user_status", box_field: "ceo_response_box" }
+    ];
 
-    // IMPORTANT: hidden fields ko runtime par unhide karo
-    frm.set_df_property("current_response_box", "hidden", !is_pending_for_me);
+    stages_mapping.forEach(stage => {
+        // If the user's status is Responded, make their box 100% read-only
+        if (frm.doc[stage.status_field] === "Responded") {
+            frm.set_df_property(stage.box_field, "read_only", 1);
+        }
+    });
+    // ---------------------------------------------------------
 
-    frm.set_df_property(
-      "current_response_attach",
-      "hidden",
-      !is_pending_for_me,
-    );
-
-    // Optional: existing response populate kar do
-    if (pending_row) {
-      frm.set_value("current_response_box", pending_row.response || "");
-      frm.set_value("current_response_attach", pending_row.attachment || "");
-    } else {
-      frm.set_value("current_response_box", "");
-      frm.set_value("current_response_attach", "");
-    }
-
-    frm.refresh_field("current_response_box");
-    frm.refresh_field("current_response_attach");
+    // Hide old generic current_response_box since we moved to the Modal
+    frm.set_df_property("current_response_box", "hidden", 1);
+    frm.set_df_property("current_response_attach", "hidden", 1);
+    
+    // Hide the whole "response_section" if you only want them using the Modal
+    frm.toggle_display("response_section", false);
 
     if (frm.doc.status === "Close") {
       frm.disable_form();
     }
   },
+  
   handle_close_query: function (frm) {
     frappe.prompt(
       [
