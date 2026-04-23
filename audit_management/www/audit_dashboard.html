@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Audit Dashboard</title>
+	<style>
+		:root {
+			--bg: #f5f7fb;
+			--panel: #ffffff;
+			--panel-soft: #f8faff;
+			--border: #dfe6f1;
+			--border-strong: #d4dced;
+			--text: #17233c;
+			--muted: #66738f;
+			--heading: #101828;
+			--primary: #1f6fff;
+			--primary-soft: #eaf2ff;
+			--success: #1f9d55;
+			--success-soft: #ebfff3;
+			--warning: #ff8a1f;
+			--warning-soft: #fff5e8;
+			--danger: #f04438;
+			--danger-soft: #fff0ef;
+			--shadow: 0 10px 28px rgba(22, 34, 62, 0.06);
+			--radius-lg: 18px;
+			--radius-md: 14px;
+			--radius-sm: 10px;
+			--font: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		[v-cloak] {
+			display: none !important;
+		}
+
+		body {
+			margin: 0;
+			font-family: var(--font);
+			background: var(--bg);
+			color: var(--text);
+			overflow: hidden;
+		}
+
+		.audit-page {
+			height: 100vh;
+			display: grid;
+			grid-template-columns: 208px minmax(0, 1fr);
+		}
+
+		.sidebar {
+			height: 100vh;
+			background: linear-gradient(180deg, #f7f9fd 0%, #f4f7fb 100%);
+			border-right: 1px solid var(--border);
+			display: flex;
+			flex-direction: column;
+			padding: 14px 10px 12px;
+			gap: 14px;
+			overflow: hidden;
+		}
+
+		.brand {
+			width: 36px;
+			height: 36px;
+			border-radius: 9px;
+			background: linear-gradient(135deg, #2874ff 0%, #1c60e4 100%);
+			color: #fff;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 700;
+			font-size: 20px;
+			margin: 0 0 6px 8px;
+			box-shadow: var(--shadow);
+		}
+
+		.nav-group-label {
+			font-size: 12px;
+			font-weight: 700;
+			color: var(--muted);
+			letter-spacing: 0.03em;
+			margin: 10px 8px 4px;
+			text-transform: uppercase;
+		}
+
+		.nav-list {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+		}
+
+		.nav-item {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 11px 12px;
+			border-radius: 12px;
+			color: #22314f;
+			text-decoration: none;
+			font-size: 15px;
+			font-weight: 500;
+		}
+
+		.nav-item.active {
+			background: #e8f0ff;
+			color: var(--primary);
+		}
+
+		.nav-item svg {
+			width: 16px;
+			height: 16px;
+			flex: 0 0 16px;
+			stroke: currentColor;
+		}
+
+		.sidebar-footer {
+			margin-top: auto;
+			background: rgba(255, 255, 255, 0.75);
+			border: 1px solid var(--border);
+			border-radius: 14px;
+			padding: 12px;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.avatar {
+			width: 40px;
+			height: 40px;
+			border-radius: 999px;
+			background: #dff4df;
+			color: #2e7d32;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 700;
+		}
+
+		.avatar.small {
+			width: 36px;
+			height: 36px;
+			font-size: 14px;
+			background: #e7f7e9;
+		}
+
+		.user-meta {
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+			min-width: 0;
+		}
+
+		.user-name {
+			font-size: 14px;
+			font-weight: 600;
+			color: var(--heading);
+		}
+
+		.user-role {
+			font-size: 13px;
+			color: var(--muted);
+		}
+
+		.main {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			height: 100vh;
+			overflow: hidden;
+		}
+
+		.topbar {
+			min-height: 60px;
+			padding: 10px 22px;
+			border-bottom: 1px solid var(--border);
+			background: rgba(255, 255, 255, 0.88);
+			backdrop-filter: blur(10px);
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 20px;
+			flex: 0 0 auto;
+		}
+
+		.breadcrumbs {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			font-size: 14px;
+			color: #283652;
+			white-space: nowrap;
+		}
+
+		.breadcrumbs span:last-child {
+			font-weight: 600;
+		}
+
+		.topbar-right {
+			display: flex;
+			align-items: center;
+			gap: 16px;
+			min-width: 0;
+		}
+
+		.topbar-left {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+			flex: 1;
+			min-width: 0;
+		}
+
+		.search {
+			width: min(390px, 36vw);
+			height: 38px;
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			background: #f7f9fd;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 0 14px;
+			color: var(--muted);
+			font-size: 14px;
+		}
+
+		.topbar-divider {
+			width: 1px;
+			height: 24px;
+			background: var(--border);
+		}
+
+		.notification {
+			position: relative;
+			color: #33415d;
+		}
+
+		.notification-badge {
+			position: absolute;
+			top: -7px;
+			right: -7px;
+			width: 18px;
+			height: 18px;
+			border-radius: 999px;
+			background: #ff2d55;
+			color: #fff;
+			font-size: 11px;
+			font-weight: 700;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			border: 2px solid #fff;
+		}
+
+		.content {
+			padding: 22px 30px 26px;
+			flex: 1 1 auto;
+			overflow: auto;
+		}
+
+		.page-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			gap: 18px;
+			margin-bottom: 14px;
+		}
+
+		.page-title {
+			margin: 0;
+			font-size: 24px;
+			font-weight: 700;
+			color: var(--heading);
+		}
+
+		.page-subtitle {
+			margin-top: 6px;
+			font-size: 15px;
+			color: #4a5a79;
+		}
+
+		.page-actions {
+			display: flex;
+			gap: 14px;
+		}
+
+		.header-filters {
+			display: grid;
+			grid-template-columns: 1fr 1.2fr 0.95fr 0.95fr auto;
+			gap: 12px;
+			align-items: end;
+			flex: 1;
+			min-width: 0;
+		}
+
+		.header-filters.topbar-filters .field label {
+			display: none;
+		}
+
+		.header-filters.topbar-filters .control {
+			height: 34px;
+			font-size: 13px;
+			padding: 0 10px;
+		}
+
+		.btn {
+			height: 38px;
+			border-radius: 10px;
+			border: 1px solid var(--border);
+			background: #fff;
+			color: #24334f;
+			padding: 0 16px;
+			display: inline-flex;
+			align-items: center;
+			gap: 9px;
+			font-size: 15px;
+			font-weight: 600;
+			box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+		}
+
+		.btn-primary {
+			background: var(--primary);
+			border-color: var(--primary);
+			color: #fff;
+		}
+
+		.btn[disabled] {
+			opacity: 0.7;
+			cursor: not-allowed;
+		}
+
+		.panel {
+			background: var(--panel);
+			border: 1px solid var(--border);
+			border-radius: var(--radius-lg);
+			box-shadow: 0 1px 1px rgba(16, 24, 40, 0.02);
+		}
+
+		.filter-panel {
+			padding: 12px 16px 14px;
+			margin-bottom: 18px;
+			display: none;
+		}
+
+		.filter-grid {
+			display: grid;
+			grid-template-columns: 1fr 1.2fr 0.95fr 0.95fr auto;
+			gap: 12px;
+			align-items: end;
+		}
+
+		.field label {
+			display: block;
+			font-size: 12px;
+			font-weight: 600;
+			color: #22314f;
+			margin-bottom: 5px;
+		}
+
+		.control {
+			height: 36px;
+			border: 1px solid var(--border-strong);
+			border-radius: 9px;
+			background: #fff;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0 12px;
+			font-size: 14px;
+			color: #24334f;
+			white-space: nowrap;
+		}
+
+		.control.muted {
+			color: #33476d;
+		}
+
+		.kpi-grid {
+			display: grid;
+			grid-template-columns: repeat(5, minmax(0, 1fr));
+			gap: 10px;
+			margin-bottom: 18px;
+		}
+
+		.kpi-card {
+			padding: 16px 18px 12px;
+			display: flex;
+			align-items: flex-start;
+			gap: 14px;
+			min-height: 86px;
+		}
+
+		.kpi-icon {
+			width: 34px;
+			height: 34px;
+			border-radius: 999px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			flex: 0 0 34px;
+		}
+
+		.kpi-icon.blue { background: var(--primary-soft); color: var(--primary); }
+		.kpi-icon.orange { background: var(--warning-soft); color: var(--warning); }
+		.kpi-icon.green { background: var(--success-soft); color: var(--success); }
+		.kpi-icon.red { background: var(--danger-soft); color: var(--danger); }
+
+		.kpi-copy {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			min-width: 0;
+		}
+
+		.kpi-copy.compact {
+			justify-content: center;
+			height: 100%;
+		}
+
+		.kpi-label {
+			font-size: 14px;
+			color: #2c3b57;
+		}
+
+		.kpi-value {
+			font-size: 32px;
+			line-height: 1;
+			font-weight: 700;
+			color: var(--heading);
+		}
+
+		.kpi-trend {
+			font-size: 13px;
+			color: #5b6986;
+		}
+
+		.kpi-trend strong {
+			margin-right: 4px;
+		}
+
+		.kpi-trend.up-blue strong { color: var(--primary); }
+		.kpi-trend.up-green strong { color: var(--success); }
+		.kpi-trend.up-red strong { color: var(--danger); }
+
+		.branch-card {
+			padding: 16px 18px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+		}
+
+		.branch-card-left {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+		}
+
+		.donut {
+			width: 42px;
+			height: 42px;
+			border-radius: 999px;
+			background: conic-gradient(#2c73ff 0 25%, #ff5f56 25% 45%, #4dcf89 45% 68%, #ffcb4d 68% 100%);
+			position: relative;
+		}
+
+		.donut::after {
+			content: "";
+			position: absolute;
+			inset: 8px;
+			border-radius: 999px;
+			background: #fff;
+		}
+
+		.link-action {
+			color: var(--primary);
+			font-size: 15px;
+			font-weight: 600;
+			text-decoration: none;
+			display: inline-flex;
+			align-items: center;
+			gap: 5px;
+		}
+
+		.table-panel {
+			overflow: hidden;
+		}
+
+		.table-header {
+			padding: 16px 14px 14px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 14px;
+			border-bottom: 1px solid var(--border);
+		}
+
+		.table-title {
+			margin: 0;
+			font-size: 18px;
+			font-weight: 700;
+			color: var(--heading);
+		}
+
+		.table-tools {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.tool-btn {
+			height: 38px;
+			padding: 0 14px;
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			background: #fff;
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			color: #24334f;
+			font-size: 15px;
+		}
+
+		.audit-table-wrap {
+			overflow-x: auto;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			min-width: 1120px;
+		}
+
+		thead th {
+			padding: 14px 14px;
+			text-align: left;
+			font-size: 14px;
+			font-weight: 600;
+			color: #22314f;
+			background: #fff;
+			border-bottom: 1px solid var(--border);
+		}
+
+		tbody td {
+			padding: 13px 14px;
+			font-size: 14px;
+			color: #21304d;
+			vertical-align: top;
+			border-bottom: 1px solid #edf1f7;
+		}
+
+		.pill {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 5px 10px;
+			border-radius: 999px;
+			font-size: 13px;
+			font-weight: 600;
+			white-space: nowrap;
+			border: 1px solid transparent;
+		}
+
+		.pill::before {
+			content: "";
+			width: 8px;
+			height: 8px;
+			border-radius: 999px;
+			background: currentColor;
+		}
+
+		.pill.progress {
+			color: #1f6fff;
+			background: #edf4ff;
+			border-color: #cdddff;
+		}
+
+		.pill.pending {
+			color: #ff8a1f;
+			background: #fff4e8;
+			border-color: #ffd4a7;
+		}
+
+		.pill.completed {
+			color: #1f9d55;
+			background: #ecfff4;
+			border-color: #bde8cb;
+		}
+
+		.pill.overdue {
+			color: #ff3b30;
+			background: #fff1ef;
+			border-color: #ffc3bc;
+		}
+
+		.audit-id {
+			display: flex;
+			flex-direction: column;
+			gap: 5px;
+		}
+
+		.audit-id strong,
+		.branch-cell strong,
+		.assignee-cell strong,
+		.date-cell strong {
+			font-weight: 600;
+			color: #23324f;
+		}
+
+		.meta {
+			font-size: 13px;
+			color: #66738f;
+		}
+
+		.branch-cell,
+		.assignee-cell {
+			display: flex;
+			align-items: center;
+			gap: 9px;
+		}
+
+		.icon-inline {
+			width: 16px;
+			height: 16px;
+			color: #50617e;
+			flex: 0 0 16px;
+		}
+
+		.date-cell {
+			display: flex;
+			flex-direction: column;
+			gap: 5px;
+		}
+
+		.date-cell .alert {
+			color: var(--danger);
+			font-size: 13px;
+			font-weight: 600;
+		}
+
+		.badge {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 58px;
+			padding: 5px 10px;
+			border-radius: 8px;
+			font-size: 13px;
+			font-weight: 600;
+			border: 1px solid transparent;
+		}
+
+		.badge.high {
+			color: #ff4d42;
+			background: #fff0ef;
+			border-color: #ffc6c2;
+		}
+
+		.badge.medium {
+			color: #ff8a1f;
+			background: #fff5ea;
+			border-color: #ffd7ad;
+		}
+
+		.badge.low {
+			color: #1f9d55;
+			background: #eefcf3;
+			border-color: #bce7ca;
+		}
+
+		.action-dot {
+			width: 34px;
+			height: 34px;
+			border-radius: 9px;
+			border: 1px solid var(--border);
+			background: #fff;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			color: #44536f;
+			font-size: 18px;
+		}
+
+		.modal-backdrop {
+			position: fixed;
+			inset: 0;
+			background: rgba(16, 24, 40, 0.38);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 24px;
+			z-index: 50;
+		}
+
+		.modal-card {
+			width: min(1080px, 100%);
+			background: #fff;
+			border: 1px solid var(--border);
+			border-radius: 20px;
+			box-shadow: 0 24px 64px rgba(16, 24, 40, 0.18);
+			overflow: hidden;
+		}
+
+		.modal-header,
+		.modal-footer {
+			padding: 18px 20px;
+			border-bottom: 1px solid var(--border);
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+		}
+
+		.modal-footer {
+			border-top: 1px solid var(--border);
+			border-bottom: 0;
+			justify-content: flex-end;
+		}
+
+		.modal-title {
+			margin: 0;
+			font-size: 18px;
+			font-weight: 700;
+			color: var(--heading);
+		}
+
+		.modal-body {
+			padding: 20px;
+		}
+
+		.form-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 16px;
+		}
+
+		.form-grid .field.full {
+			grid-column: 1 / -1;
+		}
+
+		.input,
+		.select,
+		.textarea {
+			width: 100%;
+			border: 1px solid var(--border-strong);
+			border-radius: 10px;
+			background: #fff;
+			padding: 10px 12px;
+			font: inherit;
+			color: #24334f;
+		}
+
+		.textarea {
+			min-height: 108px;
+			resize: vertical;
+		}
+
+		.modal-close {
+			width: 34px;
+			height: 34px;
+			border-radius: 10px;
+			border: 1px solid var(--border);
+			background: #fff;
+			color: #44536f;
+			font-size: 18px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.form-error {
+			font-size: 13px;
+			color: var(--danger);
+		}
+
+		.file-help {
+			font-size: 13px;
+			color: var(--muted);
+		}
+
+		.config-panel {
+			border: 1px solid var(--border);
+			border-radius: 14px;
+			background: #f8fbff;
+			padding: 14px;
+			display: grid;
+			gap: 12px;
+			min-height: 100%;
+		}
+
+		.config-title {
+			font-size: 14px;
+			font-weight: 700;
+			color: var(--heading);
+		}
+
+		.config-subtitle {
+			font-size: 13px;
+			color: var(--muted);
+		}
+
+		.config-list {
+			display: flex;
+			gap: 10px;
+			overflow-x: auto;
+			padding-bottom: 4px;
+		}
+
+		.config-item {
+			background: #fff;
+			border: 1px solid #d7e4f7;
+			border-radius: 12px;
+			padding: 12px;
+			display: grid;
+			gap: 8px;
+			min-width: 220px;
+			flex: 0 0 220px;
+		}
+
+		.config-item-head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 10px;
+			flex-wrap: wrap;
+		}
+
+		.config-item-title {
+			font-size: 14px;
+			font-weight: 700;
+			color: #23324f;
+		}
+
+		.stage-chip {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 52px;
+			height: 22px;
+			padding: 0 8px;
+			border-radius: 999px;
+			background: #edf4ff;
+			color: var(--primary);
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		.config-item-subtitle {
+			font-size: 13px;
+			color: #66738f;
+		}
+
+		.table-footer {
+			padding: 12px 14px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 14px;
+			flex-wrap: wrap;
+			color: #66738f;
+			font-size: 14px;
+		}
+
+		.pagination {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.pagination .page {
+			width: 34px;
+			height: 34px;
+			border-radius: 10px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			color: #273652;
+		}
+
+		.pagination .page.active {
+			background: #eef2f8;
+			border: 1px solid var(--border);
+		}
+
+		.mobile-nav-toggle {
+			display: none;
+		}
+
+		@media (max-width: 1280px) {
+			.kpi-grid {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+
+			.filter-grid {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+		}
+
+		@media (max-width: 980px) {
+			.audit-page {
+				grid-template-columns: 1fr;
+			}
+
+			.sidebar {
+				display: none;
+			}
+
+			.mobile-nav-toggle {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 38px;
+				height: 38px;
+				border-radius: 10px;
+				border: 1px solid var(--border);
+				background: #fff;
+			}
+
+			.topbar {
+				padding: 10px 16px;
+			}
+
+			.breadcrumbs {
+				font-size: 13px;
+				overflow: hidden;
+			}
+
+			.search,
+			.topbar-divider,
+			.help-link {
+				display: none;
+			}
+
+			.content {
+				padding: 18px 16px 24px;
+			}
+
+			.page-header {
+				flex-direction: column;
+			}
+
+			.page-actions {
+				width: 100%;
+			}
+
+			.topbar {
+				flex-wrap: wrap;
+			}
+
+			.topbar-left,
+			.topbar-right {
+				width: 100%;
+			}
+
+			.header-filters {
+				grid-template-columns: 1fr;
+			}
+
+			.page-actions .btn,
+			.filter-grid .btn {
+				flex: 1;
+				justify-content: center;
+			}
+
+			.filter-grid,
+			.kpi-grid,
+			.form-grid {
+				grid-template-columns: 1fr;
+			}
+
+			.config-list {
+				display: grid;
+			}
+
+			.config-item {
+				min-width: 0;
+				flex: 1 1 auto;
+			}
+
+			.table-header,
+			.table-footer {
+				flex-direction: column;
+				align-items: flex-start;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="audit-page" v-scope="AuditDashboard()" v-cloak>
+		<aside class="sidebar">
+			<div class="brand">E</div>
+
+			<nav class="nav-list">
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg>
+					<span>Home</span>
+				</a>
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 11 2 2 5-5"/></svg>
+					<span>My Audits</span>
+				</a>
+			</nav>
+
+			<div class="nav-group-label">Audit Management</div>
+			<nav class="nav-list">
+				<a class="nav-item active" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="15" width="7" height="7"/><rect x="14" y="15" width="7" height="7"/></svg>
+					<span>Dashboard</span>
+				</a>
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.8-4.2 13.2-4.2 16 0"/></svg>
+					<span>All Audits</span>
+				</a>
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M8 3v4"/><path d="M16 3v4"/><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16"/></svg>
+					<span>Audit Plan</span>
+				</a>
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M7 4h10l3 3v13H4V4h3Z"/><path d="M8 12h8"/><path d="M8 16h6"/></svg>
+					<span>Observations</span>
+				</a>
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 5h16v14H4z"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+					<span>Reports</span>
+				</a>
+			</nav>
+
+			<div class="nav-group-label">Configuration</div>
+			<nav class="nav-list">
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3v18"/><path d="M7 8h10"/><path d="M7 16h10"/></svg>
+					<span>Audit Stages</span>
+				</a>
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="16" r="3"/><path d="M11 9.5 13 12"/><path d="M13 12l2 2.5"/></svg>
+					<span>Audit Teams</span>
+				</a>
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M5 4h14v16H5z"/><path d="m8 9 2 2 4-4"/><path d="M8 15h8"/></svg>
+					<span>Audit Checklist</span>
+				</a>
+				<a class="nav-item" href="#">
+					<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.08V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 8 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.08-.4H2.9a2 2 0 0 1 0-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6A1.7 1.7 0 0 0 10.4 2.9V2.8a2 2 0 1 1 4 0V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c0 .37.13.73.36 1a1.7 1.7 0 0 0 1.08.4h.09a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.44.6Z"/></svg>
+					<span>Settings</span>
+				</a>
+			</nav>
+
+			<div class="sidebar-footer">
+				<div class="avatar">AB</div>
+				<div class="user-meta">
+					<div class="user-name">Arjun P.</div>
+					<div class="user-role">Audit Manager</div>
+				</div>
+			</div>
+		</aside>
+
+		<main class="main">
+			<header class="topbar">
+				<div class="topbar-left">
+					<button class="mobile-nav-toggle" type="button" aria-label="Open navigation">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22314f" stroke-width="1.8"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+					</button>
+
+					<div class="header-filters topbar-filters">
+						<div class="field" v-for="filter in filters" :key="filter.key">
+							<label v-text="filter.label"></label>
+							<div class="control" :class="{ muted: filter.muted }">
+								<span v-text="filter.value"></span>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#50617e" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="topbar-right">
+					<div class="search">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7894" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+						<span>Search or type a command (Ctrl + G)</span>
+					</div>
+					<div class="notification">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#32415d" stroke-width="1.8"><path d="M15 17h5l-1.4-1.4a2 2 0 0 1-.6-1.42V11a6 6 0 1 0-12 0v3.18a2 2 0 0 1-.59 1.41L4 17h5"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+						<span class="notification-badge">3</span>
+					</div>
+					<div class="topbar-divider"></div>
+					<div class="help-link">Help</div>
+					<div class="avatar small">AB</div>
+				</div>
+			</header>
+
+			<div class="content">
+				<div class="page-header">
+					<div>
+						<h1 class="page-title">Audit Dashboard</h1>
+						<div class="page-subtitle">Monitor and manage audits across branches</div>
+					</div>
+
+					<div class="page-actions">
+						<button class="btn" type="button">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 0 1-15.36 6.36"/><path d="M3 12A9 9 0 0 1 18.36 5.64"/><path d="M3 16v-4h4"/><path d="M21 8v4h-4"/></svg>
+							<span>Refresh</span>
+						</button>
+						<button v-if="canCreateAudit" class="btn btn-primary" type="button" @click="openCreateModal">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+							<span>New Audit</span>
+						</button>
+					</div>
+				</div>
+
+				<section class="panel filter-panel">
+					<div class="filter-grid">
+						<div class="field">
+							<label>Branch</label>
+							<div class="control">All Branches
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#50617e" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
+							</div>
+						</div>
+						<div class="field">
+							<label>Date Range</label>
+							<div class="control muted">01 May 2025 &nbsp; - &nbsp; 31 May 2025
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#50617e" stroke-width="1.8"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
+							</div>
+						</div>
+						<div class="field">
+							<label>Status</label>
+							<div class="control">All Statuses
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#50617e" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
+							</div>
+						</div>
+						<div class="field">
+							<label>Auditor</label>
+							<div class="control">All Auditors
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#50617e" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
+							</div>
+						</div>
+						<button class="btn" type="button" style="height:36px; padding:0 14px;">Clear</button>
+					</div>
+				</section>
+
+				<section class="kpi-grid">
+					<div class="panel kpi-card" v-for="card in numberCards" :key="card.key">
+						<div class="kpi-icon" :class="card.iconClass" v-html="card.icon"></div>
+						<div class="kpi-copy compact">
+							<div class="kpi-label" v-text="card.label"></div>
+							<div class="kpi-value" v-text="card.value"></div>
+						</div>
+					</div>
+
+					<div class="panel branch-card" v-if="showBranchCard">
+						<div class="branch-card-left">
+							<div class="donut"></div>
+							<div class="kpi-copy">
+								<div class="kpi-label">By Branch (Top 5)</div>
+							</div>
+						</div>
+						<a class="link-action" href="#">
+							<span>View</span>
+							<span>&gt;</span>
+						</a>
+					</div>
+				</section>
+
+				<section class="panel table-panel">
+					<div class="table-header">
+						<h2 class="table-title">Audits (<span v-text="audits.length"></span>)</h2>
+						<div class="table-tools">
+							<button class="tool-btn" type="button">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/><path d="M9 4v16"/><path d="M15 4v16"/></svg>
+								<span>Columns</span>
+							</button>
+							<button class="tool-btn" type="button">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16l-6 7v6l-4 2v-8L4 5Z"/></svg>
+								<span>Filter</span>
+							</button>
+							<button class="tool-btn" type="button">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8"/><path d="M8 13h8"/></svg>
+								<span>+</span>
+							</button>
+						</div>
+					</div>
+
+					<div class="audit-table-wrap">
+						<table>
+							<thead>
+								<tr>
+									<th>Status</th>
+									<th>Audit ID</th>
+									<th>Branch</th>
+									<th>Auditor</th>
+									<th>Stage / Assigned To</th>
+									<th>Due Date</th>
+									<th>Risk</th>
+									<th>Remarks</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="audit in audits" :key="audit.id">
+									<td><span class="pill" :class="audit.statusClass" v-text="audit.status"></span></td>
+									<td>
+										<div class="audit-id">
+											<strong v-text="audit.id"></strong>
+											<span class="meta" v-text="audit.type"></span>
+										</div>
+									</td>
+									<td>
+										<div class="branch-cell">
+											<svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h16"/><path d="M6 20V8l6-4 6 4v12"/><path d="M9 11h2"/><path d="M13 11h2"/><path d="M9 15h2"/><path d="M13 15h2"/></svg>
+											<strong v-text="audit.branch"></strong>
+										</div>
+									</td>
+									<td>
+										<div class="assignee-cell">
+											<svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.6-3.8 11.4-3.8 14 0"/></svg>
+											<strong v-text="audit.auditor"></strong>
+										</div>
+									</td>
+									<td>
+										<div class="audit-id">
+											<strong v-text="audit.stage"></strong>
+											<span class="meta" v-text="audit.assignedTo"></span>
+										</div>
+									</td>
+									<td>
+										<div class="date-cell">
+											<strong v-text="audit.dueDate"></strong>
+											<span :class="audit.dueMetaClass" v-text="audit.dueMeta"></span>
+										</div>
+									</td>
+									<td><span class="badge" :class="audit.riskClass" v-text="audit.risk"></span></td>
+									<td v-text="audit.remarks"></td>
+									<td><span class="action-dot">⋮</span></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<div class="table-footer">
+						<div>Showing 1 to <span v-text="audits.length"></span> of 41 entries</div>
+						<div class="pagination">
+							<div>Rows per page</div>
+							<div class="tool-btn" style="height:34px;">10</div>
+							<div class="page">&lt;</div>
+							<div class="page active">1</div>
+							<div class="page">2</div>
+							<div class="page">3</div>
+							<div class="page">4</div>
+							<div class="page">5</div>
+							<div class="page">&gt;</div>
+						</div>
+					</div>
+				</section>
+			</div>
+			<div v-show="showCreateModal" v-cloak class="modal-backdrop" @click.self="closeCreateModal(true)">
+				<div class="modal-card">
+					<div class="modal-header">
+						<h3 class="modal-title">Create New Audit</h3>
+						<button class="modal-close" type="button" @click.prevent="closeCreateModal(true)">×</button>
+					</div>
+					<div class="modal-body">
+						<div class="config-panel">
+								<div v-show="!!createForm.emp_branch">
+									<div>
+										<div class="config-title">Branch Workflow</div>
+									</div>
+								<div class="config-subtitle" v-show="branchConfigLoading">Loading branch configuration...</div>
+								<div class="config-subtitle" v-show="!branchConfigLoading && !branchConfiguration.length">No stage configuration found for this branch.</div>
+								<div class="config-list" v-show="!branchConfigLoading && !!branchConfiguration.length">
+									<div class="config-item" v-for="stageRow in branchConfiguration" :key="stageRow.idx || (stageRow.stage + '-' + stageRow.stage_name)">
+										<div class="config-item-head">
+											<div class="config-item-title" v-text="'Stage ' + (stageRow.stage || '-') + ' - ' + (stageRow.stage_name || '-')"></div>
+										</div>
+										<div class="config-item-subtitle" v-text="stageRow.employee_name || stageRow.employee || 'Unassigned'"></div>
+									</div>
+								</div>
+							</div>
+							<div v-show="!createForm.emp_branch">
+								<div>
+									<div class="config-title">Branch Workflow</div>
+									<div class="config-subtitle">Select a branch to preview its Audit Level stage mapping.</div>
+								</div>
+							</div>
+						</div>
+						<div class="form-grid">
+							<div class="field">
+								<label>Branch</label>
+								<select class="select" v-model="createForm.emp_branch" @change="handleBranchChange">
+									<option value="">Select Branch</option>
+									<option v-for="branch in branchOptions" :key="branch.value" :value="branch.value" v-text="branch.label || (branch.code + ' - ' + (branch.branch_name || branch.value))"></option>
+								</select>
+							</div>
+							<div class="field">
+								<label>Query Type</label>
+								<select class="select" v-model="createForm.query_type">
+									<option value="">Select Query Type</option>
+									<option v-for="queryType in queryTypeOptions" :key="queryType" :value="queryType" v-text="queryType"></option>
+								</select>
+							</div>
+							<div class="field full">
+								<label>Subject</label>
+								<input class="input" type="text" v-model.trim="createForm.audit_query_subject_box" placeholder="Enter audit subject">
+							</div>
+							<div class="field full">
+								<label>Description</label>
+								<textarea class="textarea" v-model.trim="createForm.audit_query_box" placeholder="Add audit description"></textarea>
+							</div>
+							<div class="field full">
+								<label>Attachment</label>
+								<input class="input" type="file" @change="handleAttachmentChange">
+								<div class="file-help" v-show="!!createForm.attachment_name" v-text="'Selected: ' + createForm.attachment_name"></div>
+							</div>
+							<div v-show="!!createError" class="form-error full" v-text="createError"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button class="btn" type="button" @click.prevent="closeCreateModal(true)">Cancel</button>
+						<button class="btn btn-primary" type="button" @click="submitCreateAudit" :disabled="createLoading">
+							<span v-text="createLoading ? 'Creating...' : 'Create Audit'"></span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
+	<script src="/assets/audit_management/js/petite-vue.iife.js"></script>
+	<script>
+		const AUDIT_DASHBOARD_BOOT = {{ audit_dashboard_boot | tojson }};
+		const CSRF_TOKEN = {{ frappe.session.csrf_token | tojson }};
+		const DEFAULT_NUMBER_CARDS = [
+			{ key: "total", label: "Total", value: 0 },
+			{ key: "draft", label: "Draft", value: 0 },
+			{ key: "pending", label: "Pending", value: 0 },
+			{ key: "completed", label: "Completed", value: 0 },
+			{ key: "overdue", label: "Overdue", value: 0 }
+		];
+		const DEFAULT_FILTERS = [
+			{ key: "branch", label: "Branch", value: "All Branches", muted: false },
+			{ key: "date_range", label: "Date Range", value: "01 May 2025 - 31 May 2025", muted: true },
+			{ key: "status", label: "Status", value: "All Statuses", muted: false },
+			{ key: "auditor", label: "Auditor", value: "All Auditors", muted: false }
+		];
+		const SAMPLE_AUDITS = [
+			{ id: "A-101", type: "Lease Audit", branch: "Alpha Ltd", auditor: "Rahul Sharma", stage: "Field Audit", assignedTo: "Rahul S.", dueDate: "01 Jun 2025", dueMeta: "2 days overdue", dueMetaClass: "alert", risk: "High", riskClass: "high", status: "In Progress", statusClass: "progress", remarks: "Plumbing leak observed in unit..." },
+			{ id: "B-202", type: "Facility Audit", branch: "Beta LLC", auditor: "Neha Kapoor", stage: "Document Review", assignedTo: "Neha K.", dueDate: "08 Jun 2025", dueMeta: "In 9 days", dueMetaClass: "meta", risk: "Medium", riskClass: "medium", status: "Pending", statusClass: "pending", remarks: "Waiting for lease agreement..." },
+			{ id: "D-401", type: "Lease Audit", branch: "Delta Inc", auditor: "Vikram Singh", stage: "Closed", assignedTo: "Vikram S.", dueDate: "12 May 2025", dueMeta: "Completed", dueMetaClass: "meta", risk: "Low", riskClass: "low", status: "Completed", statusClass: "completed", remarks: "All documents verified." },
+			{ id: "E-102", type: "Compliance Audit", branch: "Epsilon Co", auditor: "Priya Mehta", stage: "Field Audit", assignedTo: "Priya M.", dueDate: "20 May 2025", dueMeta: "11 days overdue", dueMetaClass: "alert", risk: "High", riskClass: "high", status: "Overdue", statusClass: "overdue", remarks: "Fire extinguisher not found..." },
+			{ id: "A-201", type: "Safety Audit", branch: "Alpha Ltd", auditor: "Arjun Patel", stage: "Observation", assignedTo: "Arjun P.", dueDate: "05 Jun 2025", dueMeta: "In 6 days", dueMetaClass: "meta", risk: "Medium", riskClass: "medium", status: "In Progress", statusClass: "progress", remarks: "Electrical wiring needs review." },
+			{ id: "C-301", type: "Stock Audit", branch: "Globex Pvt Ltd", auditor: "Neha Kapoor", stage: "Planning", assignedTo: "Neha K.", dueDate: "10 Jun 2025", dueMeta: "In 11 days", dueMetaClass: "meta", risk: "Low", riskClass: "low", status: "Pending", statusClass: "pending", remarks: "Inventory count pending." },
+			{ id: "A-102", type: "Lease Audit", branch: "Alpha Ltd", auditor: "Rahul Sharma", stage: "Field Audit", assignedTo: "Rahul S.", dueDate: "18 Jun 2025", dueMeta: "In 19 days", dueMetaClass: "meta", risk: "Medium", riskClass: "medium", status: "In Progress", statusClass: "progress", remarks: "Site visit scheduled." }
+		];
+		const CARD_META = {
+			total: {
+				iconClass: "blue",
+				icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h4"/></svg>'
+			},
+			draft: {
+				iconClass: "blue",
+				icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5V6.75A1.75 1.75 0 0 1 5.75 5h8.5L20 10.75V19.5A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5Z"/><path d="M14 5v6h6"/></svg>'
+			},
+			pending: {
+				iconClass: "orange",
+				icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+			},
+			completed: {
+				iconClass: "green",
+				icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.4 2.4 4.6-5"/></svg>'
+			},
+			overdue: {
+				iconClass: "red",
+				icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>'
+			}
+		};
+
+		function getInitialBoot() {
+			return AUDIT_DASHBOARD_BOOT || {};
+		}
+
+		function normalizeBranchOptions(options) {
+			const branchOptions = Array.isArray(options) ? options : [];
+			return branchOptions.map((branch) => {
+				if (typeof branch === "string") {
+					return {
+						value: branch,
+						code: branch,
+						branch_name: "",
+						label: branch
+					};
+				}
+
+				const value = branch.value || branch.name || branch.code || "";
+				const code = branch.code || value;
+				const branchName = branch.branch_name || branch.branch || "";
+				return {
+					value,
+					code,
+					branch_name: branchName,
+					label: branch.label || [code, branchName].filter(Boolean).join(" - ") || value
+				};
+			});
+		}
+
+		function getInitialCreateForm() {
+			return {
+				emp_branch: "",
+				query_type: "",
+				audit_query_subject_box: "",
+				audit_query_box: "",
+				attachment_file: null,
+				attachment_name: ""
+			};
+		}
+
+		function getCardMeta(key) {
+			return CARD_META[key] || CARD_META.total;
+		}
+
+		function normalizeNumberCards(payload) {
+			const payloadCards = Array.isArray(payload && payload.number_cards) ? payload.number_cards : [];
+			const cardMap = Object.fromEntries(payloadCards.map((card) => [card.key, card]));
+
+			return DEFAULT_NUMBER_CARDS.map((card) => {
+				const payloadCard = cardMap[card.key] || {};
+				return {
+					key: card.key,
+					label: payloadCard.label || card.label,
+					value: typeof payloadCard.value === "number" ? payloadCard.value : Number(payloadCard.value || 0)
+				};
+			});
+		}
+
+		function buildNumberCards(payload) {
+			return normalizeNumberCards(payload).map((card) => ({
+				...card,
+				...getCardMeta(card.key)
+			}));
+		}
+
+		async function fetchApi(url, options = {}) {
+			const headers = {
+				Accept: "application/json",
+				...(options.headers || {})
+			};
+
+			if (CSRF_TOKEN && !headers["X-Frappe-CSRF-Token"]) {
+				headers["X-Frappe-CSRF-Token"] = CSRF_TOKEN;
+			}
+
+			const response = await fetch(url, {
+				credentials: "same-origin",
+				...options,
+				headers
+			});
+			const payload = await response.json();
+
+			if (!response.ok || payload.exc) {
+				throw new Error(payload._server_messages || payload.message || "Request failed.");
+			}
+
+			return payload;
+		}
+
+		async function callDashboardMethod(method, args) {
+			const body = new URLSearchParams();
+			Object.entries(args || {}).forEach(([key, value]) => {
+				if (value !== undefined && value !== null) {
+					body.append(key, value);
+				}
+			});
+
+			const payload = await fetchApi(`/api/method/${method}`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+				},
+				body: body.toString()
+			});
+			return payload.message || {};
+		}
+
+		async function uploadAttachment(file, docname) {
+			const formData = new FormData();
+			formData.append("file", file);
+			formData.append("is_private", "0");
+			formData.append("doctype", "My Audits");
+			formData.append("docname", docname);
+			formData.append("fieldname", "audit_attach_box");
+
+			const response = await fetchApi("/api/method/upload_file", {
+				method: "POST",
+				body: formData,
+				headers: {}
+			});
+
+			return response.message || {};
+		}
+
+		function AuditDashboard() {
+			const initialBoot = getInitialBoot();
+			const initialNumberCards = initialBoot.number_cards || {};
+
+			return {
+				numberCards: buildNumberCards(initialNumberCards),
+				showBranchCard: false,
+				canCreateAudit: !!initialBoot.can_create_audit,
+				branchOptions: normalizeBranchOptions(initialBoot.branch_options),
+				queryTypeOptions: Array.isArray(initialBoot.query_type_options) ? initialBoot.query_type_options : [],
+				branchConfiguration: [],
+				branchConfigLoading: false,
+				showCreateModal: false,
+				createLoading: false,
+				createError: "",
+				createForm: getInitialCreateForm(),
+				filters: DEFAULT_FILTERS,
+				audits: SAMPLE_AUDITS,
+				async init() {
+					this.setNumberCards(initialNumberCards);
+					this.showBranchCard = this.numberCards.length < 5;
+
+					try {
+						const payload = await callDashboardMethod("audit_management.www.audit_dashboard.get_dashboard_boot");
+						this.applyBoot(payload);
+					} catch (error) {
+						console.error("Failed to load dashboard boot payload", error);
+					}
+				},
+				applyBoot(payload) {
+					this.setNumberCards(payload.number_cards || payload);
+					this.canCreateAudit = !!payload.can_create_audit;
+					this.branchOptions = Array.isArray(payload.branch_options) ? normalizeBranchOptions(payload.branch_options) : this.branchOptions;
+					this.queryTypeOptions = Array.isArray(payload.query_type_options) ? payload.query_type_options : this.queryTypeOptions;
+				},
+				setNumberCards(payload) {
+					this.numberCards = buildNumberCards(payload);
+					this.showBranchCard = this.numberCards.length < 5;
+				},
+				openCreateModal() {
+					if (!this.canCreateAudit) return;
+					this.createError = "";
+					this.showCreateModal = true;
+				},
+				async handleBranchChange() {
+					if (!this.createForm.emp_branch) {
+						this.branchConfiguration = [];
+						return;
+					}
+
+					this.branchConfigLoading = true;
+					try {
+						const payload = await callDashboardMethod(
+							"audit_management.www.audit_dashboard.get_branch_configuration",
+							{ branch: this.createForm.emp_branch }
+						);
+						this.branchConfiguration = Array.isArray(payload.stages) ? payload.stages : [];
+					} catch (error) {
+						this.branchConfiguration = [];
+						this.createError = (error && error.message) || "Failed to load branch configuration.";
+					} finally {
+						this.branchConfigLoading = false;
+					}
+				},
+				handleAttachmentChange(event) {
+					const file = event.target && event.target.files ? event.target.files[0] : null;
+					this.createForm.attachment_file = file || null;
+					this.createForm.attachment_name = file ? file.name : "";
+				},
+				closeCreateModal(force = false) {
+					if (this.createLoading && !force) return;
+					this.showCreateModal = false;
+					this.createError = "";
+					this.branchConfiguration = [];
+					this.branchConfigLoading = false;
+					this.createForm = getInitialCreateForm();
+				},
+				async submitCreateAudit() {
+					if (!this.createForm.emp_branch || !this.createForm.query_type || !this.createForm.audit_query_subject_box) {
+						this.createError = "Branch, Query Type, and Subject are required.";
+						return;
+					}
+
+					this.createLoading = true;
+					this.createError = "";
+
+					try {
+						const message = await callDashboardMethod(
+							"audit_management.www.audit_dashboard.create_audit",
+							{
+								emp_branch: this.createForm.emp_branch,
+								query_type: this.createForm.query_type,
+								audit_query_subject_box: this.createForm.audit_query_subject_box,
+								audit_query_box: this.createForm.audit_query_box
+							}
+						);
+						if (this.createForm.attachment_file && message.name) {
+							await uploadAttachment(this.createForm.attachment_file, message.name);
+						}
+						this.createLoading = false;
+						this.closeCreateModal(true);
+						await this.refreshNumberCards();
+						if (message.redirect_url) {
+							window.location.href = message.redirect_url;
+						}
+					} catch (error) {
+						this.createError = (error && error.message) || "Failed to create audit.";
+					} finally {
+						this.createLoading = false;
+					}
+				},
+				async refreshNumberCards() {
+					const payload = await callDashboardMethod("audit_management.www.audit_dashboard.get_dashboard_number_cards");
+					this.setNumberCards(payload);
+				},
+				getSelectedBranchLabel() {
+					const selected = this.branchOptions.find((branch) => branch.value === this.createForm.emp_branch);
+					return selected ? selected.label : this.createForm.emp_branch;
+				}
+			};
+		}
+
+		PetiteVue.createApp({ AuditDashboard }).mount();
+	</script>
+</body>
+</html>
