@@ -640,7 +640,7 @@ frappe.ui.form.on("My Audits", {
   //   }
   // },
   
-      handle_read_only_new: function (frm) {
+  handle_read_only_new: function (frm) {
     const is_audit_team =
       frappe.user.has_role("Audit Manager") ||
       frappe.user.has_role("Audit Member");
@@ -681,8 +681,20 @@ frappe.ui.form.on("My Audits", {
       frm.toggle_display("audit_stages", true);
     }
 
-    // --- 4. NEW: FREEZE ALL COMPLETED STAGE RESPONSE BOXES ---
-    // If a stage has already responded, lock their specific response box permanently.
+    // --- 4. NEW: HIDE RESOLUTION SECTION FOR NON-AUDIT TEAM ---
+    const is_admin = frappe.user.has_role("Administrator");
+    
+    // If the user is NOT Audit Manager, NOT Audit Member, and NOT Administrator...
+    if (!is_audit_team && !is_admin) {
+        // Hide the entire resolution section
+        frm.toggle_display("resolution_section", false);
+    } else {
+        // Ensure it stays visible for the Audit Team and Admins
+        frm.toggle_display("resolution_section", true);
+    }
+    // ---------------------------------------------------------
+
+    // 5. Freeze Completed Stage Response Boxes
     const stages_mapping = [
       { status_field: "bm_user_status", box_field: "bm_response_box" },
       { status_field: "dh_user_status", box_field: "dh_response_box" },
@@ -698,18 +710,14 @@ frappe.ui.form.on("My Audits", {
     ];
 
     stages_mapping.forEach(stage => {
-        // If the user's status is Responded, make their box 100% read-only
         if (frm.doc[stage.status_field] === "Responded") {
             frm.set_df_property(stage.box_field, "read_only", 1);
         }
     });
-    // ---------------------------------------------------------
 
     // Hide old generic current_response_box since we moved to the Modal
     frm.set_df_property("current_response_box", "hidden", 1);
     frm.set_df_property("current_response_attach", "hidden", 1);
-    
-    // Hide the whole "response_section" if you only want them using the Modal
     frm.toggle_display("response_section", false);
 
     if (frm.doc.status === "Close") {
