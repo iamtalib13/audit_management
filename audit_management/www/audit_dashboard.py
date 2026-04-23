@@ -11,6 +11,8 @@ AUDIT_OVERVIEW_ROLES = {
 AUDIT_CREATE_ROLES = {
 	"Audit Manager",
 	"Audit Member",
+	"System Manager",
+	"Administrator",
 }
 
 
@@ -146,12 +148,22 @@ def get_branch_configuration(branch):
 
 
 @frappe.whitelist()
-def create_audit(emp_branch, query_type, audit_query_subject_box, audit_query_box=None, audit_attach_box=None):
+def create_audit(emp_branch, query_type, primary_nature, audit_query_subject_box, department_alignment=None, audit_query_box=None, audit_attach_box=None):
 	_ensure_create_role()
 
 	doc = frappe.new_doc("My Audits")
 	doc.emp_branch = emp_branch
+	
+	# Try to get division from Audit Level, fallback to user's division
+	division = frappe.db.get_value("Audit Level", emp_branch, "division")
+	if not division:
+		from audit_management.audit_management.doctype.audit_level.audit_level import get_user_division
+		division = get_user_division()
+	
+	doc.emp_division = division
 	doc.query_type = query_type
+	doc.primary_nature = primary_nature
+	doc.department_alignment = department_alignment
 	doc.audit_query_subject_box = audit_query_subject_box
 	doc.audit_query_box = audit_query_box or ""
 	doc.audit_attach_box = audit_attach_box or ""
@@ -170,7 +182,7 @@ def create_audit(emp_branch, query_type, audit_query_subject_box, audit_query_bo
 		doc.query_generated_by_branch = employee.branch
 		doc.query_generated_by_mail = employee.company_email
 
-	doc.insert()
+	doc.insert(ignore_permissions=True)
 	frappe.db.commit()
 
 	return {
