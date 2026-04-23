@@ -21,7 +21,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-16 12:55:10.910737",
+ "modified": "2026-04-23 11:21:06.076214",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Stage",
@@ -37,6 +37,17 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Audit Member",
    "share": 1,
    "write": 1
   }
