@@ -52,6 +52,12 @@ frappe.ui.form.on("My Audits", {
 
   refresh: function (frm) {
 
+     // 1. Check if user has permission to edit the tracker
+        let can_edit = frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member");
+
+        // 2. Render the Interactive Tracker
+        // render_interactive_tracker(frm, can_edit);
+
     let logged_in_user = frappe.session.user;
         console.log("Logged In User ID:", logged_in_user);
 
@@ -75,12 +81,12 @@ frappe.ui.form.on("My Audits", {
             }
         );
 
-    frm.is_intro_set = false;
-    frm.set_intro("");
+    // frm.is_intro_set = false;
+    // frm.set_intro("");
 
-    frm.page.wrapper.find(".form-message-container").empty();
-    frm.page.wrapper.find(".custom-status-tracker").remove();
-    frm.page.wrapper.find(".alert.alert-info").remove();
+    // frm.page.wrapper.find(".form-message-container").empty();
+    // frm.page.wrapper.find(".custom-status-tracker").remove();
+    // frm.page.wrapper.find(".alert.alert-info").remove();
 
     frappe.db
       .get_single_value("Audit Management Settings", "use_new_system")
@@ -93,10 +99,32 @@ frappe.ui.form.on("My Audits", {
       });
   },
 
+
+  // refresh: function(frm) {
+  //       // 1. Check if user has permission to edit the tracker
+  //       let can_edit = frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member");
+
+  //       // 2. Render the Interactive Tracker
+  //       render_interactive_tracker(frm, can_edit);
+  //   },
+
   new_system_refresh: function (frm) {
-    frm.trigger("render_status_tracker");
+    // frm.trigger("render_status_tracker");
     frm.trigger("setup_dynamic_buttons");
     frm.trigger("handle_read_only_new");
+
+    // ✅ ADD THIS HERE (Ensure it loads the new interactive one)
+    let can_edit = frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member");
+    render_interactive_tracker(frm, can_edit);
+
+    // Ensure audit_stages is visible and well-formatted
+    frm.toggle_display("audit_items_section", true);
+    frm.toggle_display("audit_stages", true);
+    frm.set_df_property(
+      "audit_stages",
+      "label",
+      __("Audit Progress & Responses"),
+    );
 
     // Ensure audit_stages is visible and well-formatted
     frm.toggle_display("audit_items_section", true);
@@ -1183,3 +1211,286 @@ frappe.ui.form.on("My Audits", {
     });
   },
 });
+
+
+function render_interactive_tracker(frm, can_edit) {
+    // 1. Inject the CSS globally into the document head (only once)
+    if (!document.getElementById('custom-audit-tracker-style')) {
+        let style = document.createElement('style');
+        style.id = 'custom-audit-tracker-style';
+        style.innerHTML = `
+            /* Modern tracker styling */
+            .modern-audit-tracker {
+                font-family: inherit;
+                padding: 4px 0;
+            }
+            .modern-pill {
+                position: relative; /* Required for absolute tooltip positioning */
+                display: inline-flex;
+                align-items: center;
+                padding: 4px 14px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                letter-spacing: 0.3px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                transition: all 0.2s ease;
+                white-space: nowrap;
+                // z-index: 999;
+
+            }
+            .sortable-item:hover .modern-pill {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+                z-index: 999;
+
+            }
+            
+            /* Status Colors (Modern Banking Palette) */
+            .pill-pending { background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+            .pill-responded { background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+            .pill-skipped { background-color: #faf5ff; border: 1px solid #e9d5ff; color: #6b21a8; }
+            .pill-default { background-color: #f3f4f6; border: 1px solid #e5e7eb; color: #374151; }
+            .pill-audit-team { background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+            
+            /* Hide the arrow on the very last stage pill dynamically */
+            .stage-pill-container:last-child .modern-arrow {
+                display: none !important;
+            }
+            /* Hide any empty message boxes Frappe creates */
+            .form-message.blue:empty {
+                display: none !important;
+            }
+            /* Hide default frappe close icon specifically for our tracker via modern CSS */
+            .form-message:has(.modern-audit-tracker) .close-message {
+                display: none !important;
+            }
+
+                        /* --- GORGEOUS CUSTOM CSS TOOLTIP --- */
+            .modern-pill[data-tooltip]::after {
+                content: attr(data-tooltip);
+                position: absolute;
+                top: calc(100% + 8px); /* Position below the pill */
+                left: 50%;
+                transform: translateX(-50%) translateY(-4px); /* Animate downwards */
+                background: #1e293b; /* Sleek dark slate */
+                color: #f8fafc;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 0.2px;
+                white-space: nowrap;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.2s ease-in-out;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                z-index: 999;
+                pointer-events: none;
+            }
+            /* Tooltip Pointer Triangle (Flipped to point up) */
+            .modern-pill[data-tooltip]::before {
+                content: '';
+                position: absolute;
+                top: calc(100% + 3px); /* Position right below the pill border */
+                left: 50%;
+                transform: translateX(-50%);
+                border-width: 5px;
+                border-style: solid;
+                border-color: transparent transparent #1e293b transparent; /* Points upward */
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.2s ease-in-out;
+                z-index: 999;
+                pointer-events: none;
+                
+            }
+            /* Show Tooltip on Hover */
+            .modern-pill[data-tooltip]:hover::after {
+                opacity: 1;
+                visibility: visible;
+                transform: translateX(-50%) translateY(0); /* Float down into place */
+                z-index: 999;
+
+            }
+            .modern-pill[data-tooltip]:hover::before {
+                opacity: 1;
+                visibility: visible;
+                z-index: 999;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    if (!frm.doc.audit_stages || frm.doc.audit_stages.length === 0) {
+        frm.set_intro(''); // Clear if no stages
+        return;
+    }
+
+    // Modern SVG Chevron instead of -->
+    const arrow_svg = `<svg class="modern-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 4px;"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+
+    // 2. Build the HTML wrapper
+    let html = `
+        <div class="custom-interactive-tracker-wrapper modern-audit-tracker" style="display: flex; align-items: center; gap: 4px; width: 100%;">
+            
+            <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                AUDIT TEAM
+            </div>
+            
+            ${arrow_svg}
+            
+            <div id="draggable-stages" style="display: flex; align-items: center; flex-wrap: wrap; flex: 1; row-gap: 8px;">
+    `;
+
+    // Generate pills from the actual child table
+    frm.doc.audit_stages.forEach((row, index) => {
+        let pill_class = row.status === 'Pending' ? 'pill-pending' : 
+                         row.status === 'Responded' ? 'pill-responded' : 
+                         row.status === 'Skipped' ? 'pill-skipped' : 'pill-default';
+
+        // Get the best available name for the tooltip
+        let emp_name = row.employee_name || row.employee || row.user_id || 'Unassigned';
+
+        html += `
+            <div class="stage-pill-container sortable-item" style="display: flex; align-items: center; cursor: ${can_edit ? 'grab' : 'not-allowed'};">
+                <div class="modern-pill ${pill_class}" data-tooltip="${emp_name}">
+                    ${row.stage_name}
+                </div>
+                ${arrow_svg}
+            </div>
+        `;
+    });
+
+    html += `</div>`; // End draggable-stages
+
+    // Add Settings Icon if user has permission
+    if (can_edit) {
+        html += `
+            <div style="margin-left: auto; padding: 6px; border-radius: 50%; background: #eff6ff; cursor: pointer; color: #1d4ed8; transition: background 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" id="edit-tracker-settings" data-tooltip="Tracker Settings" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </div>
+        `;
+    }
+
+    html += `</div>`; // End wrapper
+
+    // 3. Clear ALL existing intro messages before setting the new one
+    frm.page.wrapper.find('.form-message-container').empty();
+    
+    // Set the intro natively via Frappe
+    frm.set_intro(html, 'blue');
+
+    // FORCE REMOVE the Close Button via Javascript as a secondary bulletproof measure
+    setTimeout(() => {
+        let wrapper = frm.page.wrapper.find('.custom-interactive-tracker-wrapper');
+        if (wrapper.length > 0) {
+            wrapper.closest('.form-message').find('.close-message').remove();
+        }
+    }, 50);
+
+    // 4. Make it Draggable (if permitted)
+    if (can_edit) {
+        let el = document.getElementById('draggable-stages');
+        
+        if (typeof Sortable !== 'undefined') {
+            new Sortable(el, {
+                animation: 150,
+                draggable: '.sortable-item', 
+                ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    let old_index = evt.oldIndex;
+                    let new_index = evt.newIndex;
+
+                    if (old_index === new_index) return;
+
+                    let moved_item = frm.doc.audit_stages.splice(old_index, 1)[0];
+                    frm.doc.audit_stages.splice(new_index, 0, moved_item);
+
+                    frm.doc.audit_stages.forEach((row, i) => {
+                        row.stage = i + 1;
+                        row.idx = i + 1; 
+                    });
+
+                    frm.dirty();
+                    frm.refresh_field('audit_stages');
+                    
+                    frm.save().then(() => {
+                        frappe.show_alert({message: 'Stage order saved successfully', indicator: 'green'});
+                    });
+                }
+            });
+        }
+
+        // Attach Settings Modal Click Event
+        setTimeout(() => {
+            let settings_icon = document.getElementById('edit-tracker-settings');
+            if (settings_icon) {
+                settings_icon.onclick = function() {
+                    open_stages_modal(frm);
+                };
+            }
+        }, 100);
+    }
+}
+
+function open_stages_modal(frm) {
+    let d = new frappe.ui.Dialog({
+        title: 'Edit Audit Stages for this Document',
+        size: 'large',
+        fields: [
+            {
+                fieldname: 'temp_stages',
+                fieldtype: 'Table',
+                label: 'Stages',
+                cannot_add_rows: false,
+                in_place_edit: true,
+                data: [],
+                fields: [
+                    { fieldtype: 'Link', fieldname: 'stage_name', options: 'Audit Stage', in_list_view: 1, label: 'Stage Name', reqd: 1 },
+                    { fieldtype: 'Link', fieldname: 'employee', options: 'Employee', in_list_view: 1, label: 'Employee ID', reqd: 1 },
+                    { fieldtype: 'Data', fieldname: 'employee_name', in_list_view: 1, label: 'Employee Name', read_only: 1 }
+                ]
+            }
+        ],
+        primary_action_label: 'Save Changes',
+        primary_action: function() {
+            let values = d.get_values();
+            
+            // Clear current form table
+            frm.clear_table('audit_stages');
+
+            // Push new rows from the modal back into the form
+            values.temp_stages.forEach((row, idx) => {
+                let new_row = frm.add_child('audit_stages');
+                new_row.stage = idx + 1; // Auto-sequence 1, 2, 3...
+                new_row.stage_name = row.stage_name;
+                new_row.employee = row.employee;
+                new_row.employee_name = row.employee_name;
+                new_row.status = 'Pending'; // Default status for new additions
+            });
+
+            frm.refresh_field('audit_stages');
+            frm.save().then(() => {
+                frappe.show_alert({message: 'Stages updated for this document', indicator: 'green'});
+                render_interactive_tracker(frm, true);
+                d.hide();
+            });
+        }
+    });
+
+    // Populate the modal with the current stages from the document
+    let existing_data = frm.doc.audit_stages.map(row => {
+        return {
+            stage_name: row.stage_name,
+            employee: row.employee,
+            employee_name: row.employee_name
+        };
+    });
+    
+    d.fields_dict.temp_stages.df.data = existing_data;
+    d.fields_dict.temp_stages.grid.refresh();
+    
+    d.show();
+}
