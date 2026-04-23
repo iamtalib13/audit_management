@@ -66,7 +66,11 @@ frappe.ui.form.on('Audit Items', {
                         let data = r.message[0];
                         frappe.model.set_value(cdt, cdn, "employee_name", data.employee_name);
                         frappe.model.set_value(cdt, cdn, "user_id", data.user_id);
-                        frappe.model.set_value(cdt, cdn, "email", data.company_email);
+                        
+                        // Only set email if it exists in Employee record
+                        if (data.company_email) {
+                            frappe.model.set_value(cdt, cdn, "email", data.company_email);
+                        }
                     }
                 }
             });
