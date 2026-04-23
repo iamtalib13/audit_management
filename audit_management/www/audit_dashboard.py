@@ -16,12 +16,7 @@ AUDIT_CREATE_ROLES = {
 
 def get_context(context):
 	context.no_cache = 1
-	context.audit_dashboard_boot = {
-		"number_cards": get_dashboard_number_cards(),
-		"can_create_audit": can_create_audit(),
-		"branch_options": get_branch_options(),
-		"query_type_options": get_query_type_options(),
-	}
+	context.audit_dashboard_boot = get_dashboard_boot()
 
 
 @frappe.whitelist()
@@ -54,12 +49,65 @@ def get_dashboard_number_cards():
 
 
 @frappe.whitelist()
+def get_audits(start=0, limit=20, filters=None):
+	"""Return paginated audit records."""
+	if filters and isinstance(filters, str):
+		import json
+		filters = json.loads(filters)
+	
+	base_filters = _get_dashboard_filters()
+	if filters:
+		base_filters.update(filters)
+	
+	audits = frappe.get_all(
+		"My Audits",
+		filters=base_filters,
+		fields=[
+			"name as id",
+			"query_type as type",
+			"emp_branch as branch",
+			"query_generated_by_name as auditor",
+			"status",
+			"creation",
+			"aging"
+		],
+		order_by="creation desc",
+		start=start,
+		page_length=limit
+	)
+	
+	# Add metadata for UI
+	for audit in audits:
+		audit.statusClass = "progress" if audit.status == "Pending" else "completed" if audit.status == "Close" else "overdue"
+		audit.risk = "High" # Mock risk as it's not in doctype yet
+		audit.riskClass = "high"
+		audit.dueDate = frappe.utils.formatdate(audit.creation) # Mock due date
+		audit.dueMeta = f"{audit.aging} days" if audit.aging else "Due soon"
+		
+		# Assign dateGroup for grouping logic
+		creation_date = frappe.utils.get_datetime(audit.creation).date()
+		today = frappe.utils.get_datetime(frappe.utils.now()).date()
+		yesterday = today - frappe.utils.relativedelta(days=1)
+		
+		if creation_date == today:
+			audit.dateGroup = "Today"
+		elif creation_date == yesterday:
+			audit.dateGroup = "Yesterday"
+		else:
+			audit.dateGroup = "This Week" # Simplified logic for mock
+			
+	return audits
+
+
+@frappe.whitelist()
 def get_dashboard_boot():
 	return {
 		"number_cards": get_dashboard_number_cards(),
 		"can_create_audit": can_create_audit(),
 		"branch_options": get_branch_options(),
 		"query_type_options": get_query_type_options(),
+		"department_options": frappe.get_all("Audit Department", pluck="department_name", order_by="department_name asc"),
+		"primary_nature_options": frappe.get_all("Audit Primary Nature", pluck="primary_nature", order_by="primary_nature asc"),
 	}
 
 
