@@ -32,17 +32,26 @@ def fetch_employee(employee_id):
     
     # Return as a list to maintain compatibility with the JS callback expectations
     return [employee] if employee else []
-
 @frappe.whitelist()
-def get_user_division():
-    """Fetch division of the current logged-in user from Employee doctype safely."""
-    # Based on inspection, the field name is 'custom_division'
-    if not frappe.db.has_column("Employee", "custom_division"):
-        # If custom_division field is missing, try to get department as a fallback
-        return frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "department")
-    
-    employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "custom_division")
-    return employee
+def get_user_division(user=None):
+    """Fetch division of user from Employee"""
+
+    if not user:
+        user = frappe.session.user
+
+    # Get Employee linked to user
+    employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": user},
+        ["custom_division", "department"],
+        as_dict=True
+    )
+
+    if not employee:
+        return None
+
+    # Prefer custom_division, fallback to department
+    return employee.custom_division or employee.department
 
 @frappe.whitelist()
 def branch_query(doctype, txt, searchfield, start, page_len, filters):
