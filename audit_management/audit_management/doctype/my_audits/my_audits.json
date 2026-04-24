@@ -147,6 +147,7 @@
   "audit_attach_box",
   "categorization_section",
   "primary_nature",
+  "risk",
   "column_break_cat_1",
   "department_alignment",
   "query_subject_section",
@@ -1214,11 +1215,17 @@
    "options": "Division",
    "read_only": 1,
    "set_only_once": 1
+  },
+  {
+   "fieldname": "risk",
+   "fieldtype": "Select",
+   "label": "Risk",
+   "options": "Normal\nMedium\nHigh"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-23 17:44:34.258227",
+ "modified": "2026-04-24 15:55:08.489186",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

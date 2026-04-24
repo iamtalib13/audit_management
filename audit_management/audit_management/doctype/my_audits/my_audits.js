@@ -469,107 +469,201 @@ frappe.ui.form.on("My Audits", {
   // },
 
 
-    setup_dynamic_buttons: function (frm) {
-    if (frm.is_new() || frm.doc.status === "Close") return;
+  //   setup_dynamic_buttons: function (frm) {
+  //   if (frm.is_new() || frm.doc.status === "Close") return;
     
-    const is_audit_team =
-      frappe.user.has_role("Audit Manager") ||
-      frappe.user.has_role("Audit Member");
-    const current_user = frappe.session.user;
+  //   const is_audit_team =
+  //     frappe.user.has_role("Audit Manager") ||
+  //     frappe.user.has_role("Audit Member");
+  //   const current_user = frappe.session.user;
 
-    if (is_audit_team) {
-      const next_row = (frm.doc.audit_stages || []).find((row) => !row.status);
-      if (next_row) {
-        frm
-          .add_custom_button(
-            __("Send to {0}", [next_row.stage_name]),
-            function () {
-              frappe.call({
-                method:
-                  "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
-                args: { docname: frm.doc.name },
-                callback: function (r) {
-                  if (r.message) {
-                    frappe.show_alert({
-                      message: r.message,
-                      indicator: "green",
-                    });
-                    frm.reload_doc();
-                  }
-                },
-              });
-            },
-            __("Actions"),
-          )
-          .css({ "background-color": "#28a745", color: "white" });
-      }
-      frm
-        .add_custom_button(
-          __("Close Query"),
-          function () {
-            frm.trigger("handle_close_query");
-          },
-          __("Actions"),
-        )
-        .css({ "background-color": "#dc3545", color: "white" });
-    }
+  //   if (is_audit_team) {
+  //     const next_row = (frm.doc.audit_stages || []).find((row) => !row.status);
+  //     if (next_row) {
+  //       frm
+  //         .add_custom_button(
+  //           __("Send to {0}", [next_row.stage_name]),
+  //           function () {
+  //             frappe.call({
+  //               method:
+  //                 "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
+  //               args: { docname: frm.doc.name },
+  //               callback: function (r) {
+  //                 if (r.message) {
+  //                   frappe.show_alert({
+  //                     message: r.message,
+  //                     indicator: "green",
+  //                   });
+  //                   frm.reload_doc();
+  //                 }
+  //               },
+  //             });
+  //           },
+  //           __("Actions"),
+  //         )
+  //         .css({ "background-color": "#28a745", color: "white" });
+  //     }
+  //     frm
+  //       .add_custom_button(
+  //         __("Close Query"),
+  //         function () {
+  //           frm.trigger("handle_close_query");
+  //         },
+  //         __("Actions"),
+  //       )
+  //       .css({ "background-color": "#dc3545", color: "white" });
+  //   }
 
-    // --- NEW MODAL LOGIC FOR SUBMIT RESPONSE ---
-    const pending_row = (frm.doc.audit_stages || []).find(
-      (row) => row.status === "Pending" && row.user_id === current_user,
-    );
+  //   // --- NEW MODAL LOGIC FOR SUBMIT RESPONSE ---
+  //   const pending_row = (frm.doc.audit_stages || []).find(
+  //     (row) => row.status === "Pending" && row.user_id === current_user,
+  //   );
     
-    if (pending_row) {
-      frm
-        .add_custom_button(__("Submit Response"), function () {
+  //   if (pending_row) {
+  //     frm
+  //       .add_custom_button(__("Submit Response"), function () {
             
-          // Create the Modal Dialog
-          let d = new frappe.ui.Dialog({
-            title: __("Submit Audit Response"),
-            fields: [
-                {
-                    label: __("Your Response"),
-                    fieldname: "response_text",
-                    fieldtype: "Small Text", // Uses rich text for better formatting
-                    reqd: 1, // Makes it mandatory
-                    default: frm.doc.current_response_box || "" // Pre-fill if they typed something before clicking
-                },
-                {
-                    label: __("Attachment (Optional)"),
-                    fieldname: "attachment",
-                    fieldtype: "Attach",
-                    default: frm.doc.current_response_attach || ""
-                }
-            ],
-            primary_action_label: __("Submit"),
-            primary_action(values) {
-                // When the user clicks Submit inside the modal
-                frappe.call({
-                  method: "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
-                  args: {
-                    docname: frm.doc.name,
-                    response_text: values.response_text,
-                    attachment: values.attachment || "",
-                  },
-                  freeze: true,
-                  freeze_message: __("Submitting Response..."),
-                  callback: function (r) {
-                    if (r.message) {
-                      frappe.show_alert({ message: r.message, indicator: "green" });
-                      d.hide(); // Close the modal
-                      frm.reload_doc(); // Reload page to show updated status
-                    }
-                  },
-                });
-            }
+  //         // Create the Modal Dialog
+  //         let d = new frappe.ui.Dialog({
+  //           title: __("Submit Audit Response"),
+  //           fields: [
+  //               {
+  //                   label: __("Your Response"),
+  //                   fieldname: "response_text",
+  //                   fieldtype: "Small Text", // Uses rich text for better formatting
+  //                   reqd: 1, // Makes it mandatory
+  //                   default: frm.doc.current_response_box || "" // Pre-fill if they typed something before clicking
+  //               },
+  //               {
+  //                   label: __("Attachment (Optional)"),
+  //                   fieldname: "attachment",
+  //                   fieldtype: "Attach",
+  //                   default: frm.doc.current_response_attach || ""
+  //               }
+  //           ],
+  //           primary_action_label: __("Submit"),
+  //           primary_action(values) {
+  //               // When the user clicks Submit inside the modal
+  //               frappe.call({
+  //                 method: "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
+  //                 args: {
+  //                   docname: frm.doc.name,
+  //                   response_text: values.response_text,
+  //                   attachment: values.attachment || "",
+  //                 },
+  //                 freeze: true,
+  //                 freeze_message: __("Submitting Response..."),
+  //                 callback: function (r) {
+  //                   if (r.message) {
+  //                     frappe.show_alert({ message: r.message, indicator: "green" });
+  //                     d.hide(); // Close the modal
+  //                     frm.reload_doc(); // Reload page to show updated status
+  //                   }
+  //                 },
+  //               });
+  //           }
+  //         });
+
+  //         d.show(); // Display the modal to the user
+
+  //       })
+  //       .css({ "background-color": "#1e6eb2", color: "white" });
+  //   }
+  // },
+
+
+  setup_dynamic_buttons: function (frm) {
+  if (frm.is_new() || frm.doc.status === "Close") return;
+
+  const current_user = frappe.session.user;
+
+  const has_action_access =
+    frappe.user.has_role("Audit Manager") ||
+    frappe.user.has_role("Audit Member") ||
+    frappe.user.has_role("Administrator") ||
+    current_user === "Administrator";
+
+  if (has_action_access) {
+    const next_row = (frm.doc.audit_stages || []).find((row) => !row.status);
+
+    if (next_row) {
+      frm.add_custom_button(
+        __("Send to {0}", [next_row.stage_name]),
+        function () {
+          frappe.call({
+            method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
+            args: { docname: frm.doc.name },
+            callback: function (r) {
+              if (r.message) {
+                frappe.show_alert({ message: r.message, indicator: "green" });
+                frm.reload_doc();
+              }
+            },
           });
-
-          d.show(); // Display the modal to the user
-
-        })
-        .css({ "background-color": "#1e6eb2", color: "white" });
+        },
+        __("Actions")
+      ).css({ "background-color": "#28a745", color: "white" });
     }
-  },
+
+    frm.add_custom_button(
+      __("Close Query"),
+      function () {
+        frm.trigger("handle_close_query");
+      },
+      __("Actions")
+    ).css({ "background-color": "#dc3545", color: "white" });
+  }
+
+  const pending_row = (frm.doc.audit_stages || []).find(
+    (row) => row.status === "Pending" && row.user_id === current_user
+  );
+
+  if (pending_row) {
+    frm.add_custom_button(__("Submit Response"), function () {
+      let d = new frappe.ui.Dialog({
+        title: __("Submit Response"),
+        fields: [
+          {
+            label: __("Response"),
+            fieldname: "response_text",
+            fieldtype: "Small Text",
+            reqd: 1,
+          },
+          {
+            label: __("Attachment"),
+            fieldname: "attachment",
+            fieldtype: "Attach",
+          },
+        ],
+        primary_action_label: __("Submit"),
+        primary_action(values) {
+          frappe.call({
+            method: "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
+            args: {
+              docname: frm.doc.name,
+              response_text: values.response_text,
+              attachment: values.attachment,
+            },
+            freeze: true,
+            freeze_message: __("Submitting Response..."),
+            callback: function (r) {
+              if (r.message) {
+                d.hide();
+                frappe.show_alert({
+                  message: r.message,
+                  indicator: "green",
+                });
+                frm.reload_doc();
+              }
+            },
+          });
+        },
+      });
+
+      d.show();
+    }).css({ "background-color": "#1e6eb2", color: "white" });
+  }
+},
 
   // handle_read_only_new: function (frm) {
   //   const is_audit_team =

@@ -52,8 +52,80 @@ class MyAudits(Document):
     #             "status": "Pending"  # Force status to Pending for new stages
     #         })
 
+    # def before_insert(self):
+    #     # Step 1: Get logged-in user and fetch their Employee record
+    #     logged_in_user = frappe.session.user
+
+    #     employee = frappe.db.get_value(
+    #         "Employee",
+    #         {"user_id": logged_in_user},
+    #         ["name", "employee_name", "branch", "company_email",
+    #             "designation", "custom_division"],
+    #         as_dict=True
+    #     )
+
+    #     if not employee:
+    #         frappe.throw(
+    #             _("No Employee record found for logged-in user: <b>{0}</b>. Please check HR master data.").format(logged_in_user))
+
+    #     # Step 2: Set emp_division on the document from the Employee's custom_division
+    #     self.emp_division = employee.custom_division
+
+    #     if not self.emp_division:
+    #         frappe.throw(
+    #             _("Division is not set for Employee: <b>{0}</b>. Please update HR master data.").format(employee.employee_name))
+
+    #     # Step 3: Validate emp_branch is also filled
+    #     if not self.emp_branch:
+    #         frappe.throw(_("Branch is mandatory to create an Audit Query."))
+
+    #     # Step 4: Find matching Audit Level using emp_branch AND division
+    #     # audit_level_name = frappe.db.get_value(
+    #     #     "Audit Level",
+    #     #     {
+    #     #         "emp_branch": self.emp_branch,
+    #     #         "division": self.emp_division
+    #     #     },
+    #     #     "name"
+    #     # )
+
+    #      # ==========================================================
+    #     # THIS IS WHERE IT GOES: Finding the correct Audit Level
+    #     # ==========================================================
+    #     audit_level_name = frappe.db.get_value(
+    #         "Audit Level",
+    #         {
+    #             "emp_branch": self.emp_branch,
+    #             "division": self.emp_division
+    #         },
+    #         "name"
+    #     )
+
+    #     # if not audit_level_name:
+    #     #     frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
+    #     #         self.emp_branch, self.emp_division))
+
+    #     if not audit_level_name:
+    #         frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
+    #             self.emp_branch, self.emp_division))
+
+    #     # Step 5: Fetch the Audit Level document and populate audit_stages
+    #     audit_level = frappe.get_doc("Audit Level", audit_level_name)
+    #     self.set("audit_stages", [])
+
+    #     for row in audit_level.audit_stages:
+    #         self.append("audit_stages", {
+    #             "stage": row.stage,
+    #             "stage_name": row.stage_name,
+    #             "employee": row.employee,
+    #             "user_id": row.user_id,
+    #             "employee_name": row.employee_name,
+    #             "email": row.email,
+    #             "status": "Pending"
+    #         })
+
     def before_insert(self):
-        # Step 1: Get logged-in user and fetch their Employee record
+        # 1. Get logged-in user and fetch their Employee record
         logged_in_user = frappe.session.user
 
         employee = frappe.db.get_value(
@@ -68,33 +140,34 @@ class MyAudits(Document):
             frappe.throw(
                 _("No Employee record found for logged-in user: <b>{0}</b>. Please check HR master data.").format(logged_in_user))
 
-        # Step 2: Set emp_division on the document from the Employee's custom_division
+        # 2. Set emp_division on the document from the Employee's custom_division
         self.emp_division = employee.custom_division
 
         if not self.emp_division:
             frappe.throw(
                 _("Division is not set for Employee: <b>{0}</b>. Please update HR master data.").format(employee.employee_name))
 
-        # Step 3: Validate emp_branch is also filled
         if not self.emp_branch:
             frappe.throw(_("Branch is mandatory to create an Audit Query."))
 
-        # Step 4: Find matching Audit Level using emp_branch AND division
-        audit_level_name = frappe.db.get_value(
-            "Audit Level",
-            {
-                "emp_branch": self.emp_branch,
-                "division": self.emp_division
-            },
-            "name"
-        )
+        # ==========================================================
+        # 3. Fetch the exact Audit Level document directly!
+        # Because self.emp_branch is literally the Audit Level Name (e.g., "Audit-JLL-1002")
+        # ==========================================================
+        if not frappe.db.exists("Audit Level", self.emp_branch):
+            frappe.throw(
+                _("The selected Audit Level <b>{0}</b> does not exist.").format(self.emp_branch))
 
-        if not audit_level_name:
-            frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
-                self.emp_branch, self.emp_division))
+        audit_level = frappe.get_doc("Audit Level", self.emp_branch)
 
-        # Step 5: Fetch the Audit Level document and populate audit_stages
-        audit_level = frappe.get_doc("Audit Level", audit_level_name)
+        # 4. Validate that the selected Audit Level actually belongs to the user's division!
+        if audit_level.division != self.emp_division:
+            frappe.throw(_("You cannot select an Audit Level for <b>{0}</b>. You belong to the <b>{1}</b> division.").format(
+                audit_level.division, self.emp_division))
+
+        # ==========================================================
+
+        # 5. Populate audit_stages
         self.set("audit_stages", [])
 
         for row in audit_level.audit_stages:
@@ -650,12 +723,13 @@ def has_permission(doc, ptype, user=None):
     allowed_divisions = get_user_allowed_divisions(user)
 
     if not allowed_divisions:
-        return False # Agar user ko koi bhi division allow nahi hai, to access nahi
+        return False  # Agar user ko koi bhi division allow nahi hai, to access nahi
 
     # For 'create' permission, we don't have doc.emp_division yet.
     # So, just check if the user has *any* allowed divisions.
     if ptype == "create":
-        return bool(allowed_divisions) # Agar allowed divisions ki list khali nahi hai, to create allow karo
-    
+        # Agar allowed divisions ki list khali nahi hai, to create allow karo
+        return bool(allowed_divisions)
+
     doc_division = doc.get("emp_division")
     return doc_division in allowed_divisions
