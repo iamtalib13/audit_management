@@ -650,7 +650,12 @@ def has_permission(doc, ptype, user=None):
     allowed_divisions = get_user_allowed_divisions(user)
 
     if not allowed_divisions:
-        return False
+        return False # Agar user ko koi bhi division allow nahi hai, to access nahi
 
+    # For 'create' permission, we don't have doc.emp_division yet.
+    # So, just check if the user has *any* allowed divisions.
+    if ptype == "create":
+        return bool(allowed_divisions) # Agar allowed divisions ki list khali nahi hai, to create allow karo
+    
     doc_division = doc.get("emp_division")
     return doc_division in allowed_divisions
