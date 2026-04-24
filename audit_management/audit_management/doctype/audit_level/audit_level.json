@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:emp_branch",
+ "autoname": "format:Audit-{division}-{emp_branch}",
  "creation": "2024-09-02 11:17:28.344188",
  "default_view": "List",
  "doctype": "DocType",
@@ -422,8 +422,7 @@
    "fieldname": "emp_branch",
    "fieldtype": "Link",
    "label": "Branch",
-   "options": "Sahayog Branch",
-   "unique": 1
+   "options": "Sahayog Branch"
   },
   {
    "fieldname": "division",
@@ -747,11 +746,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-22 17:34:41.916520",
+ "modified": "2026-04-24 16:14:06.899366",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",
- "naming_rule": "By fieldname",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
