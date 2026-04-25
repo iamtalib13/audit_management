@@ -1,876 +1,735 @@
 # Copyright (c) 2024, Sahayog and contributors
 # For license information, please see license.txt
-import re
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import now
+from frappe.utils import now, time_diff_in_seconds, getdate, nowdate
+from audit_management.audit_management.utils import get_working_days, update_audit_aging
+
+
 class MyAudits(Document):
+    def validate(self):
+        update_audit_aging(self)
+        if self.status == "Close":
+            self.validate_resolution_fields()
+
+    # def before_insert(self):
+    #     # Only populate the stages child table when the document is first created
+    #     if not self.emp_branch or not self.emp_division:
+    #         self.set("audit_stages", [])
+    #         return
+
+    #     # Find the Audit Level that matches BOTH branch and division
+    #     # UPDATE: Changed 'branch' to 'emp_branch' to match your Audit Level Doctype columns
+    #     audit_level_name = frappe.db.get_value(
+    #         "Audit Level",
+    #         {
+    #             "emp_branch": self.emp_branch,  # <--- Changed this to emp_branch
+    #             "division": self.emp_division
+    #         },
+    #         "name"
+    #     )
+
+    #     if not audit_level_name:
+    #         self.set("audit_stages", [])
+    #         frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
+    #             self.emp_branch, self.emp_division))
+
+    #     # Fetch the exact Audit Level document
+    #     audit_level = frappe.get_doc("Audit Level", audit_level_name)
+    #     self.set("audit_stages", [])
+
+    #     # Loop through the master table and push it to the transaction document
+    #     for row in audit_level.audit_stages:  # Assuming child table in Audit Level is named 'audit_stages'
+    #         self.append("audit_stages", {
+    #             "stage": row.stage,
+    #             "stage_name": row.stage_name,
+    #             "employee": row.employee,
+    #             "user_id": row.user_id,
+    #             "employee_name": row.employee_name,
+    #             "email": row.email,
+    #             "status": "Pending"  # Force status to Pending for new stages
+    #         })
+
+    # def before_insert(self):
+    #     # Step 1: Get logged-in user and fetch their Employee record
+    #     logged_in_user = frappe.session.user
+
+    #     employee = frappe.db.get_value(
+    #         "Employee",
+    #         {"user_id": logged_in_user},
+    #         ["name", "employee_name", "branch", "company_email",
+    #             "designation", "custom_division"],
+    #         as_dict=True
+    #     )
+
+    #     if not employee:
+    #         frappe.throw(
+    #             _("No Employee record found for logged-in user: <b>{0}</b>. Please check HR master data.").format(logged_in_user))
+
+    #     # Step 2: Set emp_division on the document from the Employee's custom_division
+    #     self.emp_division = employee.custom_division
+
+    #     if not self.emp_division:
+    #         frappe.throw(
+    #             _("Division is not set for Employee: <b>{0}</b>. Please update HR master data.").format(employee.employee_name))
+
+    #     # Step 3: Validate emp_branch is also filled
+    #     if not self.emp_branch:
+    #         frappe.throw(_("Branch is mandatory to create an Audit Query."))
+
+    #     # Step 4: Find matching Audit Level using emp_branch AND division
+    #     # audit_level_name = frappe.db.get_value(
+    #     #     "Audit Level",
+    #     #     {
+    #     #         "emp_branch": self.emp_branch,
+    #     #         "division": self.emp_division
+    #     #     },
+    #     #     "name"
+    #     # )
+
+    #      # ==========================================================
+    #     # THIS IS WHERE IT GOES: Finding the correct Audit Level
+    #     # ==========================================================
+    #     audit_level_name = frappe.db.get_value(
+    #         "Audit Level",
+    #         {
+    #             "emp_branch": self.emp_branch,
+    #             "division": self.emp_division
+    #         },
+    #         "name"
+    #     )
+
+    #     # if not audit_level_name:
+    #     #     frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
+    #     #         self.emp_branch, self.emp_division))
+
+    #     if not audit_level_name:
+    #         frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
+    #             self.emp_branch, self.emp_division))
+
+    #     # Step 5: Fetch the Audit Level document and populate audit_stages
+    #     audit_level = frappe.get_doc("Audit Level", audit_level_name)
+    #     self.set("audit_stages", [])
+
+    #     for row in audit_level.audit_stages:
+    #         self.append("audit_stages", {
+    #             "stage": row.stage,
+    #             "stage_name": row.stage_name,
+    #             "employee": row.employee,
+    #             "user_id": row.user_id,
+    #             "employee_name": row.employee_name,
+    #             "email": row.email,
+    #             "status": "Pending"
+    #         })
+
+    def before_insert(self):
+        # 1. Get logged-in user and fetch their Employee record
+        logged_in_user = frappe.session.user
+
+        employee = frappe.db.get_value(
+            "Employee",
+            {"user_id": logged_in_user},
+            ["name", "employee_name", "branch", "company_email",
+                "designation", "custom_division"],
+            as_dict=True
+        )
+
+        if not employee:
+            frappe.throw(
+                _("No Employee record found for logged-in user: <b>{0}</b>. Please check HR master data.").format(logged_in_user))
+
+        # 2. Set emp_division on the document from the Employee's custom_division
+        self.emp_division = employee.custom_division
+
+        if not self.emp_division:
+            frappe.throw(
+                _("Division is not set for Employee: <b>{0}</b>. Please update HR master data.").format(employee.employee_name))
+
+        if not self.emp_branch:
+            frappe.throw(_("Branch is mandatory to create an Audit Query."))
+
+        # ==========================================================
+        # 3. Fetch the exact Audit Level document directly!
+        # Because self.emp_branch is literally the Audit Level Name (e.g., "Audit-JLL-1002")
+        # ==========================================================
+        if not frappe.db.exists("Audit Level", self.emp_branch):
+            frappe.throw(
+                _("The selected Audit Level <b>{0}</b> does not exist.").format(self.emp_branch))
+
+        audit_level = frappe.get_doc("Audit Level", self.emp_branch)
+
+        # 4. Validate that the selected Audit Level actually belongs to the user's division!
+        if audit_level.division != self.emp_division:
+            frappe.throw(_("You cannot select an Audit Level for <b>{0}</b>. You belong to the <b>{1}</b> division.").format(
+                audit_level.division, self.emp_division))
+
+        # ==========================================================
+
+        # 5. Populate audit_stages
+        self.set("audit_stages", [])
+
+        for row in audit_level.audit_stages:
+            self.append("audit_stages", {
+                "stage": row.stage,
+                "stage_name": row.stage_name,
+                "employee": row.employee,
+                "user_id": row.user_id,
+                "employee_name": row.employee_name,
+                "email": row.email,
+                "status": "Pending"
+            })
+
+    # def before_save(self):
+    #     # 1. Sync Hardcoded Fields to Child Table (Priority for Legacy updates)
+    #     self.sync_old_to_new()
+
+    #     # 2. Sync Child Table to Hardcoded Fields (Priority for UI/Reporting)
+    #     self.sync_new_to_old()
+
+    #     # 3. Populate Stages from Audit Level only if needed
+    #     if (self.is_new() or self.has_value_changed("emp_branch")) and not self.audit_stages:
+    #         populate_audit_stages(self)
+
+    #     # 4. Disable standard notifications if new system is active
+    #     settings = frappe.get_single("Audit Management Settings")
+    #     if settings.use_new_system:
+    #         self.flags.ignore_notifications = True
+
     def before_save(self):
-        # Call the new function to populate audit stages
-        populate_audit_stages_on_save(self)
+        # 1. Sync Hardcoded Fields to Child Table (Priority for Legacy updates)
+        self.sync_old_to_new()
 
-@frappe.whitelist()
-def populate_audit_stages_on_save(doc):
-    """
-    Populates the 'audit_stages' child table of a My Audits document
-    from the linked Audit Level document.
-    This function is intended to be called as a DocType hook (e.g., before_save).
-    """
+        # 2. Sync Child Table to Hardcoded Fields (Priority for UI/Reporting)
+        self.sync_new_to_old()
 
+        # 3. Disable standard notifications if new system is active
+        settings = frappe.get_single("Audit Management Settings")
+        if settings.use_new_system:
+            self.flags.ignore_notifications = True
+
+    def sync_old_to_new(self):
+        """Syncs hardcoded fields to the child table."""
+        if not self.audit_stages:
+            return
+
+        mapping = self.get_prefix_mapping()
+        for m in mapping:
+            prefix = m["prefix"]
+            user_id = self.get(f"{prefix}_user_id")
+            if not user_id:
+                continue
+
+            # Find matching row in child table
+            row = self.find_matching_row(
+                user_id, m["stage"], m["label"], prefix)
+            if row:
+                old_status = self.get(f"{prefix}_user_status")
+                if old_status and row.status != old_status:
+                    row.status = old_status
+
+                old_resp = self.get(f"{prefix}_response_box")
+                if old_resp and row.response != old_resp:
+                    row.response = old_resp
+
+                old_pend = self.get(f"{prefix}_pending_time")
+                if old_pend and row.pending_time != old_pend:
+                    row.pending_time = old_pend
+
+    def sync_new_to_old(self):
+        """Syncs child table data back to hardcoded fields and updates tracking."""
+        if not self.audit_stages:
+            return
+
+        mapping = {m["label"]: m["prefix"] for m in self.get_prefix_mapping()}
+        max_level = 0
+
+        for row in self.audit_stages:
+            prefix = mapping.get(row.stage_name)
+            if prefix:
+                self.set(f"{prefix}_user_status", row.status)
+                self.set(f"{prefix}_response_box", row.response)
+                self.set(f"{prefix}_attach_box", row.attachment)
+                if row.pending_time:
+                    self.set(f"{prefix}_pending_time", row.pending_time)
+
+                if row.status in ["Pending", "Responded", "No Response"]:
+                    try:
+                        lvl = int(row.stage)
+                        if lvl > max_level:
+                            max_level = lvl
+                    except:
+                        pass
+
+        # Update Operational Tracking Level
+        if max_level > 0:
+            if max_level <= 1:
+                self.current_escalation_level = "Level 1"
+            elif max_level <= 3:
+                self.current_escalation_level = "Level 2"
+            else:
+                self.current_escalation_level = "Level 3"
+
+    def find_matching_row(self, user_id, stage_num, stage_label, prefix):
+        """Helper to find a row in audit_stages."""
+        for row in self.audit_stages:
+            if row.user_id == user_id:
+                return row
+            if str(row.stage) == str(stage_num) and row.stage_name in [stage_label, self.get(f"{prefix}_name")]:
+                return row
+        return None
+
+    def get_prefix_mapping(self):
+        """Standard mapping used for both sync and migration."""
+        return [
+            {"prefix": "bm", "stage": "1", "label": "BM"},
+            {"prefix": "dh", "stage": "2", "label": "DH"},
+            {"prefix": "com", "stage": "2", "label": "COM"},
+            {"prefix": "rm", "stage": "3", "label": "RM"},
+            {"prefix": "rom", "stage": "3", "label": "ROM"},
+            {"prefix": "zm", "stage": "4", "label": "ZM"},
+            {"prefix": "zom", "stage": "4", "label": "ZOM"},
+            {"prefix": "gm", "stage": "5", "label": "GM"},
+            {"prefix": "hr", "stage": "6", "label": "HR"},
+            {"prefix": "coo", "stage": "8", "label": "COO"},
+            {"prefix": "ceo", "stage": "10", "label": "CEO"}
+        ]
+
+    def validate_resolution_fields(self):
+        """Mandatory fields for query resolution."""
+        mandatory_fields = [
+            "root_cause_analysis",
+            "rca_category",
+            "recommendations",
+            "action_point_with_tat"
+        ]
+        for field in mandatory_fields:
+            if not self.get(field):
+                frappe.throw(_("Field '{0}' is mandatory for query resolution.").format(
+                    self.meta.get_label(field)))
+
+
+def populate_audit_stages(doc):
+    """Populates audit_stages from Audit Level."""
     if not doc.emp_branch:
-        # If no Audit Level is linked, clear the child table and return
         doc.set("audit_stages", [])
         return
 
-    # Define the mapping from Audit Level fields to Audit Items child table fields
-    # Format: (emp_id_field, mail_field, stage_number, stage_name_label)
-    STAGE_MAP = [
-        ("stage_1_bm_emp_id", "stage_1_bm_mail", 1, "BM"),
-        ("stage_2_dh_emp_id", "stage_2_dh_mail", 2, "DH"),
-        ("stage_2_com_emp_id", "stage_2_com_mail", 2, "COM"), # Assuming COM is also stage 2
-        ("stage_3_rm_emp_id", "stage_3_rm_mail", 3, "RM"),
-        ("stage_3_rom_emp_id", "stage_3_rom_mail", 3, "ROM"), # Assuming ROM is also stage 3
-        ("stage_4_zm_emp_id", "stage_4_zm_mail", 4, "ZM"),
-        ("stage_4_zom_emp_id", "stage_4_zom_mail", 4, "ZOM"), # Assuming ZOM is also stage 4
-        ("stage_5_gm_emp_id", "stage_5_gm_mail", 5, "GM"),
-        ("stage_6_hr_emp_id", "stage_6_hr_mail", 6, "HR"),
-        ("stage_7_coo_emp_id", "stage_7_coo_mail", 7, "COO"),
-        ("stage_8_ceo_emp_id", "stage_8_ceo_mail", 8, "CEO"),
-    ]
+    audit_level = frappe.get_doc("Audit Level", doc.emp_branch)
+    doc.set("audit_stages", [])
 
-    try:
-        # Check if the linked Audit Level document exists
-        if not frappe.db.exists("Audit Level", doc.emp_branch):
-            frappe.log_error(f"Audit Level document '{doc.emp_branch}' linked in 'My Audits' '{doc.name}' not found.",
-                             "Populate Audit Stages Hook")
-            doc.set("audit_stages", []) # Clear child table if linked Audit Level is missing
-            return
+    for row in audit_level.audit_stages:
+        doc.append("audit_stages", {
+            "stage": row.stage,
+            "stage_name": row.stage_name,
+            "employee": row.employee,
+            "user_id": row.user_id,
+            "employee_name": row.employee_name,
+            "email": row.email,
+            "status": ""
+        })
 
-        audit_level_doc = frappe.get_doc("Audit Level", doc.emp_branch)
-
-        # Clear existing child table entries for idempotency
-        # Only clear if emp_branch has changed or if it's a new document
-        # if doc.has_changed("emp_branch") or doc.is_new():
-        doc.set("audit_stages", [])
-
-        new_audit_stages_entries = []
-
-        for emp_field_id, mail_field, stage_number, stage_name_label in STAGE_MAP:
-            employee_id = audit_level_doc.get(emp_field_id)
-            employee_mail = audit_level_doc.get(mail_field)
-
-            if employee_id:
-                emp_user_id_field = emp_field_id.replace("_emp_id", "_user_id")
-                emp_name_field = emp_field_id.replace("_emp_id", "_name")
-
-                employee_user_id = audit_level_doc.get(emp_user_id_field)
-                employee_name = audit_level_doc.get(emp_name_field)
-
-                new_audit_stages_entries.append({
-                    "doctype": "Audit Items",
-                    "stage": stage_number,
-                    "stage_name": frappe.db.get_value("Audit Stage", {"name": stage_name_label}, "name") or stage_name_label,
-                    "employee": employee_id,
-                    "user_id": employee_user_id,
-                    "employee_name": employee_name,
-                    "email": employee_mail
-                })
-
-        # Sort the entries by stage number
-        new_audit_stages_entries = sorted(
-            new_audit_stages_entries,
-            key=lambda x: int(x.get("stage", 0))
-        )
-
-        # Append sorted entries to the child table and fix idx
-        for i, row_data in enumerate(new_audit_stages_entries, start=1):
-            row = doc.append("audit_stages", row_data)
-            row.idx = i
-
-    except Exception as e:
-        frappe.log_error(f"Error populating 'audit_stages' for 'My Audits' {doc.name}: {e}", "Populate Audit Stages Hook")
-        # Ensure child table is cleared or not populated on error
-        doc.set("audit_stages", [])
-
-class MyAudits(Document):
-    pass
 
 @frappe.whitelist()
 def get_status_tracker_html(docname):
-    # Fetch the document instance
     audit_doc = frappe.get_doc("My Audits", docname)
 
-    # Status mapping to map user IDs to their corresponding status fields
-    status_mapping = {
-        "bm_user_id": audit_doc.bm_user_status,
-        "bm_name": audit_doc.bm_name,
-        "dh_user_id": audit_doc.dh_user_status,
-        "dh_name": audit_doc.dh_name,
-        "com_user_id": audit_doc.com_user_status,
-        "com_name": audit_doc.com_name,
-        "rm_user_id": audit_doc.rm_user_status,
-        "rm_name": audit_doc.rm_name,
-        "rom_user_id": audit_doc.rom_user_status,
-        "rom_name": audit_doc.rom_name,
-        "zm_user_id": audit_doc.zm_user_status,
-        "zm_name": audit_doc.zm_name,
-        "zom_user_id": audit_doc.zom_user_status,
-        "zom_name": audit_doc.zom_name,
-        "gm_user_id": audit_doc.gm_user_status,
-        "gm_name": audit_doc.gm_name,
-        "hr_user_id": audit_doc.hr_user_status,
-        "hr_name": audit_doc.hr_name,
-        "coo_user_id": audit_doc.coo_user_status,
-        "coo_name": audit_doc.coo_name,
-        "ceo_user_id": audit_doc.ceo_user_status,
-        "ceo_name": audit_doc.ceo_name,
-        "branch_name":audit_doc.emp_branch,
-    }
-
-
-    # Function to create styled box with border and hover message
     def create_status_box(text, color, title):
         return f"<div style='display:inline-block; padding: 2px 6px; border-radius: 10px; border: 2px solid {color}; color: {color}; cursor: pointer;' title='{title}'>{text}</div>"
 
-    # Initialize HTML output
-    html_output = create_status_box("AUDIT TEAM", '#1E6EB2', 'Stage 0 : Audit Query') + " <b>--></b> "
+    html_output = create_status_box(
+        "AUDIT TEAM", '#1E6EB2', 'Stage 0 : Audit Query') + " <b>--></b> "
 
-    branch_name = status_mapping["branch_name"]
+    for i, row in enumerate(audit_doc.audit_stages):
+        color = "grey"
+        title = f"Stage {row.stage} : {row.stage_name} - {row.status or 'Waiting'}"
 
-    # BM color logic
-    bm_status = status_mapping["bm_user_id"]
-    bm_name = status_mapping["bm_name"]
-    if bm_status == "":
-        bm_color = "grey"
-        bm_title = f"Stage 1 : Not sent to BM - {bm_name}"
-    elif bm_status == "No Response":
-        bm_color = "#4b0a7d"
-        bm_title = f"Stage 1 : No Response from BM within TAT - {bm_name}"
-    elif bm_status == "Skipped":
-        bm_color = "#ffbe0b"
-        bm_title = f"Stage 1 : Skipped - No BM set for {branch_name}"
-    else:
-        bm_color = "green" if bm_status == "Responded" else "red"
-        bm_title = f"Stage 1 : Response for BM - {bm_name}" if bm_color == "green" else f"Stage 1 : Pending From BM - {bm_name}"
-    html_output += create_status_box("BM", bm_color, bm_title) + " <b>--></b> "
+        if row.status == "Pending":
+            color = "red"
+        elif row.status == "Responded":
+            color = "green"
+        elif row.status == "No Response":
+            color = "#4b0a7d"
+        elif row.status == "Skipped":
+            color = "#ffbe0b"
 
-    # DH / COM logic
-    dh_status = status_mapping["dh_user_id"]
-    dh_name = status_mapping["dh_name"]
-    com_status = status_mapping["com_user_id"]
-    com_name = status_mapping["com_name"]
-
-    # DH Logic
-    if dh_status == "":
-        dh_color = "grey"
-        dh_title = f"Stage 2 : Not sent to DH - {dh_name}"
-    elif dh_status == "No Response":
-        dh_color = "#4b0a7d"
-        dh_title = f"Stage 2 : No Response from DH within TAT - {dh_name}"
-    elif dh_status == "Skipped":
-        dh_color = "#ffbe0b"
-        dh_title = f"Stage 2 : Skipped - No DH set for {branch_name}"
-    else:
-        dh_color = "red" if dh_status == "Pending" else "green"
-        dh_title = f"Stage 2 : Response for DH - {dh_name}" if dh_color == "green" else f"Stage 2 : Pending From DH - {dh_name}"
-
-    # COM Logic
-    if com_status == "":
-        com_color = "grey"
-        com_title = f"Stage 2 : Not sent to COM - {com_name}"
-    elif com_status == "No Response":
-        com_color = "#4b0a7d"
-        com_title = f"Stage 2 : No Response from COM within TAT - {com_name}"
-    elif com_status == "Skipped":
-        com_color = "#ffbe0b"
-        com_title = f"Stage 2 : Skipped - No COM set for {branch_name}"
-    else:
-        com_color = "green" if com_status == "Responded" else "red"
-        com_title = f"Stage 2 : Response for COM - {com_name}" if com_color == "green" else f"Stage 2 : Pending From COM - {com_name}"
-
-    html_output += create_status_box("DH", dh_color, dh_title) + " <b>/</b> " + create_status_box("COM", com_color, com_title) + " <b>--></b> "
-
-    # RM / ROM logic
-    rm_status = status_mapping["rm_user_id"]
-    rm_name = status_mapping["rm_name"]
-    rom_status = status_mapping["rom_user_id"]
-    rom_name = status_mapping["rom_name"]
-
-    # RM Logic
-    if rm_status == "":
-        rm_color = "grey"
-        rm_title = f"Stage 3 : Not sent to RM - {rm_name}"
-    elif rm_status == "No Response":
-        rm_color = "#4b0a7d"
-        rm_title = f"Stage 3 : No Response from RM within TAT - {rm_name}"
-    elif rm_status == "Skipped":
-        rm_color = "#ffbe0b"
-        rm_title = f"Stage 3 : Skipped - No RM set for {branch_name}"
-    else:
-        rm_color = "green" if rm_status == "Responded" else "red"
-        rm_title = f"Stage 3 : Response for RM - {rm_name}" if rm_color == "green" else f"Stage 3 : Pending From RM - {rm_name}"
-
-    # ROM Logic
-    if rom_status == "":
-        rom_color = "grey"
-        rom_title = f"Stage 3 : Not sent to ROM - {rom_name}"
-    elif rom_status == "No Response":
-        rom_color = "#4b0a7d"
-        rom_title = f"Stage 3 : No Response from ROM within TAT - {rom_name}"
-    elif rom_status == "Skipped":
-        rom_color = "#ffbe0b"
-        rom_title = f"Stage 3 : Skipped - No ROM set for {branch_name}"
-    else:
-        rom_color = "red" if rom_status == "Pending" else "green"
-        rom_title = f"Stage 3 : Response for ROM - {rom_name}" if rom_color == "green" else f"Stage 3 : Pending From ROM - {rom_name}"
-
-    html_output += create_status_box("RM", rm_color, rm_title) + " <b>/</b> " + create_status_box("ROM", rom_color, rom_title) + " <b>--></b> "
-
-    # ZM / ZOM logic
-    zm_status = status_mapping["zm_user_id"]
-    zm_name = status_mapping["zm_name"]
-    zom_status = status_mapping["zom_user_id"]
-    zom_name = status_mapping["zom_name"]
-
-    # ZM Logic
-    if zm_status == "":
-        zm_color = "grey"
-        zm_title = f"Stage 4 : Not sent to ZM - {zm_name}"
-    elif zm_status == "No Response":
-        zm_color = "#4b0a7d"
-        zm_title = f"Stage 4 : No Response from ZM within TAT - {zm_name}"
-    elif zm_status == "Skipped":
-        zm_color = "#ffbe0b"
-        zm_title = f"Stage 4 : Skipped - No ZM set for {branch_name}"
-    else:
-        zm_color = "green" if zm_status == "Responded" else "red"
-        zm_title = f"Stage 4 : Response for ZM - {zm_name}" if zm_color == "green" else f"Stage 4 : Pending From ZM - {zm_name}"
-
-    # ZOM Logic
-    if zom_status == "":
-        zom_color = "grey"
-        zom_title = f"Stage 4 : Not sent to ZOM - {zom_name}"
-    elif zom_status == "No Response":
-        zom_color = "#4b0a7d"
-        zom_title = f"Stage 4 : No Response from ZOM within TAT - {zom_name}"
-    elif zom_status == "Skipped":
-        zom_color = "#ffbe0b"
-        zom_title = f"Stage 4 : Skipped - No ZOM set for {branch_name}"
-    else:
-        zom_color = "red" if zom_status == "Pending" else "green"
-        zom_title = f"Stage 4 : Response for ZOM - {zom_name}" if zom_color == "green" else f"Stage 4 : Pending From ZOM - {zom_name}"
-
-    html_output += create_status_box("ZM", zm_color, zm_title) + " <b>/</b> " + create_status_box("ZOM", zom_color, zom_title) + " <b>--></b> "
-
-    # GM color logic
-    gm_status = status_mapping["gm_user_id"]
-    gm_name = status_mapping["gm_name"]
-    if gm_status == "":
-        gm_color = "grey"
-        gm_title = f"Stage 5 : Not sent to GM - {gm_name}"
-    elif gm_status == "No Response":
-        gm_color = "#4b0a7d"
-        gm_title = f"Stage 5 : No Response from GM within TAT - {gm_name}"
-    elif gm_status == "Skipped":
-        gm_color = "#ffbe0b"
-        gm_title = f"Stage 5 : Skipped - No GM set for {branch_name}"
-    else:
-        gm_color = "green" if gm_status == "Responded" else "red"
-        gm_title = f"Stage 5 : Response for GM - {gm_name}" if gm_color == "green" else f"Stage 5 : Pending From GM - {gm_name}"
-
-    html_output += create_status_box("GM", gm_color, gm_title) + " <b>--></b> "
-
-    # HR color logic
-    hr_status = status_mapping["hr_user_id"]
-    hr_name = status_mapping["hr_name"]
-    if hr_status == "":
-        hr_color = "grey"
-        hr_title = f"Stage 5 : Not sent to HR - {hr_name}"
-    elif hr_status == "No Response":
-        hr_color = "#4b0a7d"
-        hr_title = f"Stage 5 : No Response from HR within TAT - {hr_name}"
-    elif hr_status == "Skipped":
-        hr_color = "#ffbe0b"
-        hr_title = f"Stage 5 : Skipped - No GM set for {branch_name}"
-    else:
-        hr_color = "green" if hr_status == "Responded" else "red"
-        hr_title = f"Stage 5 : Response for HR - {hr_name}" if hr_color == "green" else f"Stage 5 : Pending From HR - {hr_name}"
-
-    html_output += create_status_box("HR", hr_color, hr_title) + " <b>--></b> "
-
-    # COO color logic
-    coo_status = status_mapping["coo_user_id"]
-    coo_name = status_mapping["coo_name"]
-    if coo_status == "":
-        coo_color = "grey"
-        coo_title = f"Stage 6 : Not sent to COO - {coo_name}"
-    elif coo_status == "No Response":
-        coo_color = "#4b0a7d"
-        coo_title = f"Stage 6 : No Response from COO within TAT - {coo_name}"
-    elif coo_status == "Skipped":
-        coo_color = "#ffbe0b"
-        coo_title = f"Stage 6 : Skipped - No COO set for {branch_name}"
-    else:
-        coo_color = "green" if coo_status == "Responded" else "red"
-        coo_title = f"Stage 6 : Response for COO - {coo_name}" if coo_color == "green" else f"Stage 6 : Pending From COO - {coo_name}"
-
-    html_output += create_status_box("COO", coo_color, coo_title) + " <b>--></b> "
-
-    # CEO color logic
-    ceo_status = status_mapping["ceo_user_id"]
-    ceo_name = status_mapping["ceo_name"]
-    if ceo_status == "":
-        ceo_color = "grey"
-        ceo_title = f"Stage 7 : Not sent to CEO - {ceo_name}"
-    elif ceo_status == "No Response":
-        ceo_color = "#4b0a7d"
-        ceo_title = f"Stage 7 : No Response from CEO within TAT - {ceo_name}"
-    elif ceo_status == "Skipped":
-        ceo_color = "#ffbe0b"
-        ceo_title = f"Stage 7 : Skipped - No CEO set for {branch_name}"
-    else:
-        ceo_color = "green" if ceo_status == "Responded" else "red"
-        ceo_title = f"Stage 7 : Response for CEO - {ceo_name}" if ceo_color == "green" else f"Stage 7 : Pending From CEO - {ceo_name}"
-
-    html_output += create_status_box("CEO", ceo_color, ceo_title)
+        html_output += create_status_box(row.stage_name, color, title)
+        if i < len(audit_doc.audit_stages) - 1:
+            html_output += " <b>--></b> "
 
     return html_output
 
-@frappe.whitelist()
-def fetch_employee_data(employee_id=None):
-    if not employee_id:
-        frappe.throw(_("Employee ID is required."))
-
-    employee = frappe.db.get_value(
-        "Employee",
-        {"employee": employee_id},
-        ["employee_name", "designation", "branch", "company_email"],
-        as_dict=True
-    )
-
-    if not employee:
-        frappe.throw(_("No employee found with ID: {0}").format(employee_id))
-
-    return employee  # returning a dictionary
-
 
 @frappe.whitelist()
-def send_to_specific_stage(record, stage):
-    """Send query to a specific stage and set the user statuses to Pending if not already set."""
-    
-    # Initialize a message variable to capture feedback
-    message = {}
+def send_to_next_stage(docname):
+    doc = frappe.get_doc("My Audits", docname)
+    next_row = None
 
-    if stage == "bm":
-        current_time = now()  # Get the current timestamp
-        message = {
-            "bm_timestamp": current_time,
-            "message": f"bm_pending_time is set for record: {record}"
-        }
+    # Find first row that is not responded/skipped and not pending
+    for row in doc.audit_stages:
+        if not row.status:
+            next_row = row
+            break
 
-    elif stage == "dh_com":
-        current_time = now()  # Get the current timestamp for both
-        # Prepare a message with both timestamps
-        message = {
-            "dh_timestamp": current_time,
-            "com_timestamp": current_time,
-            "message": f"dh_pending_time and com_pending_time are set for record: {record}"
-        }
+    if next_row:
+        next_row.status = "Pending"
+        next_row.pending_time = now()
+        doc.query_status = f"Pending From {next_row.stage_name}"
+        doc.status = "Pending"
 
-    elif stage == "rm_rom":
-        current_time = now()  # Get the current timestamp for both
-        message = {
-            "rm_timestamp": current_time,
-            "rom_timestamp": current_time,
-            "message": f"rm_pending_time and rom_pending_time are set for record: {record}"
-        }
+        # Share document with the user (notify=0 to prevent redundant background queue emails)
+        frappe.share.add(doc.doctype, doc.name,
+                         next_row.user_id, read=1, write=1, notify=0)
 
-    elif stage == "zm_zom":
-        current_time = now()  # Get the current timestamp for both
-        message = {
-            "zm_timestamp": current_time,
-            "zom_timestamp": current_time,
-            "message": f"zm_pending_time and zom_pending_time are set for record: {record}"
-        }
+        doc.save()
 
-    elif stage == "gm":
-        current_time = now()  # Get the current timestamp
-        message = {
-            "gm_timestamp": current_time,
-            "message": f"gm_pending_time is set for record: {record}"
-        }
+        # Send Custom Email immediately (New System)
+        send_stage_notification(doc, next_row, action="assign")
+        return _("Query sent to {0}").format(next_row.stage_name)
+    else:
+        return _("No more stages to send to.")
 
-    elif stage == "hr":
-        current_time = now()  # Get the current timestamp
-        message = {
-            "hr_timestamp": current_time,
-            "message": f"hr_pending_time is set for record: {record}"
-        }
 
-    elif stage == "coo":
-        current_time = now()  # Get the current timestamp
-        message = {
-            "coo_timestamp": current_time,
-            "message": f"coo_pending_time is set for record: {record}"
-        }
+def send_stage_notification(doc, stage_row, action="assign"):
+    """
+    Sends dynamic notification using Email Template.
+    action: "assign" (when query is sent to a stage) or "respond" (when a stage responds)
+    """
+    settings = frappe.get_single("Audit Management Settings")
+    template_name = settings.use_new_email_template
 
-    elif stage == "ceo":
-        current_time = now()  # Get the current timestamp
-        message = {
-            "ceo_timestamp": current_time,
-            "message": f"ceo_pending_time is set for record: {record}"
-        }
+    if not template_name:
+        frappe.msgprint(
+            _("Default Email Template not set in Audit Management Settings."))
+        return
 
-    return message  # Return the message containing timestamps
+    # 1. Determine Recipients
+    recipients = []
+    if action == "assign":
+        recipients = [stage_row.email]
+    else:
+        # When someone responds, notification goes to the query generator
+        recipients = [doc.query_generated_by_mail]
 
+    if not any(recipients):
+        return
+
+    # 2. Collect CC Emails
+    cc_list = []
+
+    # A. Static CC from settings (Action specific)
+    static_cc = ""
+    if action == "assign":
+        static_cc = settings.query_cc_emails
+    elif action == "respond":
+        static_cc = settings.response_cc_emails
+
+    if static_cc:
+        try:
+            import re
+            # Render Jinja logic if present in CC fields
+            rendered_cc = frappe.render_template(static_cc, {"doc": doc})
+            # Split by comma, space, newline, or semicolon
+            static_emails = re.split(r'[,\s\n;]+', rendered_cc)
+            static_emails = [e.strip()
+                             for e in static_emails if e.strip() and "@" in e]
+            cc_list.extend(static_emails)
+        except Exception:
+            # Fallback if rendering fails
+            import re
+            static_emails = re.split(r'[,\s\n;]+', static_cc)
+            static_emails = [e.strip()
+                             for e in static_emails if e.strip() and "@" in e]
+
+    # B. Add users from Audit Stages child table ONLY if NOT using new system
+    # (In the new system, we rely purely on dynamic CC fields from settings)
+    if not settings.use_new_system:
+        for row in doc.audit_stages:
+            if row.email and row.email not in recipients:
+                cc_list.append(row.email)
+
+    # C. Add query generator to CC if it's an assignment mail
+    if action == "assign" and doc.query_generated_by_mail:
+        if doc.query_generated_by_mail not in recipients:
+            cc_list.append(doc.query_generated_by_mail)
+
+    # De-duplicate CC list
+    cc_list = list(set(cc_list))
+
+    # 3. Render and Send
+    try:
+        from frappe.email.doctype.email_template.email_template import get_email_template
+
+        # We pass context to the template
+        email_data = get_email_template(template_name, {
+            "doc": doc,
+            "stage": stage_row,
+            "action": action
+        })
+
+        frappe.sendmail(
+            recipients=recipients,
+            cc=cc_list,
+            subject=email_data.get("subject") or f"Audit Update: {doc.name}",
+            message=email_data.get("message"),
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+            now=True
+        )
+        frappe.msgprint(_("Email notification sent to {0}").format(
+            ", ".join(recipients)))
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(),
+                         _("Audit Notification Failed"))
+        frappe.msgprint(
+            _("Failed to send email notification. Check Error Log."))
 
 
 @frappe.whitelist()
-def send_to_all(record):
-    """Send query to all stages and set their user statuses to Pending."""
-    current_time = now()  # Get the current timestamp
-    message = {
-            "bm_timestamp": current_time, "dh_timestamp": current_time,
-            "com_timestamp": current_time,"rm_timestamp": current_time,
-            "rom_timestamp": current_time, "zm_timestamp": current_time,
-            "zom_timestamp": current_time,"gm_timestamp": current_time,
-            "hr_timestamp": current_time,"coo_timestamp": current_time,
-            "ceo_timestamp": current_time,
-        }
-    return message  # Return the message containing timestamps
+def submit_response(docname, response_text, attachment=None):
+    doc = frappe.get_doc("My Audits", docname)
+    current_user = frappe.session.user.lower()
+
+    found = False
+
+    for i, row in enumerate(doc.audit_stages):
+        row_user = (row.user_id or "").lower()
+        row_email = (row.email or "").lower()
+
+        # Match by user_id or email
+        if row.status == "Pending" and (row_user == current_user or row_email == current_user):
+            row.status = "Responded"
+            row.response = response_text
+            row.attachment = attachment
+            row.response_time = now()
+            doc.query_status = f"Response From {row.stage_name}"
+            found = True
+
+            # Send notification on response
+            send_stage_notification(doc, row, action="respond")
+            break
+
+    if found:
+        settings = frappe.get_single("Audit Management Settings")
+        if settings.use_new_system:
+            doc.flags.ignore_notifications = True
+
+        doc.save(ignore_permissions=True)
+        return _("Response submitted successfully.")
+    else:
+        frappe.throw(
+            _("You are not authorized to respond at this stage or the query is not pending for you."))
 
 
 @frappe.whitelist()
 def check_pending_tat():
-    print("Checking pending TAT...")
-    
-    def has_pending_exceeded(record, user_status_field, pending_time_field, now_time):
-        print(f"Checking pending time for {user_status_field} in record {record.name}")
-        
-        status = getattr(record, user_status_field)
-        pending_time = getattr(record, pending_time_field)
-        query_type = getattr(record, "query_type", None)
-        
-        tat_time = 1 * 24 * 60
-        tat_day = "1 Day TAT"
-        
-        if user_status_field == "bm_user_status":
-            if query_type == "Audit Report Compliance":
-                tat_time = 15 * 24 * 60
-                tat_day = "15 Days then 1 Day TAT"
-            elif query_type == "Critical Compliance":
-                tat_time = 1 * 24 * 60
-                tat_day = "1 Day TAT"
-        
-        if status == "Pending" and pending_time:
-            time_diff_minutes = frappe.utils.time_diff_in_seconds(now_time, pending_time) / 60
-            if time_diff_minutes >= tat_time:
-                frappe.db.set_value("My Audits", record.name, "tat_day", tat_day)
-                print("True aaya")
-                return True
-        print("False aaya")
-        return False
-
+    """
+    Fully dynamic, metadata-driven TAT check and escalation.
+    Uses 'audit_stages' table as source of truth for flow.
+    """
     now_time = frappe.utils.now()
-    print(f"Current time: {now_time}")
-    
-    pending_records = frappe.get_all(
-        "My Audits",
-        or_filters=[
-            ["bm_user_status", "=", "Pending"],
-            ["dh_user_status", "=", "Pending"],
-            ["com_user_status", "=", "Pending"],
-            ["rm_user_status", "=", "Pending"],
-            ["rom_user_status", "=", "Pending"],
-            ["zm_user_status", "=", "Pending"],
-            ["zom_user_status", "=", "Pending"],
-            ["gm_user_status", "=", "Pending"],
-            ["hr_user_status", "=", "Pending"],
-            ["coo_user_status", "=", "Pending"],
-            ["ceo_user_status", "=", "Pending"],
-        ],
-        fields=[
-        "name",
-        "query_generated_by_name",
-        "query_generated_by_designation",
-        "query_generated_by_branch",
-        "audit_query_subject_box",
-        "query_type",
-        "emp_branch",                
-        "dh_name", "com_name",       
-        "rm_name", "rom_name",        
-        "zm_name", "zom_name",        
-        "gm_name",                   
-        "hr_name",                    
-        "coo_name",                
-        "ceo_name",
-        "bm_user_status", "bm_pending_time", "bm_mail",
-        "dh_user_status", "dh_pending_time", "dh_mail",
-        "com_user_status", "com_pending_time", "com_mail",
-        "rm_user_status", "rm_pending_time", "rm_mail",
-        "rom_user_status", "rom_pending_time", "rom_mail",
-        "zm_user_status", "zm_pending_time", "zm_mail",
-        "zom_user_status", "zom_pending_time", "zom_mail",
-        "gm_user_status", "gm_pending_time", "gm_mail",
-        "hr_user_status", "hr_pending_time", "hr_mail",
-        "coo_user_status", "coo_pending_time", "coo_mail",
-        "ceo_user_status", "ceo_pending_time", "ceo_mail"
-    ]
-    )
-    
-    print(f"Total pending records found: {len(pending_records)}")
-    
-    updates = []
-    emails = []
-    
-    level_transitions = [
-        {
-            "current": ["bm_user_status", "bm_pending_time", "bm_mail"],
-            "next": [
-                ["dh_user_status", "dh_pending_time", "dh_mail"],
-                ["com_user_status", "com_pending_time", "com_mail"]
-            ]
-        },
-        {
-            "current": ["dh_user_status", "dh_pending_time", "dh_mail", "com_user_status", "com_pending_time", "com_mail"],
-            "next": [
-                ["rm_user_status", "rm_pending_time", "rm_mail"],
-                ["rom_user_status", "rom_pending_time", "rom_mail"]
-            ]
-        },
-        {
-            "current": ["rm_user_status", "rm_pending_time", "rm_mail", "rom_user_status", "rom_pending_time", "rom_mail"],
-            "next": [
-                ["zm_user_status", "zm_pending_time", "zm_mail"],
-                ["zom_user_status", "zom_pending_time", "zom_mail"]
-            ]
-        },
-        {
-            "current": ["zm_user_status", "zm_pending_time", "zm_mail", "zom_user_status", "zom_pending_time", "zom_mail"],
-            "next": [
-                ["gm_user_status", "gm_pending_time", "gm_mail"]
-            ]
-        },
-        {
-            "current": ["gm_user_status", "gm_pending_time", "gm_mail"],
-            "next": [
-                ["hr_user_status", "hr_pending_time", "hr_mail"]
-            ]
-        },
-        {
-            "current": ["hr_user_status", "hr_pending_time", "hr_mail"],
-            "next": [
-                ["coo_user_status", "coo_pending_time", "coo_mail"]
-            ]
-        },
-        {
-            "current": ["coo_user_status", "coo_pending_time", "coo_mail"],
-            "next": [
-                ["ceo_user_status", "ceo_pending_time", "ceo_mail"]
-            ]
-        }
-    ]
-    
-    # Loop through the transition
-    for record in pending_records:
-        print(f"Processing record: {record.name}")
+    pending_audits = frappe.get_all(
+        "My Audits", filters={"status": "Pending"}, fields=["name", "query_type"])
 
-        dear_lines = {
-            "dh_user_status": f"Dear {record.dh_name} & {record.com_name},<br />DH & COM of {record.query_generated_by_branch},<br /><br />",
-            "com_user_status": f"Dear {record.dh_name} & {record.com_name},<br />DH & COM of {record.query_generated_by_branch},<br /><br />",
-            "rm_user_status": f"Dear {record.rm_name} & {record.rom_name},<br />RM & ROM for {record.query_generated_by_branch},<br /><br />",
-            "rom_user_status": f"Dear {record.rm_name} & {record.rom_name},<br />RM & ROM for {record.query_generated_by_branch},<br /><br />",
-            "zm_user_status": f"Dear {record.zm_name} & {record.zom_name},<br />ZM & ZOM for {record.query_generated_by_branch},<br /><br />",
-            "zom_user_status": f"Dear {record.zm_name} & {record.zom_name},<br />ZM & ZOM for {record.query_generated_by_branch},<br /><br />",
-            "gm_user_status": f"Dear {record.gm_name},<br />GM for {record.query_generated_by_branch},<br /><br />",
-            "hr_user_status": f"Dear {record.hr_name},<br />HR for {record.query_generated_by_branch},<br /><br />",
-            "coo_user_status": f"Dear {record.coo_name},<br />COO for {record.query_generated_by_branch},<br /><br />",
-            "ceo_user_status": f"Dear {record.ceo_name},<br />CEO for {record.query_generated_by_branch},<br /><br />",
-        }
+    for audit in pending_audits:
+        doc = frappe.get_doc("My Audits", audit.name)
+        if not doc.query_type or not doc.audit_stages:
+            continue
 
-        query_creator = f"""
-        <p>Name: {record.query_generated_by_name}</p>
-        <p>Designation: {record.query_generated_by_designation}</p>
-        <p>Branch: {record.query_generated_by_branch}</p>
-        """
-        
-        for transition in level_transitions:
-            current_level = transition["current"]
-            next_levels = transition["next"]
+        tat_config_doc = frappe.get_cached_doc(
+            "Audit Query Type", doc.query_type)
+        tat_map = {row.stage: row.tat_days for row in tat_config_doc.tat_config}
+        default_tat = tat_config_doc.default_tat_days or 1
 
-            active_fields = []
-            skip_update = False
+        active_rows = [
+            row for row in doc.audit_stages if row.status == "Pending"]
+        if not active_rows:
+            continue
 
-            for i in range(0, len(current_level), 3):
-                status_field = current_level[i]
-                if getattr(record, status_field) == "Pending":
-                    active_fields.append(status_field)
-                elif getattr(record, status_field) == "Responded":
-                    skip_update = True
-                    break
+        current_stage_level = active_rows[0].stage
+        exceeded = False
+        max_days_found = 0
 
-            if skip_update:
-                print(f"Skipping update for {record.name}, as one or more user statuses are 'Responded'.")
+        for row in active_rows:
+            if not row.pending_time:
                 continue
 
-            if active_fields:
-                print(f"Active Fields: {active_fields}")
+            days = tat_map.get(row.stage_name, default_tat)
+            max_days_found = max(max_days_found, days)
+            tat_minutes = days * 24 * 60
+            time_diff_minutes = time_diff_in_seconds(
+                now_time, row.pending_time) / 60
 
-                for active_field in active_fields:
-                    pending_time_field = current_level[current_level.index(active_field) + 1]
+            if time_diff_minutes >= tat_minutes:
+                exceeded = True
+                break
 
-                    if has_pending_exceeded(record, active_field, pending_time_field, now_time):
-                        print(f"Pending time exceeded for {active_field}, updating...")
+        if exceeded:
+            doc.tat_day = f"{max_days_found} Day(s) TAT"
+            for row in doc.audit_stages:
+                if row.stage == current_stage_level and row.status == "Pending":
+                    row.status = "No Response"
 
-                        # Mark all current "Pending" fields as "No Response"
-                        for field in active_fields:
-                            updates.append({"name": record.name, "field": field, "value": "No Response"})
-                            print(f"Setting 'No Response' for {field} in record {record.name}")
+            next_stage_level = str(int(current_stage_level) + 1)
+            next_rows = [
+                row for row in doc.audit_stages if row.stage == next_stage_level]
 
-                        for next_level in next_levels:
-                            user_status_fields = [next_level[i] for i in range(0, len(next_level), 2)]
+            if next_rows:
+                stage_names = []
+                for n_row in next_rows:
+                    n_row.status = "Pending"
+                    n_row.pending_time = now_time
+                    frappe.share.add(doc.doctype, doc.name,
+                                     n_row.user_id, read=1, write=1, notify=0)
 
-                            for user_status_field in user_status_fields:
-                                if not user_status_field.endswith("_mail"):
-                                    updates.append({"name": record.name, "field": user_status_field, "value": "Pending"})
-                                    print(f"Setting 'Pending' for {user_status_field} in record {record.name}")
+                    # Send Notification
+                    try:
+                        send_stage_notification(doc, n_row)
+                    except Exception:
+                        frappe.log_error(frappe.get_traceback(), _(
+                            "Escalation Email Failed"))
 
-                            for i in range(1, len(next_level), 2):
-                                pending_time_field = next_level[i]
-                                updates.append({"name": record.name, "field": pending_time_field, "value": now_time})
-                                print(f"Setting '{now_time}' for {pending_time_field} in record {record.name}")
+                    if n_row.stage_name not in stage_names:
+                        stage_names.append(n_row.stage_name)
+                doc.query_status = f"Pending From {', '.join(stage_names)}"
+            else:
+                doc.status = "Close"
+                doc.query_status = "Completed"
 
-                            # ✅ Email details
-                            dear_line = dear_lines.get(next_level[0], "Dear Sir/Madam,<br /><br />")
+            doc.save(ignore_permissions=True)
 
-                            if len(next_level) > 2 and hasattr(record, next_level[2]):
-                                recipient = getattr(record, next_level[2])
-                                if recipient and recipient not in emails:
-                                    emails.append(recipient)
-                                    print(f"Added {recipient} to email list.")
-                        break  # Stop checking more fields in current transition
-                    else:
-                        print(f"Pending time not exceeded for {active_field}, skipping update...")
-                break  # Process only one transition level per record
 
-        # ✅ Send email for this record (after all transition logic)
-        if emails:
-            email_subject = f"For : {record.audit_query_subject_box}"
-            email_message = frappe.render_template(
-                "audit_management/templates/emails/audit_query.html",
-                {
-                    "doc": record,
-                    "dear_line": dear_line,
-                    "query_creator": query_creator
-                }
-            )
-            print(f"Sending email to recipients: {emails}")
+@frappe.whitelist()
+def fetch_employee_data(employee_id):
+    employee = frappe.db.get_value("Employee", employee_id, [
+                                   "employee_name", "designation", "branch", "company_email"], as_dict=True)
+    if not employee:
+        employee = frappe.db.get_value("Employee", {"user_id": employee_id}, [
+                                       "employee_name", "designation", "branch", "company_email"], as_dict=True)
+
+    if not employee:
+        frappe.throw(_("Employee for {0} not found").format(employee_id))
+    return employee
+
+
+def send_escalation_notification(doc, level):
+    """Sends email when escalation level changes."""
+    subject = f"Audit Escalation [{level}]: {doc.name}"
+    message = f"Audit Query {doc.name} has been escalated to {level} due to inactivity ({doc.aging} working days)."
+
+    for row in doc.audit_stages:
+        if row.status == "Pending" and row.email:
             frappe.sendmail(
-                recipients=emails,
-                subject=email_subject,
-                message=email_message
+                recipients=[row.email],
+                subject=subject,
+                message=message,
+                reference_doctype=doc.doctype,
+                reference_name=doc.name
             )
-            print("Email sending completed.")
-            emails = []  # Clear email list for next record
 
-    # ✅ Commit updates after loop
-    if updates:
-        print("Updating database...")
-        for update in updates:
-            frappe.db.set_value("My Audits", update["name"], update["field"], update["value"])
-            print(f"Updated {update['field']} in {update['name']} with {update['value']}")
-            print("======================")
-
-
-
-#this was for testing
-@frappe.whitelist()
-def printing_all_records():
-    """Fetch and print all records where any stage is still 'Pending'."""
-    # Fetch all records where any stage is 'Pending'
-    pending_records = frappe.get_all("My Audits", or_filters=[
-        ["bm_user_status", "=", "Pending"],
-        ["dh_user_status", "=", "Pending"],
-        ["com_user_status", "=", "Pending"],
-        ["rm_user_status", "=", "Pending"],
-        ["rom_user_status", "=", "Pending"],
-        ["zm_user_status", "=", "Pending"],
-        ["zom_user_status", "=", "Pending"],
-        ["gm_user_status", "=", "Pending"],
-        ["hr_user_status", "=", "Pending"],
-        ["coo_user_status", "=", "Pending"],
-        ["ceo_user_status", "=", "Pending"]
-    ], fields=["name", "bm_user_status", "bm_pending_time", "dh_user_status", "dh_pending_time",
-               "com_user_status", "com_pending_time", "rm_user_status", "rm_pending_time", 
-               "rom_user_status", "rom_pending_time", "zm_user_status", "zm_pending_time",
-               "zom_user_status", "zom_pending_time", "gm_user_status", "gm_pending_time",
-               "coo_user_status", "coo_pending_time", "ceo_user_status", "ceo_pending_time"])
-
-    # Log and print the fetched records
-    for record in pending_records:
-        record_str = str(record)[:140]  # Truncate the record string to 140 characters
-        frappe.log_error(record_str, "Pending Audit Record")  # Log for debugging
-        print(record)
 
 @frappe.whitelist()
-def get_audit_counts(is_admin=None):
-    # Adjust the SQL queries based on the is_admin flag
-    counts = {}
+def send_daily_reminders():
+    """Sends daily follow-up emails for all pending queries."""
+    pending_audits = frappe.get_all(
+        "My Audits", filters={"status": "Pending"}, fields=["name"])
+    for audit in pending_audits:
+        doc = frappe.get_doc("My Audits", audit.name)
+        for row in doc.audit_stages:
+            if row.status == "Pending" and row.email:
+                subject = f"REMINDER: Audit Query Pending - {doc.name}"
+                message = f"This is a daily reminder for pending audit query: {doc.name}. Please address it soon."
+                frappe.sendmail(
+                    recipients=[row.email],
+                    subject=subject,
+                    message=message,
+                    reference_doctype=doc.doctype,
+                    reference_name=doc.name
+                )
 
-    # Example SQL queries based on the value of is_admin
-    if is_admin == "yes":
-        # Query for Admin or Audit Manager (e.g., all records)
-        counts["total_count"] = frappe.db.count("My Audits")
-        counts["draft_count"] = frappe.db.count("My Audits", filters={"status": "Draft"})
-        counts["pending_count"] = frappe.db.count("My Audits", filters={"status": "Pending"})
-        counts["close_count"] = frappe.db.count("My Audits", filters={"status": "Close"})
-        counts["bm_pending_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "Pending"})
-        counts["dh_pending_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "Pending"})
-        counts["com_pending_count"] = frappe.db.count("My Audits", filters={"com_user_status": "Pending"})
-        counts["rm_pending_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "Pending"})
-        counts["rom_pending_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "Pending"})
-        counts["zm_pending_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "Pending"})
-        counts["zom_pending_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "Pending"})
-        counts["gm_pending_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "Pending"})
-        counts["hr_pending_count"] = frappe.db.count("My Audits", filters={"hr_user_status": "Pending"})
-        counts["coo_pending_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Pending"})
-        counts["ceo_pending_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Pending"})
-        counts["bm_response_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "Responded"})
-        counts["dh_response_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "Responded"})
-        counts["com_response_count"] = frappe.db.count("My Audits", filters={"com_user_status": "Responded"})
-        counts["rm_response_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "Responded"})
-        counts["rom_response_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "Responded"})
-        counts["zm_response_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "Responded"})
-        counts["zom_response_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "Responded"})
-        counts["gm_response_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "Responded"})
-        counts["hr_response_count"] = frappe.db.count("My Audits", filters={"hr_user_status": "Responded"})
-        counts["coo_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Responded"})
-        counts["ceo_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Responded"})
+# def get_user_allowed_divisions(user):
+#     """
+#     1. Get User's Division from Employee doctype.
+#     2. Map it to allowed divisions using Audit Management Settings.
+#     """
+#     from audit_management.audit_management.doctype.audit_level.audit_level import get_user_division
+#     user_div = get_user_division()
 
-        # Add No Response counts
-        counts["bm_no_response_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "No Response"})
-        counts["dh_no_response_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "No Response"})
-        counts["com_no_response_count"] = frappe.db.count("My Audits", filters={"com_user_status": "No Response"})
-        counts["rm_no_response_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "No Response"})
-        counts["rom_no_response_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "No Response"})
-        counts["zm_no_response_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "No Response"})
-        counts["zom_no_response_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "No Response"})
-        counts["gm_no_response_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "No Response"})
-        counts["hr_no_response_count"] = frappe.db.count("My Audits", filters={"hr_user_status": "No Response"})
-        counts["coo_no_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "No Response"})
-        counts["ceo_no_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "No Response"})
+#     if not user_div:
+#         return []
 
-    elif is_admin == "no":
-        # Query for Audit Manager (e.g., restricted records)
-        counts["total_count"] = frappe.db.count("My Audits",filters={"owner": frappe.session.user})
-        counts["draft_count"] = frappe.db.count("My Audits", filters={"status": "Draft", "owner": frappe.session.user})
-        counts["pending_count"] = frappe.db.count("My Audits", filters={"status": "Pending", "owner": frappe.session.user})
-        counts["close_count"] = frappe.db.count("My Audits", filters={"status": "Close", "owner": frappe.session.user})
-        counts["bm_pending_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "Pending", "owner": frappe.session.user})
-        counts["dh_pending_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "Pending", "owner": frappe.session.user})
-        counts["com_pending_count"] = frappe.db.count("My Audits", filters={"com_user_status": "Pending", "owner": frappe.session.user})
-        counts["rm_pending_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "Pending", "owner": frappe.session.user})
-        counts["rom_pending_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "Pending", "owner": frappe.session.user})
-        counts["zm_pending_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "Pending", "owner": frappe.session.user})
-        counts["zom_pending_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "Pending", "owner": frappe.session.user})
-        counts["gm_pending_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "Pending", "owner": frappe.session.user})
-        counts["hr_pending_count"] = frappe.db.count("My Audits", filters={"hr_user_status": "Pending", "owner": frappe.session.user})
-        counts["coo_pending_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Pending", "owner": frappe.session.user})
-        counts["ceo_pending_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Pending", "owner": frappe.session.user})
-        counts["bm_response_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "Responded", "owner": frappe.session.user})
-        counts["dh_response_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "Responded", "owner": frappe.session.user})
-        counts["com_response_count"] = frappe.db.count("My Audits", filters={"com_user_status": "Responded", "owner": frappe.session.user})
-        counts["rm_response_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "Responded", "owner": frappe.session.user})
-        counts["rom_response_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "Responded", "owner": frappe.session.user})
-        counts["zm_response_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "Responded", "owner": frappe.session.user})
-        counts["zom_response_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "Responded", "owner": frappe.session.user})
-        counts["gm_response_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "Responded", "owner": frappe.session.user})
-        counts["hr_response_count"] = frappe.db.count("My Audits", filters={"hr_user_status": "Responded", "owner": frappe.session.user})
-        counts["coo_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "Responded", "owner": frappe.session.user})
-        counts["ceo_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "Responded", "owner": frappe.session.user})
-           
-        # Add No Response counts for restricted access
-        counts["bm_no_response_count"] = frappe.db.count("My Audits", filters={"bm_user_status": "No Response", "owner": frappe.session.user})
-        counts["dh_no_response_count"] = frappe.db.count("My Audits", filters={"dh_user_status": "No Response", "owner": frappe.session.user})
-        counts["com_no_response_count"] = frappe.db.count("My Audits", filters={"com_user_status": "No Response", "owner": frappe.session.user})
-        counts["rm_no_response_count"] = frappe.db.count("My Audits", filters={"rm_user_status": "No Response", "owner": frappe.session.user})
-        counts["rom_no_response_count"] = frappe.db.count("My Audits", filters={"rom_user_status": "No Response", "owner": frappe.session.user})
-        counts["zm_no_response_count"] = frappe.db.count("My Audits", filters={"zm_user_status": "No Response", "owner": frappe.session.user})
-        counts["zom_no_response_count"] = frappe.db.count("My Audits", filters={"zom_user_status": "No Response", "owner": frappe.session.user})
-        counts["gm_no_response_count"] = frappe.db.count("My Audits", filters={"gm_user_status": "No Response", "owner": frappe.session.user})
-        counts["hr_no_response_count"] = frappe.db.count("My Audits", filters={"hr_user_status": "No Response", "owner": frappe.session.user})
-        counts["coo_no_response_count"] = frappe.db.count("My Audits", filters={"coo_user_status": "No Response", "owner": frappe.session.user})
-        counts["ceo_no_response_count"] = frappe.db.count("My Audits", filters={"ceo_user_status": "No Response", "owner": frappe.session.user})
+#     settings = frappe.get_single("Audit Management Settings")
 
-    return counts
+#     # Find all divisions mapped to the user's division
+#     allowed = [row.allowed_division for row in settings.division_permissions if row.source_division == user_div]
 
-@frappe.whitelist(allow_guest=True)
-def get_audit_level_for_user():
-    # Get the current logged-in user
-    user = frappe.session.user
+#     # If no mapping is found in settings, default to allowing them to see ONLY their own division
+#     if not allowed:
+#         allowed = [user_div]
 
-    # Use or_filters to check if the user exists in any of the specified fields
-    matches = frappe.get_all(
-        'Audit Level',
-        or_filters=[
-            ['stage_1_bm_user_id', '=', user],
-            ['stage_2_dh_user_id', '=', user],
-            ['stage_2_com_user_id', '=', user],
-            ['stage_3_rm_user_id', '=', user],
-            ['stage_3_rom_user_id', '=', user],
-            ['stage_4_zm_user_id', '=', user],
-            ['stage_4_zom_user_id', '=', user],
-            ['stage_5_gm_user_id', '=', user],
-            ['stage_6_hr_user_id', '=', user],
-            ['stage_7_coo_user_id', '=', user],
-            ['stage_8_ceo_user_id', '=', user]
-        ],
-        fields=[
-            'name', 'stage_1_bm_user_id', 'stage_2_dh_user_id', 'stage_2_com_user_id',
-            'stage_3_rm_user_id', 'stage_3_rom_user_id', 'stage_4_zm_user_id',
-            'stage_4_zom_user_id', 'stage_5_gm_user_id', 'stage_6_hr_user_id','stage_7_coo_user_id',
-            'stage_8_ceo_user_id'
-        ]
-    )
+#     return allowed
 
-    # If matches are found, determine user stages for each
-    if matches:
-        results = []
-        stages = {
-            'stage_1_bm_user_id': "bm_user_status",
-            'stage_2_dh_user_id': "dh_user_status",
-            'stage_2_com_user_id': "com_user_status",
-            'stage_3_rm_user_id': "rm_user_status",
-            'stage_3_rom_user_id': "rom_user_status",
-            'stage_4_zm_user_id': "zm_user_status",
-            'stage_4_zom_user_id': "zom_user_status",
-            'stage_5_gm_user_id': "gm_user_status",
-            'stage_6_hr_user_id': "hr_user_status",
-            'stage_7_coo_user_id': "coo_user_status", 
-            'stage_8_ceo_user_id': "ceo_user_status"
-        }
 
-        # Loop through each matching record and find the corresponding user stage
-        for audit_level in matches:
-            for stage_field, status_field in stages.items():
-                if audit_level.get(stage_field) == user:
-                    results.append({
-                        "name": audit_level['name'],
-                        "user_stage": status_field
-                    })
-        
-        return {
-            "flag": "LevelUser",
-            "matches": results
-        }
+def get_user_allowed_divisions(user):
+    user_div = frappe.db.get_value(
+        "Employee", {"user_id": user}, "custom_division")
+    if not user_div:
+        return []
 
-    # Check if the user has any of the specified roles (Audit Manager, Audit Member, etc.)
-    user_roles = frappe.get_roles(user)
-    audit_roles = {"Audit Manager", "Audit Member", "System Manager", "Administrator"}
+    settings = frappe.get_single("Audit Management Settings")
 
-    if audit_roles.intersection(user_roles):
-        return {"flag": "AuditUser"}
+    # Check if the attribute exists before trying to loop through it!
+    if not hasattr(settings, "division_permissions") or not settings.division_permissions:
+        # Fallback to just their own division if table is missing/empty
+        return [user_div]
 
-    # If neither condition is met, return "OtherUser"
-    return {"flag": "OtherUser"}
+    allowed = [
+        row.allowed_division for row in settings.division_permissions if row.source_division == user_div]
+
+    # Always include their own division
+    if user_div not in allowed:
+        allowed.append(user_div)
+
+    return allowed
+
+
+def get_permission_query_conditions(user=None):
+    if not user:
+        user = frappe.session.user
+
+    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+        return ""
+
+    allowed_divisions = get_user_allowed_divisions(user)
+
+    if not allowed_divisions:
+        # No division found for user, and no mapping. Deny access.
+        return "1=0"
+
+    # Convert list to SQL format
+    divisions_sql = ", ".join([frappe.db.escape(d) for d in allowed_divisions])
+    return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
+
+
+def has_permission(doc, ptype, user=None):
+    if not user:
+        user = frappe.session.user
+
+    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+        return True
+
+    allowed_divisions = get_user_allowed_divisions(user)
+
+    if not allowed_divisions:
+        return False  # Agar user ko koi bhi division allow nahi hai, to access nahi
+
+    # For 'create' permission, we don't have doc.emp_division yet.
+    # So, just check if the user has *any* allowed divisions.
+    if ptype == "create":
+        # Agar allowed divisions ki list khali nahi hai, to create allow karo
+        return bool(allowed_divisions)
+
+    doc_division = doc.get("emp_division")
+    return doc_division in allowed_divisions

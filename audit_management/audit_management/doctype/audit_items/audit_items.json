@@ -13,8 +13,10 @@
   "employee_name",
   "email",
   "status",
+  "response",
   "attachment",
-  "response"
+  "pending_time",
+  "response_time"
  ],
  "fields": [
   {
@@ -70,12 +72,14 @@
   {
    "fieldname": "attachment",
    "fieldtype": "Attach",
+   "in_list_view": 1,
    "label": "Attachment",
    "read_only": 1
   },
   {
    "fieldname": "response",
    "fieldtype": "Small Text",
+   "in_list_view": 1,
    "label": "Response",
    "read_only": 1
   },
@@ -86,13 +90,25 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "\nPending\nNo Response\nResponded\nSkipped"
+  },
+  {
+   "fieldname": "pending_time",
+   "fieldtype": "Datetime",
+   "label": "Pending Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "response_time",
+   "fieldtype": "Datetime",
+   "label": "Response Time",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-27 13:59:27.473932",
+ "modified": "2026-04-15 12:29:46.783869",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Items",

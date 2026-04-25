@@ -127,12 +127,12 @@
   "ceo_user_id",
   "column_break_yvwil",
   "ceo_mail",
-  "audit_items_section",
-  "audit_stages",
-  "new_request_tab",
+  "audit_details_tab",
   "enter_branch_section",
   "emp_branch",
   "employee_id",
+  "column_break_xurg",
+  "emp_division",
   "generated_by_section",
   "query_generated_by_empid",
   "query_generated_by_mail",
@@ -142,14 +142,33 @@
   "column_break_eophe",
   "query_generated_by_branch",
   "audit_query_section",
-  "audit_attach_box",
-  "column_break_dmena",
   "query_type",
-  "column_break_l8yey",
+  "column_break_dmena",
+  "audit_attach_box",
+  "categorization_section",
+  "primary_nature",
+  "risk",
+  "column_break_cat_1",
+  "department_alignment",
+  "query_subject_section",
   "audit_query_subject_box",
-  "section_break_7cwgo",
+  "query_description_section",
+  "column_break_chtt",
   "audit_query_box",
-  "bm_response_section",
+  "tracking_section",
+  "aging",
+  "column_break_track_1",
+  "current_escalation_level",
+  "resolution_section",
+  "rca_category",
+  "root_cause_analysis",
+  "column_break_res_1",
+  "action_point_with_tat",
+  "recommendations",
+  "response_section",
+  "current_response_attach",
+  "current_response_box",
+  "bm_response",
   "bm_attach_box",
   "bm_response_box",
   "dh_com_response_section",
@@ -183,7 +202,9 @@
   "ceo_attach_box",
   "ceo_response_box",
   "closing_remark_section",
-  "closing_remark"
+  "closing_remark",
+  "audit_items_section",
+  "audit_stages"
  ],
  "fields": [
   {
@@ -207,66 +228,51 @@
    "options": "\nDraft\nPending\nClose"
   },
   {
-   "fieldname": "new_request_tab",
-   "fieldtype": "Tab Break",
-   "label": "New Request"
-  },
-  {
-   "fetch_from": "emp_branch.stage_1_bm_user_id",
    "fieldname": "bm_user_id",
    "fieldtype": "Data",
    "label": "BM User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_2_dh_user_id",
    "fieldname": "dh_user_id",
    "fieldtype": "Data",
    "label": "DH User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_2_com_user_id",
    "fieldname": "com_user_id",
    "fieldtype": "Data",
    "label": "COM User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_3_rm_user_id",
    "fieldname": "rm_user_id",
    "fieldtype": "Data",
    "label": "RM User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_3_rom_user_id",
    "fieldname": "rom_user_id",
    "fieldtype": "Data",
    "label": "ROM User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_4_zm_user_id",
    "fieldname": "zm_user_id",
    "fieldtype": "Data",
    "label": "ZM User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_4_zom_user_id",
    "fieldname": "zom_user_id",
    "fieldtype": "Data",
    "label": "ZOM User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_5_gm_user_id",
    "fieldname": "gm_user_id",
    "fieldtype": "Data",
    "label": "GM User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_7_coo_user_id",
    "fieldname": "coo_user_id",
    "fieldtype": "Data",
    "label": "COO User ID"
   },
   {
-   "fetch_from": "emp_branch.stage_8_ceo_user_id",
    "fieldname": "ceo_user_id",
    "fieldtype": "Data",
    "label": "CEO User ID"
@@ -284,14 +290,89 @@
   {
    "columns": 8,
    "fieldname": "audit_query_box",
-   "fieldtype": "Small Text",
+   "fieldtype": "Text Editor",
    "label": "Query Description :",
    "reqd": 1
   },
   {
-   "fieldname": "bm_response_section",
+   "fieldname": "categorization_section",
    "fieldtype": "Section Break",
-   "label": "<b>BM Response : </b>"
+   "label": "<b>Categorization</b>"
+  },
+  {
+   "fieldname": "primary_nature",
+   "fieldtype": "Link",
+   "label": "Primary Nature of Query",
+   "options": "Audit Primary Nature",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_cat_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "department_alignment",
+   "fieldtype": "Link",
+   "label": "Departmental & Product Alignment",
+   "options": "Audit Department",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tracking_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Operational Tracking</b>"
+  },
+  {
+   "fieldname": "aging",
+   "fieldtype": "Int",
+   "label": "Aging (Days)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_track_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "current_escalation_level",
+   "fieldtype": "Select",
+   "label": "Current Escalation Level",
+   "options": "\nLevel 1\nLevel 2\nLevel 3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolution_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Resolution Details</b>"
+  },
+  {
+   "fieldname": "rca_category",
+   "fieldtype": "Link",
+   "label": "RCA Category",
+   "options": "Audit RCA Category"
+  },
+  {
+   "fieldname": "column_break_res_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "action_point_with_tat",
+   "fieldtype": "Small Text",
+   "label": "Action Point with TAT and Closure"
+  },
+  {
+   "fieldname": "root_cause_analysis",
+   "fieldtype": "Small Text",
+   "label": "Root Cause Analysis (RCA)"
+  },
+  {
+   "fieldname": "recommendations",
+   "fieldtype": "Small Text",
+   "label": "Recommendations"
+  },
+  {
+   "fieldname": "response_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Active Response : </b>"
   },
   {
    "depends_on": "eval:doc.bm_response_box != null || frappe.session.user==doc.bm_user_id && doc.status==\"Pending\" && (doc.bm_user_status==\"Pending\" || doc.bm_user_status===\"No Response\")",
@@ -380,9 +461,8 @@
   },
   {
    "fieldname": "query_status",
-   "fieldtype": "Select",
-   "label": "Query Status",
-   "options": "\nPending From BM\nResponse From BM\nPending From DH & COM\nResponse From DH\nResponse From COM\nResponse From DH & COM\nPending From RM & ROM\nResponse From RM\nResponse From ROM\nResponse From RM & ROM\nPending From ZM & ZOM\nResponse From ZM\nResponse From ZOM\nResponse From ZM & ZOM\nPending From GM\nResponse From GM\nPending From HR\nResponse From HR\nPending From COO\nResponse From COO\nPending From CEO\nResponse From CEO"
+   "fieldtype": "Data",
+   "label": "Query Status"
   },
   {
    "fieldname": "column_break_zjlzx",
@@ -504,7 +584,8 @@
    "in_list_view": 1,
    "label": "Branch",
    "options": "Audit Level",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "audit_attach_box",
@@ -595,61 +676,51 @@
    "label": "Closing Remark"
   },
   {
-   "fetch_from": "emp_branch.stage_1_bm_name",
    "fieldname": "bm_name",
    "fieldtype": "Data",
    "label": "BM name"
   },
   {
-   "fetch_from": "emp_branch.stage_2_dh_name",
    "fieldname": "dh_name",
    "fieldtype": "Data",
    "label": "DH Name"
   },
   {
-   "fetch_from": "emp_branch.stage_2_com_name",
    "fieldname": "com_name",
    "fieldtype": "Data",
    "label": "COM Name"
   },
   {
-   "fetch_from": "emp_branch.stage_3_rm_name",
    "fieldname": "rm_name",
    "fieldtype": "Data",
    "label": "RM Name"
   },
   {
-   "fetch_from": "emp_branch.stage_3_rom_name",
    "fieldname": "rom_name",
    "fieldtype": "Data",
    "label": "ROM Name"
   },
   {
-   "fetch_from": "emp_branch.stage_4_zm_name",
    "fieldname": "zm_name",
    "fieldtype": "Data",
    "label": "ZM Name"
   },
   {
-   "fetch_from": "emp_branch.stage_4_zom_name",
    "fieldname": "zom_name",
    "fieldtype": "Data",
    "label": "ZOM Name"
   },
   {
-   "fetch_from": "emp_branch.stage_5_gm_name",
    "fieldname": "gm_name",
    "fieldtype": "Data",
    "label": "GM Name"
   },
   {
-   "fetch_from": "emp_branch.stage_7_coo_name",
    "fieldname": "coo_name",
    "fieldtype": "Data",
    "label": "COO Name"
   },
   {
-   "fetch_from": "emp_branch.stage_8_ceo_name",
    "fieldname": "ceo_name",
    "fieldtype": "Data",
    "label": "CEO Name"
@@ -866,7 +937,7 @@
   },
   {
    "fieldname": "audit_query_subject_box",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Query Subject :",
    "reqd": 1
   },
@@ -875,7 +946,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_1_bm_mail",
    "fieldname": "bm_mail",
    "fieldtype": "Data",
    "label": "BM Mail"
@@ -885,7 +955,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_2_dh_mail",
    "fieldname": "dh_mail",
    "fieldtype": "Data",
    "label": "DH Mail"
@@ -895,7 +964,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_2_com_mail",
    "fieldname": "com_mail",
    "fieldtype": "Data",
    "label": "COM Mail"
@@ -905,7 +973,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_3_rm_mail",
    "fieldname": "rm_mail",
    "fieldtype": "Data",
    "label": "RM Mail"
@@ -915,7 +982,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_3_rom_mail",
    "fieldname": "rom_mail",
    "fieldtype": "Data",
    "label": "ROM Mail"
@@ -925,7 +991,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_4_zm_mail",
    "fieldname": "zm_mail",
    "fieldtype": "Data",
    "label": "ZM Mail"
@@ -935,7 +1000,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_4_zom_mail",
    "fieldname": "zom_mail",
    "fieldtype": "Data",
    "label": "ZOM Mail"
@@ -945,7 +1009,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_5_gm_mail",
    "fieldname": "gm_mail",
    "fieldtype": "Data",
    "label": "GM Mail"
@@ -955,13 +1018,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_7_coo_mail",
    "fieldname": "coo_mail",
    "fieldtype": "Data",
    "label": "COO Mail"
   },
   {
-   "fetch_from": "emp_branch.stage_8_ceo_mail",
    "fieldname": "ceo_mail",
    "fieldtype": "Data",
    "label": "CEO Mail"
@@ -986,18 +1047,10 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "column_break_l8yey",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_7cwgo",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "query_type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Query Type",
-   "options": "\nAudit Report Compliance\nCritical Compliance\nOperational Compliance",
+   "options": "Audit Query Type",
    "reqd": 1
   },
   {
@@ -1032,7 +1085,6 @@
    "label": "Stage 6 (HR)"
   },
   {
-   "fetch_from": "emp_branch.stage_6_hr_name",
    "fieldname": "hr_name",
    "fieldtype": "Data",
    "label": "HR Name"
@@ -1061,7 +1113,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_6_hr_user_id",
    "fieldname": "hr_user_id",
    "fieldtype": "Data",
    "label": "HR User ID"
@@ -1071,7 +1122,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "emp_branch.stage_6_hr_mail",
    "fieldname": "hr_mail",
    "fieldtype": "Data",
    "label": "HR Mail"
@@ -1106,20 +1156,76 @@
    "options": "\nNo\nYes"
   },
   {
+   "depends_on": "eval:frappe.user.has_role(\"Audit Member\") || frappe.user.has_role(\"Audit Manager\")",
    "fieldname": "audit_items_section",
    "fieldtype": "Section Break",
    "label": "Audit Items"
   },
   {
+   "depends_on": "eval:frappe.user.has_role(\"Audit Member\") || frappe.user.has_role(\"Audit Manager\")",
    "fieldname": "audit_stages",
    "fieldtype": "Table",
    "label": "Audit Stages",
    "options": "Audit Items"
+  },
+  {
+   "fieldname": "current_response_attach",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  },
+  {
+   "fieldname": "current_response_box",
+   "fieldtype": "Small Text",
+   "label": "Response"
+  },
+  {
+   "fieldname": "audit_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Audit Details"
+  },
+  {
+   "fieldname": "column_break_chtt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "query_subject_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Query Subject :</b>"
+  },
+  {
+   "fieldname": "bm_response",
+   "fieldtype": "Section Break",
+   "label": "<b>BM Response : </b>"
+  },
+  {
+   "fieldname": "query_description_section",
+   "fieldtype": "Section Break",
+   "label": "<b>Query Description :</b>"
+  },
+  {
+   "fieldname": "column_break_xurg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "emp_division",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Division",
+   "options": "Division",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "risk",
+   "fieldtype": "Select",
+   "label": "Risk",
+   "options": "Normal\nMedium\nHigh"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-23 15:45:48.381781",
+ "modified": "2026-04-24 15:55:08.489186",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",

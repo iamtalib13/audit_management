@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:emp_branch",
+ "autoname": "format:Audit-{division}-{emp_branch}",
  "creation": "2024-09-02 11:17:28.344188",
  "default_view": "List",
  "doctype": "DocType",
@@ -9,6 +9,8 @@
  "engine": "InnoDB",
  "field_order": [
   "emp_branch",
+  "column_break_usmq",
+  "division",
   "stage_1_bm_section",
   "stage_1_bm_emp_id",
   "column_break_4v6eo",
@@ -81,22 +83,38 @@
   "stage_6_hr_name",
   "column_break_w7x50",
   "stage_6_hr_mail",
-  "stage_7_coo_section",
-  "stage_7_coo_emp_id",
+  "stage_7_chro_section",
+  "stage_7_chro_emp_id",
+  "column_break_fivf",
+  "stage_7_chro_user_id",
+  "column_break_hlln",
+  "stage_7_chro_name",
+  "column_break_tkzh",
+  "stage_7_chro_mail",
+  "stage_8_coo_section",
+  "stage_8_coo_emp_id",
   "column_break_wd2ri",
-  "stage_7_coo_user_id",
+  "stage_8_coo_user_id",
   "column_break_mlzxp",
-  "stage_7_coo_name",
+  "stage_8_coo_name",
   "column_break_rsmjy",
-  "stage_7_coo_mail",
-  "stage_8_ceo_section",
-  "stage_8_ceo_emp_id",
+  "stage_8_coo_mail",
+  "stage_9_cfo_section",
+  "stage_9_cfo_emp_id",
+  "column_break_wbvk",
+  "stage_9_user_id",
+  "column_break_wfzw",
+  "stage_9_cfo_name",
+  "column_break_dmkb",
+  "stage_9_cfo_mail",
+  "stage_10_ceo_section",
+  "stage_10_ceo_emp_id",
   "column_break_r8qhq",
-  "stage_8_ceo_user_id",
+  "stage_10_ceo_user_id",
   "column_break_ryavi",
-  "stage_8_ceo_name",
+  "stage_10_ceo_name",
   "column_break_z7ayy",
-  "stage_8_ceo_mail",
+  "stage_10_ceo_mail",
   "audit_items_section",
   "audit_stages"
  ],
@@ -120,6 +138,7 @@
    "fetch_from": "stage_1_bm_emp_id.user_id",
    "fieldname": "stage_1_bm_user_id",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "BM User ID",
    "read_only": 1
   },
@@ -134,6 +153,7 @@
    "fetch_from": "stage_2_dh_emp_id.user_id",
    "fieldname": "stage_2_dh_user_id",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "DH User ID",
    "read_only": 1
   },
@@ -148,6 +168,7 @@
    "fetch_from": "stage_2_com_emp_id.user_id",
    "fieldname": "stage_2_com_user_id",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "COM User ID",
    "read_only": 1
   },
@@ -162,6 +183,7 @@
    "fetch_from": "stage_3_rm_emp_id.user_id",
    "fieldname": "stage_3_rm_user_id",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "RM User ID",
    "read_only": 1
   },
@@ -176,6 +198,7 @@
    "fetch_from": "stage_3_rom_emp_id.user_id",
    "fieldname": "stage_3_rom_user_id",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "ROM User ID",
    "read_only": 1
   },
@@ -190,6 +213,7 @@
    "fetch_from": "stage_4_zm_emp_id.user_id",
    "fieldname": "stage_4_zm_user_id",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "ZM User ID",
    "read_only": 1
   },
@@ -208,6 +232,7 @@
    "fetch_from": "stage_4_zom_emp_id.user_id",
    "fieldname": "stage_4_zom_user_id",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "ZOM User ID",
    "read_only": 1
   },
@@ -223,6 +248,7 @@
    "fetch_from": "stage_1_bm_emp_id.employee_name",
    "fieldname": "stage_1_bm_name",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "BM Name",
    "read_only": 1
   },
@@ -234,6 +260,7 @@
    "fetch_from": "stage_2_dh_emp_id.employee_name",
    "fieldname": "stage_2_dh_name",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "DH Name",
    "read_only": 1
   },
@@ -259,6 +286,7 @@
    "fetch_from": "stage_2_com_emp_id.employee_name",
    "fieldname": "stage_2_com_name",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "COM Name",
    "read_only": 1
   },
@@ -270,6 +298,7 @@
    "fetch_from": "stage_3_rm_emp_id.employee_name",
    "fieldname": "stage_3_rm_name",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "RM Name",
    "read_only": 1
   },
@@ -290,6 +319,7 @@
    "fetch_from": "stage_3_rom_emp_id.employee_name",
    "fieldname": "stage_3_rom_name",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "ROM Name",
    "read_only": 1
   },
@@ -301,6 +331,7 @@
    "fetch_from": "stage_4_zm_emp_id.employee_name",
    "fieldname": "stage_4_zm_name",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "ZM Name",
    "read_only": 1
   },
@@ -321,6 +352,7 @@
    "fetch_from": "stage_4_zom_emp_id.employee_name",
    "fieldname": "stage_4_zom_name",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "ZOM Name",
    "read_only": 1
   },
@@ -354,6 +386,7 @@
    "fetch_from": "stage_5_gm_emp_id.user_id",
    "fieldname": "stage_5_gm_user_id",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "GM User ID",
    "read_only": 1
   },
@@ -365,6 +398,7 @@
    "fetch_from": "stage_5_gm_emp_id.employee_name",
    "fieldname": "stage_5_gm_name",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "GM Name",
    "read_only": 1
   },
@@ -388,8 +422,13 @@
    "fieldname": "emp_branch",
    "fieldtype": "Link",
    "label": "Branch",
-   "options": "Branch",
-   "unique": 1
+   "options": "Sahayog Branch"
+  },
+  {
+   "fieldname": "division",
+   "fieldtype": "Data",
+   "label": "Division",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_v1upb",
@@ -398,6 +437,7 @@
   {
    "fieldname": "stage_1_bm_mail",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "BM Mail"
   },
   {
@@ -407,6 +447,7 @@
   {
    "fieldname": "stage_2_dh_mail",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "DH Mail"
   },
   {
@@ -416,6 +457,7 @@
   {
    "fieldname": "stage_2_com_mail",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "COM Mail"
   },
   {
@@ -425,6 +467,7 @@
   {
    "fieldname": "stage_3_rm_mail",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "RM Mail"
   },
   {
@@ -434,6 +477,7 @@
   {
    "fieldname": "stage_3_rom_mail",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "ROM Mail"
   },
   {
@@ -443,6 +487,7 @@
   {
    "fieldname": "stage_4_zm_mail",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "ZM Mail"
   },
   {
@@ -452,6 +497,7 @@
   {
    "fieldname": "stage_4_zom_mail",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "ZOM Mail"
   },
   {
@@ -459,9 +505,9 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_5_gm_emp_id.company_email",
    "fieldname": "stage_5_gm_mail",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "GM Mail"
   },
   {
@@ -492,7 +538,9 @@
    "fetch_from": "stage_6_hr_emp_id.user_id",
    "fieldname": "stage_6_hr_user_id",
    "fieldtype": "Data",
-   "label": "HR User ID"
+   "hidden": 1,
+   "label": "HR User ID",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_y8mjb",
@@ -502,81 +550,19 @@
    "fetch_from": "stage_6_hr_emp_id.employee_name",
    "fieldname": "stage_6_hr_name",
    "fieldtype": "Data",
-   "label": "HR Name"
+   "hidden": 1,
+   "label": "HR Name",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_w7x50",
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "stage_6_hr_emp_id.company_email",
    "fieldname": "stage_6_hr_mail",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "HR Mail"
-  },
-  {
-   "fieldname": "stage_7_coo_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 7 (COO)"
-  },
-  {
-   "fieldname": "stage_7_coo_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>COO Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_7_coo_emp_id.user_id",
-   "fieldname": "stage_7_coo_user_id",
-   "fieldtype": "Data",
-   "label": "COO User ID",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "stage_7_coo_emp_id.employee_name",
-   "fieldname": "stage_7_coo_name",
-   "fieldtype": "Data",
-   "label": "COO Name",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "stage_7_coo_emp_id.company_email",
-   "fieldname": "stage_7_coo_mail",
-   "fieldtype": "Data",
-   "label": "COO Mail"
-  },
-  {
-   "fieldname": "stage_8_ceo_section",
-   "fieldtype": "Section Break",
-   "label": "Stage 8 (CEO)"
-  },
-  {
-   "fieldname": "stage_8_ceo_emp_id",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "<b>CEO Employee ID</b>",
-   "options": "Employee"
-  },
-  {
-   "fetch_from": "stage_8_ceo_emp_id.user_id",
-   "fieldname": "stage_8_ceo_user_id",
-   "fieldtype": "Data",
-   "label": "CEO User ID",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "stage_8_ceo_emp_id.employee_name",
-   "fieldname": "stage_8_ceo_name",
-   "fieldtype": "Data",
-   "label": "CEO Name",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "stage_8_ceo_emp_id.company_email",
-   "fieldname": "stage_8_ceo_mail",
-   "fieldtype": "Data",
-   "label": "CEO Mail"
   },
   {
    "fieldname": "stage_1_bm_section",
@@ -593,15 +579,178 @@
    "fieldtype": "Table",
    "label": "Audit Stages",
    "options": "Audit Items"
+  },
+  {
+   "fieldname": "stage_8_coo_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 8 (COO)"
+  },
+  {
+   "fieldname": "stage_8_coo_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>COO Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_8_coo_emp_id.user_id",
+   "fieldname": "stage_8_coo_user_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "COO User ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "stage_8_coo_emp_id.employee_name",
+   "fieldname": "stage_8_coo_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "COO Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_8_coo_mail",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "COO Mail"
+  },
+  {
+   "fieldname": "stage_7_chro_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 7 (CHRO)"
+  },
+  {
+   "fieldname": "stage_7_chro_emp_id",
+   "fieldtype": "Link",
+   "label": "<b>CHRO Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_7_chro_emp_id.user_id",
+   "fieldname": "stage_7_chro_user_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CHRO User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_fivf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "stage_7_chro_emp_id.employee_name",
+   "fieldname": "stage_7_chro_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CHRO Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hlln",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_tkzh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stage_7_chro_mail",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CHRO Mail"
+  },
+  {
+   "fieldname": "stage_10_ceo_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 10 (CEO)"
+  },
+  {
+   "fieldname": "stage_10_ceo_emp_id",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "<b>CEO Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_10_ceo_emp_id.user_id",
+   "fieldname": "stage_10_ceo_user_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CEO User ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "stage_10_ceo_emp_id.employee_name",
+   "fieldname": "stage_10_ceo_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CEO Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_10_ceo_mail",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CEO Mail"
+  },
+  {
+   "fieldname": "stage_9_cfo_section",
+   "fieldtype": "Section Break",
+   "label": "Stage 9 (CFO)"
+  },
+  {
+   "fieldname": "stage_9_cfo_emp_id",
+   "fieldtype": "Link",
+   "label": "<b>CFO Employee ID</b>",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "stage_9_cfo_emp_id.user_id",
+   "fieldname": "stage_9_user_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CFO User ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "stage_9_cfo_emp_id.employee_name",
+   "fieldname": "stage_9_cfo_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CFO  Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stage_9_cfo_mail",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "CFO Mail",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wbvk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wfzw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_dmkb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_usmq",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-16 16:17:51.541555",
+ "modified": "2026-04-24 16:14:06.899366",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",
- "naming_rule": "By fieldname",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

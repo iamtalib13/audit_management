@@ -8,3 +8,4 @@ audit_management.patches.fixtures.add_audit_roles
 audit_management.patches.fixtures.audit_permission_patch
 audit_management.patches.migrate_audit_level_to_child
 audit_management.patches.migrate_audit_level_to_my_audits_child
+audit_management.patches.migrate_hardcoded_to_child_table

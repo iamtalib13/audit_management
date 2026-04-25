@@ -828,7 +828,7 @@ function get_records_count() {
 }
 
 frappe.call({
-    method: 'audit_management.audit_management.doctype.my_audits.my_audits.get_audit_level_for_user', // Replace with your correct method path
+    method: 'audit_management.audit_management.doctype.my_audits.my_audits_workspace_helper.get_audit_level_for_user', // Replace with your correct method path
     callback: function(response) {
         // Ensure matches is always an array to prevent errors
         const matches = response.message.matches || [];
