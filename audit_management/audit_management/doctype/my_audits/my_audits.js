@@ -1194,6 +1194,7 @@ setup_dynamic_buttons: function (frm) {
         "audit_query_box",
         "audit_query_subject_box",
         "emp_branch",
+        "risk",
         "query_type",
         "audit_attach_box",
       ].forEach((f) => {
