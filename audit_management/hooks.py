@@ -133,12 +133,18 @@ scheduler_events = {
     #     "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat",
     #     "audit_management.audit_management.doctype.my_audits.my_audits.send_daily_reminders"
     # ]
-    "hourly": [
-        "auditmanagement.auditmanagement.doctype.myaudits.myaudits.check_pending_tat"
+    "daily": [
+        "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat"
     ],
     "daily": [
-        "auditmanagement.auditmanagement.doctype.myaudits.myaudits.send_daily_reminders"
-    ]
+        # "audit_management.audit_management.doctype.my_audits.my_audits.send_daily_reminders"
+    ],
+
+    "cron": {
+        "* * * * *": [
+            # "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat"
+        ]
+    }
 }
 # Testing
 # -------
