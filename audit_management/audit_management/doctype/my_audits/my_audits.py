@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import now, time_diff_in_seconds, getdate, nowdate
+from frappe.utils import now, time_diff_in_seconds, time_diff_in_hours, getdate, nowdate
 from audit_management.audit_management.utils import get_working_days, update_audit_aging
 
 
@@ -125,6 +125,9 @@ class MyAudits(Document):
     #         })
 
     def before_insert(self):
+        # 1. Force the status to Draft upon creation
+        if not self.status:
+            self.status = "Draft"
         # 1. Get logged-in user and fetch their Employee record
         logged_in_user = frappe.session.user
 
@@ -523,82 +526,82 @@ def submit_response(docname, response_text, attachment=None):
             _("You are not authorized to respond at this stage or the query is not pending for you."))
 
 
-@frappe.whitelist()
-def check_pending_tat():
-    """
-    Fully dynamic, metadata-driven TAT check and escalation.
-    Uses 'audit_stages' table as source of truth for flow.
-    """
-    now_time = frappe.utils.now()
-    pending_audits = frappe.get_all(
-        "My Audits", filters={"status": "Pending"}, fields=["name", "query_type"])
+# @frappe.whitelist()
+# def check_pending_tat():
+#     """
+#     Fully dynamic, metadata-driven TAT check and escalation.
+#     Uses 'audit_stages' table as source of truth for flow.
+#     """
+#     now_time = frappe.utils.now()
+#     pending_audits = frappe.get_all(
+#         "My Audits", filters={"status": "Pending"}, fields=["name", "query_type"])
 
-    for audit in pending_audits:
-        doc = frappe.get_doc("My Audits", audit.name)
-        if not doc.query_type or not doc.audit_stages:
-            continue
+#     for audit in pending_audits:
+#         doc = frappe.get_doc("My Audits", audit.name)
+#         if not doc.query_type or not doc.audit_stages:
+#             continue
 
-        tat_config_doc = frappe.get_cached_doc(
-            "Audit Query Type", doc.query_type)
-        tat_map = {row.stage: row.tat_days for row in tat_config_doc.tat_config}
-        default_tat = tat_config_doc.default_tat_days or 1
+#         tat_config_doc = frappe.get_cached_doc(
+#             "Audit Query Type", doc.query_type)
+#         tat_map = {row.stage: row.tat_days for row in tat_config_doc.tat_config}
+#         default_tat = tat_config_doc.default_tat_days or 1
 
-        active_rows = [
-            row for row in doc.audit_stages if row.status == "Pending"]
-        if not active_rows:
-            continue
+#         active_rows = [
+#             row for row in doc.audit_stages if row.status == "Pending"]
+#         if not active_rows:
+#             continue
 
-        current_stage_level = active_rows[0].stage
-        exceeded = False
-        max_days_found = 0
+#         current_stage_level = active_rows[0].stage
+#         exceeded = False
+#         max_days_found = 0
 
-        for row in active_rows:
-            if not row.pending_time:
-                continue
+#         for row in active_rows:
+#             if not row.pending_time:
+#                 continue
 
-            days = tat_map.get(row.stage_name, default_tat)
-            max_days_found = max(max_days_found, days)
-            tat_minutes = days * 24 * 60
-            time_diff_minutes = time_diff_in_seconds(
-                now_time, row.pending_time) / 60
+#             days = tat_map.get(row.stage_name, default_tat)
+#             max_days_found = max(max_days_found, days)
+#             tat_minutes = days * 24 * 60
+#             time_diff_minutes = time_diff_in_seconds(
+#                 now_time, row.pending_time) / 60
 
-            if time_diff_minutes >= tat_minutes:
-                exceeded = True
-                break
+#             if time_diff_minutes >= tat_minutes:
+#                 exceeded = True
+#                 break
 
-        if exceeded:
-            doc.tat_day = f"{max_days_found} Day(s) TAT"
-            for row in doc.audit_stages:
-                if row.stage == current_stage_level and row.status == "Pending":
-                    row.status = "No Response"
+#         if exceeded:
+#             doc.tat_day = f"{max_days_found} Day(s) TAT"
+#             for row in doc.audit_stages:
+#                 if row.stage == current_stage_level and row.status == "Pending":
+#                     row.status = "No Response"
 
-            next_stage_level = str(int(current_stage_level) + 1)
-            next_rows = [
-                row for row in doc.audit_stages if row.stage == next_stage_level]
+#             next_stage_level = str(int(current_stage_level) + 1)
+#             next_rows = [
+#                 row for row in doc.audit_stages if row.stage == next_stage_level]
 
-            if next_rows:
-                stage_names = []
-                for n_row in next_rows:
-                    n_row.status = "Pending"
-                    n_row.pending_time = now_time
-                    frappe.share.add(doc.doctype, doc.name,
-                                     n_row.user_id, read=1, write=1, notify=0)
+#             if next_rows:
+#                 stage_names = []
+#                 for n_row in next_rows:
+#                     n_row.status = "Pending"
+#                     n_row.pending_time = now_time
+#                     frappe.share.add(doc.doctype, doc.name,
+#                                      n_row.user_id, read=1, write=1, notify=0)
 
-                    # Send Notification
-                    try:
-                        send_stage_notification(doc, n_row)
-                    except Exception:
-                        frappe.log_error(frappe.get_traceback(), _(
-                            "Escalation Email Failed"))
+#                     # Send Notification
+#                     try:
+#                         send_stage_notification(doc, n_row)
+#                     except Exception:
+#                         frappe.log_error(frappe.get_traceback(), _(
+#                             "Escalation Email Failed"))
 
-                    if n_row.stage_name not in stage_names:
-                        stage_names.append(n_row.stage_name)
-                doc.query_status = f"Pending From {', '.join(stage_names)}"
-            else:
-                doc.status = "Close"
-                doc.query_status = "Completed"
+#                     if n_row.stage_name not in stage_names:
+#                         stage_names.append(n_row.stage_name)
+#                 doc.query_status = f"Pending From {', '.join(stage_names)}"
+#             else:
+#                 doc.status = "Close"
+#                 doc.query_status = "Completed"
 
-            doc.save(ignore_permissions=True)
+#             doc.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -649,28 +652,6 @@ def send_daily_reminders():
                     reference_name=doc.name
                 )
 
-# def get_user_allowed_divisions(user):
-#     """
-#     1. Get User's Division from Employee doctype.
-#     2. Map it to allowed divisions using Audit Management Settings.
-#     """
-#     from audit_management.audit_management.doctype.audit_level.audit_level import get_user_division
-#     user_div = get_user_division()
-
-#     if not user_div:
-#         return []
-
-#     settings = frappe.get_single("Audit Management Settings")
-
-#     # Find all divisions mapped to the user's division
-#     allowed = [row.allowed_division for row in settings.division_permissions if row.source_division == user_div]
-
-#     # If no mapping is found in settings, default to allowing them to see ONLY their own division
-#     if not allowed:
-#         allowed = [user_div]
-
-#     return allowed
-
 
 def get_user_allowed_divisions(user):
     user_div = frappe.db.get_value(
@@ -679,19 +660,13 @@ def get_user_allowed_divisions(user):
         return []
 
     settings = frappe.get_single("Audit Management Settings")
-
-    # Check if the attribute exists before trying to loop through it!
     if not hasattr(settings, "division_permissions") or not settings.division_permissions:
-        # Fallback to just their own division if table is missing/empty
         return [user_div]
 
     allowed = [
         row.allowed_division for row in settings.division_permissions if row.source_division == user_div]
-
-    # Always include their own division
     if user_div not in allowed:
         allowed.append(user_div)
-
     return allowed
 
 
@@ -699,37 +674,165 @@ def get_permission_query_conditions(user=None):
     if not user:
         user = frappe.session.user
 
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+    roles = frappe.get_roles(user)
+    if "Administrator" in roles or "System Manager" in roles:
         return ""
 
     allowed_divisions = get_user_allowed_divisions(user)
-
     if not allowed_divisions:
-        # No division found for user, and no mapping. Deny access.
         return "1=0"
 
-    # Convert list to SQL format
-    divisions_sql = ", ".join([frappe.db.escape(d) for d in allowed_divisions])
-    return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
+    divisions_sql = ",".join([frappe.db.escape(d) for d in allowed_divisions])
+
+    # NEW LOGIC: Check if user is part of the core Audit Team
+    is_audit_team = "Audit Manager" in roles or "Audit Member" in roles
+
+    if is_audit_team:
+        # Audit team sees everything in their allowed divisions, including Drafts
+        return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
+    else:
+        # Stage members (Branch users) ONLY see records if status is NOT Draft
+        return f"(`tabMy Audits`.status != 'Draft' AND `tabMy Audits`.emp_division IN ({divisions_sql}))"
 
 
 def has_permission(doc, ptype, user=None):
     if not user:
         user = frappe.session.user
 
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+    roles = frappe.get_roles(user)
+    if "Administrator" in roles or "System Manager" in roles:
         return True
 
-    allowed_divisions = get_user_allowed_divisions(user)
+    is_audit_team = "Audit Manager" in roles or "Audit Member" in roles
 
-    if not allowed_divisions:
-        return False  # Agar user ko koi bhi division allow nahi hai, to access nahi
-
-    # For 'create' permission, we don't have doc.emp_division yet.
-    # So, just check if the user has *any* allowed divisions.
+    # 1. First, check if the action is merely initializing the 'create' form
     if ptype == "create":
-        # Agar allowed divisions ki list khali nahi hai, to create allow karo
+        # If they are an Audit Team member, they are globally allowed to click 'Add My Audits'
+        if is_audit_team:
+            return True
+        # If they are not Audit team, verify they have at least one allowed division
+        allowed_divisions = get_user_allowed_divisions(user)
         return bool(allowed_divisions)
 
+    # 2. Block direct URL access to Drafts for non-audit team members (unless they created it)
+    if getattr(doc, "status", None) == "Draft" and not is_audit_team and doc.owner != user:
+        return False
+
+    # 3. Check division permissions for read/write/submit
+    allowed_divisions = get_user_allowed_divisions(user)
+    if not allowed_divisions:
+        return False
+
+    # Use doc.get("emp_division") to match the Python document object fieldname
     doc_division = doc.get("emp_division")
+
+    # If the document hasn't been saved yet (no division set), and they passed the 'create' check, allow them to continue filling out the form
+    if not doc_division and doc.is_new():
+        return True
+
     return doc_division in allowed_divisions
+
+# -------------------------------------------------------------
+# WHITELISTED METHODS (Add these outside the MyAudits class)
+# -------------------------------------------------------------
+
+
+@frappe.whitelist()
+def raise_request(docname, stagename):
+    """Transition from Draft to Pending and assign to the selected starting stage."""
+    doc = frappe.get_doc("My Audits", docname)
+
+    if doc.status != "Draft":
+        frappe.throw("Only Draft requests can be raised.")
+
+    if not doc.get("audit_stages"):
+        frappe.throw(
+            "Please add stages in the operational tracking section first.")
+
+    stage_found = False
+    assigned_userid = None
+
+    for row in doc.get("audit_stages"):
+        # Fix: use stage_name and user_id (with underscores)
+        if row.stage_name == stagename:
+            row.status = "Pending"
+            row.pending_time = frappe.utils.now()
+            stage_found = True
+            assigned_userid = row.user_id
+        else:
+            row.status = ""  # Clear others
+
+    if not stage_found:
+        frappe.throw(f"Stage {stagename} not found in the workflow.")
+
+    doc.status = "Pending"
+    doc.query_status = f"Pending From {stagename}"
+    doc.save(ignore_permissions=True)
+
+    # Give access and notify the assigned member
+    if assigned_userid:
+        frappe.share.add(doc.doctype, doc.name, assigned_userid,
+                         read=1, write=1, share=1, notify=1)
+
+    return "Request Raised Successfully!"
+
+
+@frappe.whitelist()
+def check_pending_tat():
+    """Scheduled job to check TAT and auto-escalate if exceeded."""
+    nowtime = frappe.utils.now_datetime()
+    pending_audits = frappe.get_all(
+        "My Audits", filters={"status": "Pending"}, fields=["name", "query_type"])
+
+    for audit in pending_audits:
+        doc = frappe.get_doc("My Audits", audit.name)
+        if not doc.query_type or not doc.get("audit_stages"):
+            continue
+
+        # Get TAT Configurations from Audit Query Type
+        tat_config_doc = frappe.get_cached_doc(
+            "Audit Query Type", doc.query_type)
+        tat_map = {
+            row.stage: row.tat_days for row in tat_config_doc.tat_config} if getattr(tat_config_doc, "tat_config", None) else {}
+        default_tat = getattr(tat_config_doc, "default_tat_days", 1)
+
+        # Find the current pending stage
+        active_rows = [
+            row for row in doc.get("audit_stages") if row.status == "Pending"]
+        if not active_rows:
+            continue
+
+        current_row = active_rows[0]
+        if not current_row.pending_time:
+            continue
+
+        # Calculate days elapsed (using stage_name with underscore)
+        tat_days = tat_map.get(current_row.stage_name, default_tat)
+        elapsed_days = time_diff_in_hours(
+            nowtime, current_row.pending_time) / 24.0
+
+        if elapsed_days > tat_days:
+            # TAT Breached -> Auto Escalate
+            current_row.status = "No Response"
+
+            # Find next stage in sequence
+            next_row = None
+            for idx, r in enumerate(doc.get("audit_stages")):
+                if r.name == current_row.name and (idx + 1) < len(doc.get("audit_stages")):
+                    next_row = doc.get("audit_stages")[idx + 1]
+                    break
+
+            if next_row:
+                next_row.status = "Pending"
+                next_row.pending_time = frappe.utils.now()
+                # Fix: use stage_name (with underscore)
+                doc.query_status = f"Pending From {next_row.stage_name}"
+
+                # Notify next person
+                if next_row.user_id:
+                    frappe.share.add(doc.doctype, doc.name,
+                                     next_row.user_id, read=1, write=1, notify=1)
+            else:
+                doc.query_status = "Unresolved - Escalation Exhausted"
+
+            doc.save(ignore_permissions=True)
