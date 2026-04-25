@@ -64,7 +64,7 @@ app_license = "xyz"
 # before_install = "audit_management.install.before_install"
 # after_install = "audit_management.install.after_install"
 after_migrate = [
-        #"audit_management.patches.fixtures.create_audit_dashboard.execute",
+    # "audit_management.patches.fixtures.create_audit_dashboard.execute",
 ]
 
 # Uninstallation
@@ -100,11 +100,11 @@ after_migrate = [
 # Permissions evaluated in scripted ways
 
 permission_query_conditions = {
-	"My Audits": "audit_management.audit_management.doctype.my_audits.my_audits.get_permission_query_conditions",
+    "My Audits": "audit_management.audit_management.doctype.my_audits.my_audits.get_permission_query_conditions",
 }
 
 has_permission = {
-	"My Audits": "audit_management.audit_management.doctype.my_audits.my_audits.has_permission",
+    "My Audits": "audit_management.audit_management.doctype.my_audits.my_audits.has_permission",
 }
 
 # DocType Class
@@ -129,9 +129,15 @@ has_permission = {
 # ---------------
 
 scheduler_events = {
+    # "daily": [
+    #     "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat",
+    #     "audit_management.audit_management.doctype.my_audits.my_audits.send_daily_reminders"
+    # ]
+    "hourly": [
+        "auditmanagement.auditmanagement.doctype.myaudits.myaudits.check_pending_tat"
+    ],
     "daily": [
-        "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat",
-        "audit_management.audit_management.doctype.my_audits.my_audits.send_daily_reminders"
+        "auditmanagement.auditmanagement.doctype.myaudits.myaudits.send_daily_reminders"
     ]
 }
 # Testing
@@ -208,19 +214,19 @@ fixtures = [
             "name",
             "in",
             {
-				"Audit Management"
-			}
+                                "Audit Management"
+            }
         ]
     ]},
-    
-# email templates fixtures
-{
-    "dt": "Email Template",
-    "filters": [
-        ["name", "in", [
-            "Audit Query Activity Notification"
-        ]]
-    ],
-},
+
+    # email templates fixtures
+    {
+        "dt": "Email Template",
+        "filters": [
+            ["name", "in", [
+                "Audit Query Activity Notification"
+            ]]
+        ],
+    },
 
 ]
