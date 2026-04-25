@@ -51,6 +51,7 @@ frappe.ui.form.on("My Audits", {
   },
 
   refresh: function (frm) {
+    
 
      // 1. Check if user has permission to edit the tracker
         let can_edit = frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member");
@@ -97,6 +98,29 @@ frappe.ui.form.on("My Audits", {
           frm.trigger("old_system_refresh");
         }
       });
+      // 🌟 FINAL FIX: KEEP STATUS AS "DRAFT", SHOW SAVE ONLY ON MODIFY 🌟
+        if (!frm.is_new()) {
+            // Wait for background scripts (like employee data fetches) to finish
+            setTimeout(() => {
+                
+                // 1. Tell Frappe the form is "clean" (Not modified)
+                frm.doc.__unsaved = 0;
+                
+                // 2. Hide the Save button manually without touching the "Draft" header status!
+                frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
+                
+            }, 800);
+            
+            // 3. Optional: Add a real-time listener. 
+            // If Frappe ever forces it back on, this ensures it only stays visible if the form is actually modified.
+            setInterval(() => {
+                if (!frm.is_dirty()) {
+                    frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
+                } else {
+                    frm.page.wrapper.find('.primary-action[data-label="Save"]').show();
+                }
+            }, 1000);
+        } 
   },
 
 
@@ -1182,11 +1206,17 @@ setup_dynamic_buttons: function (frm) {
     const is_pending_for_me = !!pending_row;
 
     // 1. Save Button Logic
-    if (is_pending_for_me && !is_audit_team) {
-      frm.disable_save();
-    } else if (is_audit_team || frm.doc.status === "Draft") {
-      frm.enable_save();
-    }
+    // if (is_pending_for_me && !is_audit_team) {
+    //   frm.disable_save();
+    // } else if (is_audit_team || frm.doc.status === "Draft") {
+    //   frm.enable_save();
+    // }
+            // 1. Strict Save Button Logic
+        if (!frm.is_new() && frm.doc.status !== "Draft") {
+            frm.disable_save(); // Completely hides the Save button for everyone
+        } else {
+            frm.enable_save();  // Shows it only during New / Draft states
+        }
 
     // 2. Audit Details Read-Only Logic
     if (!is_audit_team && frm.doc.status !== "Draft") {
