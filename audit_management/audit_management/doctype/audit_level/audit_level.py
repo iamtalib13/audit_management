@@ -139,26 +139,83 @@ def branch_query(doctype, txt, searchfield, start, page_len, filters):
     })
 
 
+# -------------------------
+# PERMISSION LOGIC (FINAL)
+# -------------------------
+
+def apply_cross_division_access(divisions):
+    """Handle cross-access between specific divisions."""
+    cross_access = ["Multistate", "Retail Banking", "Retail Branch Banking"]
+
+    if any(d in divisions for d in cross_access):
+        return list(set(divisions + cross_access))
+
+    return list(set(divisions))
+
+
+def get_user_allowed_divisions(user):
+    user_div = frappe.db.get_value(
+        "Employee", {"user_id": user}, "custom_division"
+    )
+
+    if not user_div:
+        return []
+
+    settings = frappe.get_single("Audit Management Settings")
+
+    if not hasattr(settings, "division_permissions") or not settings.division_permissions:
+        return [user_div]
+
+    allowed = [
+        row.allowed_division
+        for row in settings.division_permissions
+        if row.source_division == user_div
+    ]
+
+    if user_div not in allowed:
+        allowed.append(user_div)
+
+    return allowed
+
+
 def get_permission_query_conditions(user=None):
-    # Returns an empty string so Frappe safely applies your standard Role Permissions for the List View
-    return ""
+    if not user:
+        user = frappe.session.user
+
+    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+        return ""
+
+    allowed_divisions = get_user_allowed_divisions(user)
+    allowed_divisions = apply_cross_division_access(allowed_divisions)
+
+    if not allowed_divisions:
+        return "1=0"
+
+    divisions_sql = ", ".join([frappe.db.escape(d) for d in allowed_divisions])
+
+    return f"`tabAudit Level`.division IN ({divisions_sql})"
 
 
 def has_permission(doc, ptype, user=None):
     if not user:
         user = frappe.session.user
 
-    # Always allow Administrator
     if user == "Administrator":
         return True
 
     roles = frappe.get_roles(user)
 
-    # 🌟 STRICT LOGIC: Only allow "create" if the user has the correct role
+    # CREATE restriction (existing behavior retained)
     if ptype == "create":
         if "Audit Manager" in roles or "Audit Member" in roles:
             return True
-        return False  # Explicitly block everyone else from creating
+        return False
 
-    # For other actions (read, write, delete), return None to let Frappe's standard Role Permissions Manager handle it
-    return None
+    # Division-based restriction
+    user_divisions = get_user_allowed_divisions(user)
+    user_divisions = apply_cross_division_access(user_divisions)
+
+    if doc.get("division") in user_divisions:
+        return True
+
+    return False
