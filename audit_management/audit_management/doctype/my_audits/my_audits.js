@@ -2369,5 +2369,4 @@ function open_stages_modal(frm) {
             });
         }
     }, 300);
-console.log('Modal opened and Sortable initialized');
 }
