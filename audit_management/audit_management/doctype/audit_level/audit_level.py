@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 from audit_management.audit_management.utils import is_new_system_enabled
 
+
 class AuditLevel(Document):
     def before_insert(self):
         if not self.division:
@@ -33,17 +34,20 @@ class AuditLevel(Document):
         for row in self.audit_stages:
             if row.employee and row.email:
                 # Check if employee already has this email
-                current_email = frappe.db.get_value("Employee", row.employee, "company_email")
+                current_email = frappe.db.get_value(
+                    "Employee", row.employee, "company_email")
                 if not current_email and row.email:
                     # Update Employee doctype
-                    frappe.db.set_value("Employee", row.employee, "company_email", row.email)
-                    frappe.msgprint(frappe._("Updated email for Employee {0}").format(row.employee))
+                    frappe.db.set_value(
+                        "Employee", row.employee, "company_email", row.email)
+                    frappe.msgprint(
+                        frappe._("Updated email for Employee {0}").format(row.employee))
 
     def sync_new_to_old_stages(self):
         """Syncs child table data to old hardcoded stage fields for backward compatibility."""
         if not hasattr(self, "audit_stages"):
             return
-        
+
         # Mapping prefix to stage number
         mapping = {
             "1": "stage_1_bm", "2": ["stage_2_dh", "stage_2_com"], "3": ["stage_3_rm", "stage_3_rom"],
@@ -54,10 +58,12 @@ class AuditLevel(Document):
         for row in self.audit_stages:
             stage_num = str(row.stage)
             prefix_data = mapping.get(stage_num)
-            if not prefix_data: continue
+            if not prefix_data:
+                continue
 
-            prefixes = [prefix_data] if isinstance(prefix_data, str) else prefix_data
-            
+            prefixes = [prefix_data] if isinstance(
+                prefix_data, str) else prefix_data
+
             # Find which prefix matches this stage name (e.g., DH vs COM)
             for p in prefixes:
                 # If name matches or it's a single prefix stage
@@ -66,23 +72,29 @@ class AuditLevel(Document):
                     self.set(f"{p}_name", row.employee_name)
                     self.set(f"{p}_user_id", row.user_id)
                     self.set(f"{p}_mail", row.email)
-                    
+
                     # Also update employee email if manually typed in old system
                     if row.employee and row.email:
-                        current_email = frappe.db.get_value("Employee", row.employee, "company_email")
+                        current_email = frappe.db.get_value(
+                            "Employee", row.employee, "company_email")
                         if not current_email:
-                            frappe.db.set_value("Employee", row.employee, "company_email", row.email)
+                            frappe.db.set_value(
+                                "Employee", row.employee, "company_email", row.email)
+
 
 @frappe.whitelist()
 def fetch_employee(employee_id):
     """Fetch employee data safely using Frappe API instead of raw SQL."""
-    employee = frappe.db.get_value("Employee", employee_id, 
-        ["employee_name", "user_id", "designation", "branch", "company_email"], 
-        as_dict=True
-    )
-    
+    employee = frappe.db.get_value("Employee", employee_id,
+                                   ["employee_name", "user_id", "designation",
+                                       "branch", "company_email"],
+                                   as_dict=True
+                                   )
+
     # Return as a list to maintain compatibility with the JS callback expectations
     return [employee] if employee else []
+
+
 @frappe.whitelist()
 def get_user_division(user=None):
     """Fetch division of user from Employee"""
@@ -104,6 +116,7 @@ def get_user_division(user=None):
     # Prefer custom_division, fallback to department
     return employee.custom_division or employee.department
 
+
 @frappe.whitelist()
 def branch_query(doctype, txt, searchfield, start, page_len, filters):
     """Query to display sol_id and branch in Link field."""
@@ -124,72 +137,3 @@ def branch_query(doctype, txt, searchfield, start, page_len, filters):
         "start": start,
         "page_len": page_len
     })
-
-
-def get_user_allowed_divisions(user):
-    user_div = frappe.db.get_value(
-        "Employee", {"user_id": user}, "custom_division")
-    if not user_div:
-        return []
-
-    settings = frappe.get_single("Audit Management Settings")
-
-    # Check if the attribute exists before trying to loop through it!
-    if not hasattr(settings, "division_permissions") or not settings.division_permissions:
-        # Fallback to just their own division if table is missing/empty
-        return [user_div]
-
-    allowed = [
-        row.allowed_division for row in settings.division_permissions if row.source_division == user_div]
-
-    # Always include their own division
-    if user_div not in allowed:
-        allowed.append(user_div)
-
-    return allowed
-
-
-def get_permission_query_conditions(user=None):
-    if not user:
-        user = frappe.session.user
-
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
-        return ""
-
-    allowed_divisions = get_user_allowed_divisions(user)
-    
-    # Multistate, Retail Banking, and Retail Branch Banking can see each other
-    cross_access_divisions = ["Multistate", "Retail Banking", "Retail Branch Banking"]
-    if any(d in allowed_divisions for d in cross_access_divisions):
-        for d in cross_access_divisions:
-            if d not in allowed_divisions:
-                allowed_divisions.append(d)
-
-    if not allowed_divisions:
-        return "1=0"
-
-    divisions_sql = ", ".join([frappe.db.escape(d) for d in allowed_divisions])
-    
-    return f"`tabAudit Level`.division IN ({divisions_sql})"
-
-
-def has_permission(doc, ptype, user=None):
-    if not user:
-        user = frappe.session.user
-
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
-        return True
-
-    # 1. Division Check (Mandatory Segregation)
-    user_divisions = get_user_allowed_divisions(user)
-    doc_division = doc.get("division")
-    
-    # Multistate, Retail Banking, and Retail Branch Banking cross-access
-    cross_access_divisions = ["Multistate", "Retail Banking", "Retail Branch Banking"]
-    if any(d in user_divisions for d in cross_access_divisions):
-        user_divisions.extend(cross_access_divisions)
-    
-    if doc_division in user_divisions:
-        return True
-
-    return False

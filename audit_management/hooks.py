@@ -64,7 +64,7 @@ app_license = "xyz"
 # before_install = "audit_management.install.before_install"
 # after_install = "audit_management.install.after_install"
 after_migrate = [
-        #"audit_management.patches.fixtures.create_audit_dashboard.execute",
+    # "audit_management.patches.fixtures.create_audit_dashboard.execute",
 ]
 
 # Uninstallation
@@ -131,10 +131,22 @@ has_permission = {
 # ---------------
 
 scheduler_events = {
+    # "daily": [
+    #     "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat",
+    #     "audit_management.audit_management.doctype.my_audits.my_audits.send_daily_reminders"
+    # ]
     "daily": [
-        "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat",
-        "audit_management.audit_management.doctype.my_audits.my_audits.send_daily_reminders"
-    ]
+        "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat"
+    ],
+    "daily": [
+        # "audit_management.audit_management.doctype.my_audits.my_audits.send_daily_reminders"
+    ],
+
+    "cron": {
+        "* * * * *": [
+            # "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat"
+        ]
+    }
 }
 # Testing
 # -------
@@ -210,19 +222,19 @@ fixtures = [
             "name",
             "in",
             {
-				"Audit Management"
-			}
+                                "Audit Management"
+            }
         ]
     ]},
-    
-# email templates fixtures
-{
-    "dt": "Email Template",
-    "filters": [
-        ["name", "in", [
-            "Audit Query Activity Notification"
-        ]]
-    ],
-},
+
+    # email templates fixtures
+    {
+        "dt": "Email Template",
+        "filters": [
+            ["name", "in", [
+                "Audit Query Activity Notification"
+            ]]
+        ],
+    },
 
 ]
