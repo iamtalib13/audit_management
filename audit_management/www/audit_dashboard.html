@@ -893,105 +893,73 @@
 				<h1 class="sidebar-title">Audit Management</h1>
 			</div>
 
-			<button class="new-audit-btn" @click="openCreateModal">
+			<button class="new-audit-btn" v-if="canCreateAudit" @click="openCreateModal">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
 				<span>New Audit</span>
-				<svg style="margin-left: auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
 			</button>
 
 			<div class="sidebar-section">
 				<h3 class="sidebar-section-title">Summary</h3>
 				<nav>
-					<div class="nav-item summary-item">
+					<div class="nav-item summary-item" 
+						 :class="{ 'active': activeFilter === 'total' }" 
+						 @click="filterAudits('total')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
 							Total
 						</div>
 						<span class="summary-count count-total" v-text="numberCards.find(c => c.key === 'total')?.value || 0"></span>
 					</div>
-					<div class="nav-item summary-item">
+					<div class="nav-item summary-item" 
+						 :class="{ 'active': activeFilter === 'draft' }" 
+						 @click="filterAudits('draft')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
 							Draft
 						</div>
 						<span class="summary-count count-draft" v-text="numberCards.find(c => c.key === 'draft')?.value || 0"></span>
 					</div>
-					<div class="nav-item summary-item">
+					<div class="nav-item summary-item" 
+						 :class="{ 'active': activeFilter === 'pending' }" 
+						 @click="filterAudits('pending')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 							Pending
 						</div>
-						<span class="summary-count count-pending" v-text="numberCards[2].value">16</span>
+						<span class="summary-count count-pending" v-text="numberCards.find(c => c.key === 'pending')?.value || 0"></span>
 					</div>
-					<div class="nav-item summary-item">
+					<div class="nav-item summary-item" 
+						 :class="{ 'active': activeFilter === 'completed' }" 
+						 @click="filterAudits('completed')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
 							Completed
 						</div>
-						<span class="summary-count count-completed" v-text="numberCards[3].value">18</span>
+						<span class="summary-count count-completed" v-text="numberCards.find(c => c.key === 'completed')?.value || 0"></span>
 					</div>
-					<div class="nav-item summary-item">
+					<div class="nav-item summary-item" 
+						 :class="{ 'active': activeFilter === 'overdue' }" 
+						 @click="filterAudits('overdue')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
 							Overdue
 						</div>
-						<span class="summary-count count-overdue" v-text="numberCards[4].value">7</span>
+						<span class="summary-count count-overdue" v-text="numberCards.find(c => c.key === 'overdue')?.value || 0"></span>
 					</div>
-				</nav>
-			</div>
-
-			<div class="sidebar-section">
-				<h3 class="sidebar-section-title">Main</h3>
-				<nav>
-					<div class="nav-item active">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-						Dashboard
-					</div>
-					<div class="nav-item">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-						All Audits
-					</div>
-					<div class="nav-item">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-						Audit Plan
-					</div>
-					<div class="nav-item">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-						Observations
-					</div>
-					<div class="nav-item">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-						Reports
-					</div>
-				</nav>
-			</div>
-
-			<div class="sidebar-section">
-				<h3 class="sidebar-section-title">Manage</h3>
-				<nav>
-					<div class="nav-item">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7"/><path d="M9 21v-11"/><path d="M14 21v-4"/><path d="M19 21v-14"/></svg>
-						Audit Stages
-					</div>
-					<div class="nav-item">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-						Audit Teams
-					</div>
-					<div class="nav-item">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-						Audit Checklist
-					</div>
+					<a href="/app/audit-level" class="nav-item">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+						Audit Levels
+					</a>
 				</nav>
 			</div>
 
 			<div class="sidebar-footer">
 				<div class="user-profile">
-					<div class="avatar" style="background-color: #2e8a87;">AP</div>
+					<div class="avatar" style="background-color: #2e8a87;" v-text="user.name.charAt(0)"></div>
 					<div>
-						<div style="font-size: 13px; font-weight: 700">Arjun P.</div>
-						<div style="font-size: 11px; color: var(--sidebar-muted)">Audit Manager</div>
+						<div style="font-size: 13px; font-weight: 700" v-text="user.name"></div>
+						<div style="font-size: 11px; color: var(--sidebar-muted)" v-text="user.role"></div>
 					</div>
-					<svg style="margin-left: auto" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
 				</div>
 			</div>
 		</aside>
@@ -1061,8 +1029,10 @@
 											<h4 class="audit-id-title" v-text="audit.id + ' ' + (audit.type || '')"></h4>
 											<span class="audit-date" v-text="audit.dueDate"></span>
 										</div>
-										<div class="audit-meta" v-text="(audit.branch || 'Unknown') + ' • ' + (audit.auditor || 'Unknown')"></div>
-										<div class="audit-footer">
+										<div class="audit-meta">
+										        <span class="assignee-text">Assignee: <b v-text="audit.current_assignee"></b></span>
+										        <span class="risk-text">Risk: <b v-text="audit.risk || 'Normal'"></b></span>
+										</div>										<div class="audit-footer">
 											<span class="due-status" :class="{ 'overdue-text': audit.dueMeta && audit.dueMeta.includes('overdue') }" v-text="audit.dueMeta"></span>
 											<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 										</div>
@@ -1127,8 +1097,7 @@
 								<div class="meta-item">
 									<span class="meta-label">Stage / Assigned To</span>
 									<div class="meta-value" style="flex-direction: column; align-items: flex-start; gap: 4px">
-										<div style="display: flex; gap: 6px; align-items: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21v-4a7 7 0 0 1 7-7h4a7 7 0 0 1 7 7v4"/><circle cx="12" cy="7" r="4"/></svg> <span v-text="selectedAudit.stage || '-'"></span></div>
-										<div style="display: flex; gap: 6px; align-items: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> <span v-text="selectedAudit.assignedTo || '-'"></span></div>
+										<div style="display: flex; gap: 6px; align-items: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> <span v-text="selectedAudit.assignedTo || '—'"></span></div>
 									</div>
 								</div>
 								<div class="meta-item">
@@ -1147,9 +1116,6 @@
 
 						<div class="detail-tabs">
 							<div class="tab-item active">Communication</div>
-							<div class="tab-item">Observations <span class="tab-count">0</span></div>
-							<div class="tab-item">Attachments <span class="tab-count">0</span></div>
-							<div class="tab-item">Activity</div>
 						</div>
 
 						<div class="communication-feed">
@@ -1163,20 +1129,6 @@
 										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
 									</div>
 									<div class="message-text" v-text="msg.text"></div>
-									
-									<div class="attachment-box" v-if="msg.attachment">
-										<div class="flex-center" style="width: 40px; height: 40px; background: #fff1f2; color: #f43f5e; border-radius: 4px; font-weight: 800; font-size: 10px">PDF</div>
-										<div>
-											<div style="font-weight: 700" v-text="msg.attachment.name"></div>
-											<div style="font-size: 11px; color: var(--text-muted)" v-text="msg.attachment.size"></div>
-										</div>
-										<div class="flex-center" style="width: 28px; height: 28px; border: 1px solid var(--border-color); border-radius: 4px; margin-left: 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
-									</div>
-
-									<div class="image-grid" v-if="msg.images">
-										<img v-for="img in msg.images" :src="img" class="feed-image">
-										<div class="image-more" v-if="msg.moreImages">+2</div>
-									</div>
 								</div>
 							</div>
 							<div v-if="!(selectedAudit.communication || []).length" style="text-align: center; padding: 40px; color: var(--text-muted)">
@@ -1185,27 +1137,13 @@
 						</div>
 
 						<div class="message-input-area">
-							<div class="input-tabs">
-								<span class="input-tab active">Message</span>
-								<span class="input-tab">Note</span>
-							</div>
 							<div class="input-box">
 								<textarea class="input-textarea" placeholder="Type a message..."></textarea>
 								<div class="input-footer">
-									<div class="input-actions">
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-									</div>
-									<div class="send-btn-group">
-										<button class="send-btn">Send</button>
-										<button class="send-dropdown"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
-									</div>
+									<!-- Footer actions remain -->
 								</div>
 							</div>
-						</div>
-					</template>
+						</div>					</template>
 
 					<!-- New Audit Form (Email Style) -->
 					<template v-else-if="activePane === 'create'">
@@ -1357,6 +1295,9 @@
 				hasMore: true,
 				start: 0,
 				limit: 20,
+				activeFilter: 'total',
+				user: boot.user || { name: 'User', role: 'User' },
+				canCreateAudit: boot.can_create_audit || false,
 				numberCards: boot.number_cards?.number_cards || [
 					{ key: 'total', value: 0 },
 					{ key: 'draft', value: 0 },
@@ -1390,6 +1331,18 @@
 					}
 				},
 
+				async filterAudits(key) {
+					this.activeFilter = key;
+					this.start = 0;
+					this.audits = [];
+					this.hasMore = true;
+					this.selectedAudit = null;
+					await this.loadMoreAudits();
+					if (this.audits.length > 0) {
+						this.selectedAudit = this.audits[0];
+					}
+				},
+
 				get groupedAudits() {
 					const groups = ["Today", "Yesterday", "This Week", "Last Week"];
 					return groups.map(g => ({
@@ -1403,11 +1356,23 @@
 					
 					this.isLoading = true;
 					try {
-						const response = await fetch(`/api/method/audit_management.www.audit_dashboard.get_audits?start=${this.start}&limit=${this.limit}`, {
+						const filters = {};
+						if (this.activeFilter === 'draft') filters.status = 'Draft';
+						else if (this.activeFilter === 'pending') filters.status = 'Pending';
+						else if (this.activeFilter === 'completed') filters.status = 'Close';
+						else if (this.activeFilter === 'overdue') {
+							filters.status = 'Pending';
+							filters.aging = [">", 0];
+						}
+
+						const response = await fetch(`/api/method/audit_management.www.audit_dashboard.get_audits?start=${this.start}&limit=${this.limit}&filters=${JSON.stringify(filters)}`, {
 							headers: { 'X-Frappe-CSRF-Token': CSRF_TOKEN }
 						});
 						const data = await response.json();
-						const newAudits = data.message || [];
+						const newAudits = (data.message || []).map(a => ({
+							...a,
+							assignedTo: a.current_assignee
+						}));
 						
 						if (newAudits.length < this.limit) {
 							this.hasMore = false;
@@ -1491,10 +1456,10 @@
 							},
 							body: JSON.stringify(this.createForm)
 						});
+
 						const data = await response.json();
-						
-						if (data.message && data.message.name) {
-							// Refresh audits and switch back
+
+						if (data.message && (data.message.name || data.message.message)) {
 							this.start = 0;
 							this.audits = [];
 							this.hasMore = true;
@@ -1502,15 +1467,14 @@
 							this.activePane = 'detail';
 							if (this.audits.length > 0) this.selectedAudit = this.audits[0];
 						} else {
-							this.createError = data.message || "Failed to create audit.";
+							this.createError = (data._server_messages ? JSON.parse(data._server_messages)[0] : data.message) || "Failed to create audit.";
 						}
 					} catch (e) {
-						this.createError = "An error occurred.";
+						this.createError = "An error occurred while creating the audit.";
 					} finally {
 						this.createLoading = false;
 					}
-				}
-			}
+				}			}
 		}
 
 		PetiteVue.createApp({ AuditDashboard }).mount();
