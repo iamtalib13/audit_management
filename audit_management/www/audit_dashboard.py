@@ -71,7 +71,8 @@ def get_audits(start=0, limit=20, filters=None):
 			"query_generated_by_name as auditor",
 			"status",
 			"creation",
-			"aging"
+			"aging",
+			"risk"
 		],
 		order_by="creation desc",
 		start=start,
@@ -81,29 +82,53 @@ def get_audits(start=0, limit=20, filters=None):
 	# Add metadata for UI
 	for audit in audits:
 		audit.statusClass = "progress" if audit.status == "Pending" else "completed" if audit.status == "Close" else "overdue"
-		audit.risk = "High" # Mock risk as it's not in doctype yet
-		audit.riskClass = "high"
-		audit.dueDate = frappe.utils.formatdate(audit.creation) # Mock due date
+		audit.riskClass = (audit.risk or "Normal").lower()
+		audit.dueDate = frappe.utils.formatdate(audit.creation)
 		audit.dueMeta = f"{audit.aging} days" if audit.aging else "Due soon"
-		
+
+		# Fetch the current assignee from audit_stages child table
+		stages = frappe.get_all(
+			"Audit Items",
+			filters={"parent": audit.id},
+			fields=["idx", "employee_name", "user_id", "status"],
+			order_by="idx asc"
+		)
+
+		pending_stage = next(
+			(s for s in stages if s.status and s.status.strip() == "Pending"),
+			None
+		)
+
+		if pending_stage:
+			audit.current_assignee = pending_stage.employee_name or pending_stage.user_id or "Unknown"
+		else:
+			audit.current_assignee = "Completed"
+     
 		# Assign dateGroup for grouping logic
 		creation_date = frappe.utils.get_datetime(audit.creation).date()
 		today = frappe.utils.get_datetime(frappe.utils.now()).date()
 		yesterday = today - frappe.utils.relativedelta(days=1)
-		
+       
 		if creation_date == today:
 			audit.dateGroup = "Today"
 		elif creation_date == yesterday:
 			audit.dateGroup = "Yesterday"
 		else:
-			audit.dateGroup = "This Week" # Simplified logic for mock
-			
+			audit.dateGroup = "This Week"
+    
 	return audits
 
 
 @frappe.whitelist()
 def get_dashboard_boot():
+	user = frappe.session.user
+	employee = frappe.db.get_value("Employee", {"user_id": user}, ["employee_name", "designation"], as_dict=True)
+	
 	return {
+		"user": {
+			"name": employee.employee_name if employee else frappe.session.user,
+			"role": frappe.db.get_value("User", user, "role_profile_name") or "User"
+		},
 		"number_cards": get_dashboard_number_cards(),
 		"can_create_audit": can_create_audit(),
 		"branch_options": get_branch_options(),
@@ -111,6 +136,7 @@ def get_dashboard_boot():
 		"department_options": frappe.get_all("Audit Department", pluck="department_name", order_by="department_name asc"),
 		"primary_nature_options": frappe.get_all("Audit Primary Nature", pluck="primary_nature", order_by="primary_nature asc"),
 	}
+
 
 
 @frappe.whitelist()
@@ -151,45 +177,52 @@ def get_branch_configuration(branch):
 def create_audit(emp_branch, query_type, primary_nature, audit_query_subject_box, department_alignment=None, audit_query_box=None, audit_attach_box=None):
 	_ensure_create_role()
 
-	doc = frappe.new_doc("My Audits")
-	doc.emp_branch = emp_branch
-	
-	# Try to get division from Audit Level, fallback to user's division
-	division = frappe.db.get_value("Audit Level", emp_branch, "division")
-	if not division:
-		from audit_management.audit_management.doctype.audit_level.audit_level import get_user_division
-		division = get_user_division()
-	
-	doc.emp_division = division
-	doc.query_type = query_type
-	doc.primary_nature = primary_nature
-	doc.department_alignment = department_alignment
-	doc.audit_query_subject_box = audit_query_subject_box
-	doc.audit_query_box = audit_query_box or ""
-	doc.audit_attach_box = audit_attach_box or ""
-	doc.status = "Draft"
+	try:
+		doc = frappe.new_doc("My Audits")
+		doc.emp_branch = emp_branch
+		
+		# Try to get division from Audit Level, fallback to user's division
+		division = frappe.db.get_value("Audit Level", emp_branch, "division")
+		if not division:
+			from audit_management.audit_management.doctype.audit_level.audit_level import get_user_division
+			division = get_user_division()
+		
+		doc.emp_division = division
+		doc.query_type = query_type
+		doc.primary_nature = primary_nature
+		doc.department_alignment = department_alignment
+		doc.audit_query_subject_box = audit_query_subject_box
+		doc.audit_query_box = audit_query_box or ""
+		doc.audit_attach_box = audit_attach_box or ""
+		doc.status = "Draft"
+		
+		if not doc.department_alignment:
+			frappe.throw("Departmental & Product Alignment is mandatory.")
 
-	employee = frappe.db.get_value(
-		"Employee",
-		{"user_id": frappe.session.user},
-		["name", "employee_name", "designation", "branch", "company_email"],
-		as_dict=True,
-	)
-	if employee:
-		doc.query_generated_by_empid = employee.name
-		doc.query_generated_by_name = employee.employee_name
-		doc.query_generated_by_designation = employee.designation
-		doc.query_generated_by_branch = employee.branch
-		doc.query_generated_by_mail = employee.company_email
+		employee = frappe.db.get_value(
+			"Employee",
+			{"user_id": frappe.session.user},
+			["name", "employee_name", "designation", "branch", "company_email"],
+			as_dict=True,
+		)
+		if employee:
+			doc.query_generated_by_empid = employee.name
+			doc.query_generated_by_name = employee.employee_name
+			doc.query_generated_by_designation = employee.designation
+			doc.query_generated_by_branch = employee.branch
+			doc.query_generated_by_mail = employee.company_email
 
-	doc.insert(ignore_permissions=True)
-	frappe.db.commit()
+		doc.insert(ignore_permissions=True)
+		frappe.db.commit()
 
-	return {
-		"name": doc.name,
-		"redirect_url": f"/app/my-audits/{frappe.utils.scrub(doc.name)}",
-		"message": "Audit created successfully.",
-	}
+		return {
+			"name": doc.name,
+			"redirect_url": f"/app/my-audits/{frappe.scrub(doc.name)}",
+			"message": "Audit created successfully.",
+		}
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Audit Creation Failed")
+		raise e
 
 
 def can_create_audit():
