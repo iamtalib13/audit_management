@@ -670,29 +670,67 @@ def get_user_allowed_divisions(user):
     return allowed
 
 
-def get_permission_query_conditions(user=None):
-    if not user:
-        user = frappe.session.user
+# def get_permission_query_conditions(user=None):
+#     if not user:
+#         user = frappe.session.user
 
-    roles = frappe.get_roles(user)
-    if "Administrator" in roles or "System Manager" in roles:
-        return ""
+#     roles = frappe.get_roles(user)
+#     if "Administrator" in roles or "System Manager" in roles:
+#         return ""
 
-    allowed_divisions = get_user_allowed_divisions(user)
-    if not allowed_divisions:
-        return "1=0"
+#     allowed_divisions = get_user_allowed_divisions(user)
+#     if not allowed_divisions:
+#         return "1=0"
 
-    divisions_sql = ",".join([frappe.db.escape(d) for d in allowed_divisions])
+#     divisions_sql = ",".join([frappe.db.escape(d) for d in allowed_divisions])
 
-    # NEW LOGIC: Check if user is part of the core Audit Team
-    is_audit_team = "Audit Manager" in roles or "Audit Member" in roles
+#     # NEW LOGIC: Check if user is part of the core Audit Team
+#     is_audit_team = "Audit Manager" in roles or "Audit Member" in roles
 
-    if is_audit_team:
-        # Audit team sees everything in their allowed divisions, including Drafts
-        return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
-    else:
-        # Stage members (Branch users) ONLY see records if status is NOT Draft
-        return f"(`tabMy Audits`.status != 'Draft' AND `tabMy Audits`.emp_division IN ({divisions_sql}))"
+#     if is_audit_team:
+#         # Audit team sees everything in their allowed divisions, including Drafts
+#         return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
+#     else:
+#         # Stage members (Branch users) ONLY see records if status is NOT Draft
+#         return f"(`tabMy Audits`.status != 'Draft' AND `tabMy Audits`.emp_division IN ({divisions_sql}))"
+
+
+# def has_permission(doc, ptype, user=None):
+#     if not user:
+#         user = frappe.session.user
+
+#     roles = frappe.get_roles(user)
+#     if "Administrator" in roles or "System Manager" in roles:
+#         return True
+
+#     is_audit_team = "Audit Manager" in roles or "Audit Member" in roles
+
+#     # 1. First, check if the action is merely initializing the 'create' form
+#     if ptype == "create":
+#         # If they are an Audit Team member, they are globally allowed to click 'Add My Audits'
+#         if is_audit_team:
+#             return True
+#         # If they are not Audit team, verify they have at least one allowed division
+#         allowed_divisions = get_user_allowed_divisions(user)
+#         return bool(allowed_divisions)
+
+#     # 2. Block direct URL access to Drafts for non-audit team members (unless they created it)
+#     if getattr(doc, "status", None) == "Draft" and not is_audit_team and doc.owner != user:
+#         return False
+
+#     # 3. Check division permissions for read/write/submit
+#     allowed_divisions = get_user_allowed_divisions(user)
+#     if not allowed_divisions:
+#         return False
+
+#     # Use doc.get("emp_division") to match the Python document object fieldname
+#     doc_division = doc.get("emp_division")
+
+#     # If the document hasn't been saved yet (no division set), and they passed the 'create' check, allow them to continue filling out the form
+#     if not doc_division and doc.is_new():
+#         return True
+
+#     return doc_division in allowed_divisions
 
 
 def has_permission(doc, ptype, user=None):
@@ -700,37 +738,91 @@ def has_permission(doc, ptype, user=None):
         user = frappe.session.user
 
     roles = frappe.get_roles(user)
+
+    # 1. System Admins and Audit Team can see and do everything
     if "Administrator" in roles or "System Manager" in roles:
         return True
 
     is_audit_team = "Audit Manager" in roles or "Audit Member" in roles
+    if is_audit_team:
+        return True
 
-    # 1. First, check if the action is merely initializing the 'create' form
-    if ptype == "create":
-        # If they are an Audit Team member, they are globally allowed to click 'Add My Audits'
-        if is_audit_team:
-            return True
-        # If they are not Audit team, verify they have at least one allowed division
-        allowed_divisions = get_user_allowed_divisions(user)
-        return bool(allowed_divisions)
-
-    # 2. Block direct URL access to Drafts for non-audit team members (unless they created it)
+    # 2. Block direct URL access to Drafts for non-audit team members unless they created it
     if getattr(doc, "status", None) == "Draft" and not is_audit_team and doc.owner != user:
         return False
 
-    # 3. Check division permissions for read/write/submit
+    # 3. 🌟 NEW STRICT LOGIC: Stage members can ONLY see the document if it is currently pending for them
+    # If the document is past Draft state and the user is NOT Audit Team, check the child table.
+    if getattr(doc, "status", None) != "Draft" and not is_audit_team:
+        # Always allow the original creator to see their own request
+        if doc.owner == user:
+            return True
+
+        # Get all child table stages
+        stages = doc.get("auditstages") or []
+
+        # Find if the current user is in the pending stage
+        is_currently_pending_for_me = False
+        user_lower = user.lower()
+
+        for row in stages:
+            if row.status == "Pending":
+                r_user = (row.userid or "").lower()
+                r_email = (row.email or "").lower()
+
+                # If this pending row matches the current user, grant access
+                if r_user == user_lower or r_email == user_lower:
+                    is_currently_pending_for_me = True
+                    break
+
+        # If the ticket is NOT currently pending for them, completely block read/write access
+        if not is_currently_pending_for_me:
+            return False
+
+    # 4. Check division permissions for read/write/submit (Fallback for creators/valid viewers)
     allowed_divisions = get_user_allowed_divisions(user)
     if not allowed_divisions:
         return False
 
-    # Use doc.get("emp_division") to match the Python document object fieldname
-    doc_division = doc.get("emp_division")
-
-    # If the document hasn't been saved yet (no division set), and they passed the 'create' check, allow them to continue filling out the form
+    doc_division = doc.get("empdivision")
     if not doc_division and doc.is_new():
         return True
 
     return doc_division in allowed_divisions
+
+
+def get_permission_query_conditions(user=None):
+    if not user:
+        user = frappe.session.user
+
+    roles = frappe.get_roles(user)
+
+    # Audit team and Admins see everything
+    if "Administrator" in roles or "System Manager" in roles or "Audit Manager" in roles or "Audit Member" in roles:
+        return ""
+
+    # Division check
+    allowed_divisions = get_user_allowed_divisions(user)
+    if not allowed_divisions:
+        return "1=0"  # Hide everything if no division
+
+    # Safely escape divisions without adding double-quotes manually
+    divisions_sql = ", ".join(
+        f"{frappe.db.escape(d)}" for d in allowed_divisions)
+
+    # 🌟 FIX: Changed "userid" to "user_id" inside the EXISTS subquery
+    # to perfectly match your MariaDB database column for the child table!
+    return f"""
+        (`tabMy Audits`.owner = '{user}' OR 
+         EXISTS (
+             SELECT name FROM `tabAudit Items` 
+             WHERE parent = `tabMy Audits`.name 
+             AND status = 'Pending' 
+             AND (user_id = '{user}' OR email = '{user}')
+         ))
+        AND `tabMy Audits`.status != 'Draft' 
+        AND `tabMy Audits`.emp_division IN ({divisions_sql})
+    """
 
 # -------------------------------------------------------------
 # WHITELISTED METHODS (Add these outside the MyAudits class)
