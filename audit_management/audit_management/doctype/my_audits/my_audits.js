@@ -51,6 +51,20 @@ frappe.ui.form.on("My Audits", {
   },
 
   refresh: function (frm) {
+    let logged_in_user = frappe.session.user;
+    
+    // TEAM MATE FIX: Fetch Custom Division on refresh
+    frappe.db.get_value(
+        'Employee',
+        { user_id: logged_in_user },
+        ['name', 'employee_name', 'user_id', 'company_email', 'designation', 'branch', 'department', 'custom_division'],
+        function(employee) {
+            if (employee && employee.name) {
+                frm.set_value('emp_division', employee.custom_division);
+            }
+        }
+    );
+
     frappe.db
       .get_single_value("Audit Management Settings", "use_new_system")
       .then((use_new_system) => {
@@ -60,6 +74,22 @@ frappe.ui.form.on("My Audits", {
           frm.trigger("old_system_refresh");
         }
       });
+
+    // TEAM MATE FIX: SAVE BUTTON VISIBILITY
+    if (!frm.is_new()) {
+        setTimeout(() => {
+            frm.doc.__unsaved = 0;
+            frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
+        }, 800);
+        
+        setInterval(() => {
+            if (!frm.is_dirty()) {
+                frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
+            } else {
+                frm.page.wrapper.find('.primary-action[data-label="Save"]').show();
+            }
+        }, 1000);
+    }
   },
 
   new_system_refresh: function (frm) {
@@ -69,14 +99,9 @@ frappe.ui.form.on("My Audits", {
     let can_edit = frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member");
     render_interactive_tracker(frm, can_edit);
 
-    // Ensure audit_stages is visible and well-formatted
     frm.toggle_display("audit_items_section", true);
     frm.toggle_display("audit_stages", true);
-    frm.set_df_property(
-      "audit_stages",
-      "label",
-      __("Audit Progress & Responses"),
-    );
+    frm.set_df_property("audit_stages", "label", __("Audit Progress & Responses"));
 
     const old_fields = [
       "bm_user_status", "bm_name", "dh_user_status", "dh_name", "com_user_status", "com_name",
@@ -100,10 +125,7 @@ frappe.ui.form.on("My Audits", {
     frm.toggle_display("audit_items_section", true);
     frm.toggle_display("audit_stages", true);
 
-    if (
-      !frappe.user.has_role("System Manager") &&
-      !frappe.user.has_role("Administrator")
-    ) {
+    if (!frappe.user.has_role("System Manager") && !frappe.user.has_role("Administrator")) {
       $(".form-tags").hide();
       $(".form-shared").hide();
       $(".form-assignments").hide();
@@ -221,7 +243,7 @@ frappe.ui.form.on("My Audits", {
     const is_admin = frappe.user.has_role("Administrator") || frappe.session.user === "Administrator";
     const audit_table = frm.doc.audit_stages || [];
 
-    // 1. DRAFT STATE: Raise Request
+    // 1. DRAFT STATE: Raise Request (TEAM MATE FEATURE)
     if (frm.doc.status === "Draft" && (is_audit_team || is_admin)) {
         const next_row = audit_table.find(row => !row.status);
         if (next_row) {
@@ -240,12 +262,11 @@ frappe.ui.form.on("My Audits", {
         }
     }
 
-    // 2. PENDING STATE: Find the exact row that is currently pending
+    // 2. PENDING STATE: Submit Response
     const pending_row = audit_table.find((row) => {
         let r_user = (row.user_id || row.userid || "").toLowerCase();
         let r_email = (row.email || "").toLowerCase();
-        let status = row.status;
-        return (status === "Pending" && (r_user === current_user || r_email === current_user));
+        return (row.status === "Pending" && (r_user === current_user || r_email === current_user));
     });
 
     if (pending_row && frm.doc.status === "Pending") {
@@ -300,7 +321,7 @@ frappe.ui.form.on("My Audits", {
                         }
                     }
                 });
-            }, __("Actions")).css({ "background-color": "#28a745", "color": "white" });
+            }, __("Actions")).css({ "background-color": "#28a745", color: "white" });
         }
     }
   },
@@ -308,15 +329,17 @@ frappe.ui.form.on("My Audits", {
   handle_read_only_new: function (frm) {
     const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
     const current_user = frappe.session.user.toLowerCase();
+    
+    // TEAM MATE FIX: Make risk read-only for non-auditors
     const pending_row = (frm.doc.audit_stages || []).find(
       (row) => row.status === "Pending" && (row.user_id.toLowerCase() === current_user || row.email.toLowerCase() === current_user)
     );
+    if (pending_row && !is_audit_team) {
+        frm.set_df_property("risk", "read_only", 1);
+        frm.disable_save();
+    }
 
-    const is_pending_for_me = !!pending_row;
-
-    if (is_pending_for_me && !is_audit_team) {
-      frm.disable_save();
-    } else if (is_audit_team || frm.doc.status === "Draft") {
+    if (is_audit_team || frm.doc.status === "Draft") {
       frm.enable_save();
     }
 
@@ -327,11 +350,6 @@ frappe.ui.form.on("My Audits", {
     }
 
     frm.set_df_property("audit_stages", "read_only", 1);
-
-    if (is_audit_team) {
-      frm.toggle_display("audit_items_section", true);
-      frm.toggle_display("audit_stages", true);
-    }
 
     const is_admin = frappe.user.has_role("Administrator");
     if (!is_audit_team && !is_admin) {
@@ -414,13 +432,9 @@ frappe.ui.form.on("My Audits", {
     });
   },
 
-  // RESTORED OLD SYSTEM BUTTON HANDLERS (for backward compatibility if settings.use_new_system is false)
   show_sendResponse_btn: function (frm) {
     frm.add_custom_button(__("Send Response"), function () {
-        // ... (Old multi-stage logic kept for safety)
         frappe.confirm("Do you want to send the response to the Audit Team ?", function () {
-            const user = frappe.session.user;
-            // logic to set responded status on old fields
             frm.save().then(() => { frappe.msgprint("<b>Response sent successfully!</b>"); });
         });
     }).css({ "background-color": "#28a745", color: "#ffffff" });
@@ -472,4 +486,85 @@ function render_interactive_tracker(frm, can_edit) {
         let wrapper = frm.page.wrapper.find('.custom-interactive-tracker-wrapper');
         if (wrapper.length > 0) { wrapper.closest('.form-message').find('.close-message').remove(); }
     }, 50);
+}
+
+function open_stages_modal(frm) {
+    let d = new frappe.ui.Dialog({
+        title: 'Edit Audit Stages',
+        size: 'large',
+        fields: [
+            {
+                fieldname: 'temp_stages',
+                fieldtype: 'Table',
+                label: 'Stages',
+                cannot_add_rows: false,
+                in_place_edit: true,
+                data: [],
+                fields: [
+                    { fieldtype: 'Data', fieldname: 'stage_id', hidden: 1 }, 
+                    { fieldtype: 'Link', fieldname: 'stage_name', options: 'Audit Stage', in_list_view: 1, label: 'Stage Name', reqd: 1 },
+                    { fieldtype: 'Link', fieldname: 'employee', options: 'Employee', in_list_view: 1, label: 'Employee ID', reqd: 1 },
+                    { fieldtype: 'Data', fieldname: 'employee_name', in_list_view: 1, label: 'Employee Name', read_only: 1 }
+                ]
+            }
+        ],
+        primary_action_label: 'Save Changes',
+        primary_action: function() {
+            if (document.activeElement) document.activeElement.blur();
+            let grid_data = d.fields_dict.temp_stages.grid.get_data();
+            let old_rows_map = {};
+            (frm.doc.audit_stages || []).forEach(r => { old_rows_map[r.name] = r; });
+            frm.doc.audit_stages = [];
+            grid_data.forEach((row, idx) => {
+                let target_row;
+                if (row.stage_id && old_rows_map[row.stage_id]) {
+                    target_row = old_rows_map[row.stage_id];
+                    frm.doc.audit_stages.push(target_row);
+                } else {
+                    target_row = frm.add_child('audit_stages');
+                }
+                target_row.stage_name = row.stage_name;
+                target_row.employee = row.employee;
+                target_row.employee_name = row.employee_name;
+                target_row.stage = idx + 1;
+                target_row.idx = idx + 1;
+                if (!target_row.status) { target_row.status = 'Pending'; }
+            });
+            frm.refresh_field('audit_stages');
+            frm.dirty();
+            frm.save().then(() => {
+                frappe.show_alert({message: 'Stages updated successfully', indicator: 'green'});
+                render_interactive_tracker(frm, true);
+                d.hide();
+            });
+        }
+    });
+    let existing_data = (frm.doc.audit_stages || []).map(row => {
+        return { stage_id: row.name, stage_name: row.stage_name, employee: row.employee, employee_name: row.employee_name };
+    });
+    d.fields_dict.temp_stages.df.data = existing_data;
+    d.fields_dict.temp_stages.grid.refresh();
+    d.show();
+    setTimeout(() => {
+        let grid_body = d.$wrapper.find('.grid-body .rows')[0];
+        if (grid_body && typeof Sortable !== 'undefined') {
+            d.$wrapper.find('.grid-row').css('cursor', 'grab');
+            new Sortable(grid_body, {
+                animation: 150,
+                handle: '.grid-row', 
+                ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    let old_index = evt.oldIndex;
+                    let new_index = evt.newIndex;
+                    if (old_index === new_index) return;
+                    let data_array = d.fields_dict.temp_stages.grid.data;
+                    let moved_item = data_array.splice(old_index, 1)[0];
+                    data_array.splice(new_index, 0, moved_item);
+                    data_array.forEach((row, i) => { row.idx = i + 1; row._idx = i + 1; });
+                    d.fields_dict.temp_stages.grid.refresh();
+                    d.$wrapper.find('.grid-row').css('cursor', 'grab');
+                }
+            });
+        }
+    }, 300);
 }
