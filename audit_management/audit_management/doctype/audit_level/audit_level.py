@@ -137,3 +137,28 @@ def branch_query(doctype, txt, searchfield, start, page_len, filters):
         "start": start,
         "page_len": page_len
     })
+
+
+def get_permission_query_conditions(user=None):
+    # Returns an empty string so Frappe safely applies your standard Role Permissions for the List View
+    return ""
+
+
+def has_permission(doc, ptype, user=None):
+    if not user:
+        user = frappe.session.user
+
+    # Always allow Administrator
+    if user == "Administrator":
+        return True
+
+    roles = frappe.get_roles(user)
+
+    # 🌟 STRICT LOGIC: Only allow "create" if the user has the correct role
+    if ptype == "create":
+        if "Audit Manager" in roles or "Audit Member" in roles:
+            return True
+        return False  # Explicitly block everyone else from creating
+
+    # For other actions (read, write, delete), return None to let Frappe's standard Role Permissions Manager handle it
+    return None
