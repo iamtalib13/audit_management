@@ -882,6 +882,28 @@
 		svg {
 			flex-shrink: 0;
 		}
+		.audit-card.my-turn-highlight {
+			border-left: 4px solid #f56565 !important;
+			background-color: #fffaf0;
+		}
+
+		.my-turn-badge {
+			display: inline-block;
+			background-color: #f56565;
+			color: white;
+			font-size: 10px;
+			font-weight: 700;
+			padding: 2px 6px;
+			border-radius: 4px;
+			margin-left: 8px;
+			text-transform: uppercase;
+			vertical-align: middle;
+		}
+
+		.audit-id-title {
+			display: flex;
+			align-items: center;
+		}
 	</style>
 </head>
 <body v-scope="AuditDashboard()" @vue:mounted="mounted" v-cloak>
@@ -1019,14 +1041,17 @@
 									v-for="audit in group.items" 
 									:key="audit.id"
 									class="audit-card" 
-									:class="{ active: selectedAudit && selectedAudit.id === audit.id }"
+									:class="{ active: selectedAudit && selectedAudit.id === audit.id, 'my-turn-highlight': audit.is_my_turn }"
 									@click="selectAudit(audit)"
 								>
 									<input type="checkbox" style="margin-top: 6px" @click.stop>
 									<div class="risk-dot" :class="'risk-' + audit.riskClass"></div>
 									<div class="audit-card-content">
 										<div class="audit-card-header">
-											<h4 class="audit-id-title" v-text="audit.id + ' ' + (audit.type || '')"></h4>
+											<h4 class="audit-id-title">
+												<span v-text="audit.id + ' ' + (audit.type || '')"></span>
+												<span v-if="audit.is_my_turn" class="my-turn-badge">My Turn</span>
+											</h4>
 											<span class="audit-date" v-text="audit.dueDate"></span>
 										</div>
 										<div class="audit-meta">
@@ -1138,9 +1163,11 @@
 
 						<div class="message-input-area">
 							<div class="input-box">
-								<textarea class="input-textarea" placeholder="Type a message..."></textarea>
+								<textarea class="input-textarea" placeholder="Type a message..." v-model="responseMessage" :disabled="responseLoading"></textarea>
 								<div class="input-footer">
-									<!-- Footer actions remain -->
+									<button class="composer-send-btn" @click="submitResponse" :disabled="responseLoading || !responseMessage.trim()">
+										<span v-text="responseLoading ? 'Sending...' : 'Send'"></span>
+									</button>
 								</div>
 							</div>
 						</div>					</template>
@@ -1323,11 +1350,46 @@
 				createLoading: false,
 				createError: "",
 				attachmentName: "",
+				responseMessage: "",
+				responseLoading: false,
 
 				async mounted() {
 					await this.loadMoreAudits();
 					if (this.audits.length > 0) {
 						this.selectedAudit = this.audits[0];
+					}
+				},
+
+				async submitResponse() {
+					if (!this.responseMessage.trim()) return;
+
+					this.responseLoading = true;
+					try {
+						const res = await fetch('/api/method/audit_management.www.audit_dashboard.submit_audit_response', {
+							method: 'POST',
+							headers: { 
+								'Content-Type': 'application/json',
+								'X-Frappe-CSRF-Token': CSRF_TOKEN 
+							},
+							body: JSON.stringify({
+								docname: this.selectedAudit.id,
+								response_text: this.responseMessage
+							})
+						});
+						
+						const data = await res.json();
+						if (data.message) {
+							this.responseMessage = "";
+							// Refresh audit list or detail view
+							await this.filterAudits(this.activeFilter); 
+						} else {
+							alert(data._server_messages || "Failed to submit response");
+						}
+					} catch (e) {
+						console.error(e);
+						alert("Failed to send response");
+					} finally {
+						this.responseLoading = false;
 					}
 				},
 
