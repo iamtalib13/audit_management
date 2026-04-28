@@ -200,22 +200,26 @@ def has_permission(doc, ptype, user=None):
     if not user:
         user = frappe.session.user
 
-    if user == "Administrator":
-        return True
-
     roles = frappe.get_roles(user)
 
-    # CREATE restriction (existing behavior retained)
-    if ptype == "create":
-        if "Audit Manager" in roles or "Audit Member" in roles:
-            return True
-        return False
-
-    # Division-based restriction
-    user_divisions = get_user_allowed_divisions(user)
-    user_divisions = apply_cross_division_access(user_divisions)
-
-    if doc.get("division") in user_divisions:
+    # 1. System Admins see everything
+    if user == "Administrator" or "System Manager" in roles:
         return True
 
-    return False
+    # 2. Get allowed divisions (handles Multistate/Retail cross-access)
+    allowed_divisions = get_user_allowed_divisions(user)
+    allowed_divisions = apply_cross_division_access(allowed_divisions)
+    if not allowed_divisions:
+        return False
+
+    # 3. CREATE check
+    if ptype == "create":
+        return "Audit Manager" in roles or "Audit Member" in roles
+
+    # 4. Division Check (Mandatory for everyone except Admins)
+    doc_division = doc.get("division")
+    # If doc is new and doesn't have a division yet, allow initialization if they have the role
+    if not doc_division and doc.is_new():
+        return "Audit Manager" in roles or "Audit Member" in roles
+
+    return doc_division in allowed_divisions
