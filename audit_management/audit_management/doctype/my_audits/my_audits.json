@@ -361,7 +361,7 @@
   },
   {
    "fieldname": "root_cause_analysis",
-   "fieldtype": "Small Text",
+   "fieldtype": "Text Editor",
    "label": "Root Cause Analysis (RCA)"
   },
   {

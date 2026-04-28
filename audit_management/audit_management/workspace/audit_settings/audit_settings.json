@@ -29,7 +29,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-04-22 14:02:45.289640",
+ "modified": "2026-04-28 13:15:47.614283",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Settings",
@@ -41,6 +41,9 @@
  "roles": [
   {
    "role": "Administrator"
+  },
+  {
+   "role": "Audit Manager"
   }
  ],
  "sequence_id": 52.1,

@@ -1240,17 +1240,8 @@ setup_dynamic_buttons: function (frm) {
       frm.toggle_display("audit_stages", true);
     }
 
-    // --- 4. NEW: HIDE RESOLUTION SECTION FOR NON-AUDIT TEAM ---
-    const is_admin = frappe.user.has_role("Administrator");
-    
-    // If the user is NOT Audit Manager, NOT Audit Member, and NOT Administrator...
-    if (!is_audit_team && !is_admin) {
-        // Hide the entire resolution section
-        frm.toggle_display("resolution_section", false);
-    } else {
-        // Ensure it stays visible for the Audit Team and Admins
-        frm.toggle_display("resolution_section", true);
-    }
+    // Show the resolution section ONLY when the query is closed
+    frm.toggle_display("resolution_section", frm.doc.status === "Close");
     // ---------------------------------------------------------
 
     // 5. Freeze Completed Stage Response Boxes
@@ -1285,33 +1276,84 @@ setup_dynamic_buttons: function (frm) {
   },
   
   handle_close_query: function (frm) {
-    frappe.prompt(
-      [
+    let d = new frappe.ui.Dialog({
+      title: __("Enter Resolution Details"),
+      fields: [
+        {
+          label: __("RCA Category"),
+          fieldname: "rca_category",
+          fieldtype: "Link",
+          options: "Audit RCA Category",
+          reqd: 1,
+          default: frm.doc.rca_category,
+          onchange: function() {
+            let val = this.get_value();
+            if (val) {
+              frappe.db.get_value("Audit RCA Category", val, "root_cause_analysis", (r) => {
+                if (r && r.root_cause_analysis) {
+                  d.set_value("root_cause_analysis", r.root_cause_analysis);
+                }
+              });
+            }
+          }
+        },
+        {
+          fieldtype: "HTML",
+          fieldname: "rca_help",
+          options: `<div class="small text-muted" style="margin-top: -10px; margin-bottom: 10px;">
+            ${__("If the category is not present, use 'Create New' in the link above.")}
+          </div>`
+        },
+        {
+          label: __("Root Cause Analysis (RCA)"),
+          fieldname: "root_cause_analysis",
+          fieldtype: "Text Editor",
+          reqd: 1,
+          default: frm.doc.root_cause_analysis,
+        },
+        {
+          label: __("Action Point with TAT and Closure"),
+          fieldname: "action_point_with_tat",
+          fieldtype: "Small Text",
+          reqd: 1,
+          default: frm.doc.action_point_with_tat,
+        },
+        {
+          label: __("Recommendations"),
+          fieldname: "recommendations",
+          fieldtype: "Small Text",
+          reqd: 1,
+          default: frm.doc.recommendations,
+        },
         {
           label: __("Closing Remark"),
           fieldname: "closing_remark",
           fieldtype: "Small Text",
           reqd: 1,
+          default: frm.doc.closing_remark,
         },
       ],
-      function (data) {
+      primary_action_label: __("Close"),
+      primary_action(data) {
+        d.hide();
+        frm.set_value("rca_category", data.rca_category);
+        frm.set_value("root_cause_analysis", data.root_cause_analysis);
+        frm.set_value("action_point_with_tat", data.action_point_with_tat);
+        frm.set_value("recommendations", data.recommendations);
         frm.set_value("closing_remark", data.closing_remark);
         frm.set_value("status", "Close");
-        frm.save(null, {
-          callback: function (r) {
-            if (!r.exc) {
-              frappe.show_alert({
-                message: __("Query Closed Successfully"),
-                indicator: "green",
-              });
-              frm.reload_doc();
-            }
-          },
+        frm.save().then((r) => {
+          if (!r.exc) {
+            frappe.show_alert({
+              message: __("Query Closed Successfully"),
+              indicator: "green",
+            });
+            frm.reload_doc();
+          }
         });
-      },
-      __("Enter Closing Remark"),
-      __("Close"),
-    );
+      }
+    });
+    d.show();
   },
 
   audit_query_subject_box: function (frm) {
@@ -1912,26 +1954,7 @@ setup_dynamic_buttons: function (frm) {
     if (frm.doc.status !== "Close") {
       frm
         .add_custom_button(__("Close Query"), function () {
-          frappe.prompt(
-            [
-              {
-                label: "Enter Closing Remark",
-                fieldname: "closing_remark",
-                fieldtype: "Data",
-                reqd: 1,
-              },
-            ],
-            function (data) {
-              frm.set_value("closing_remark", data.closing_remark);
-              frm.set_value("status", "Close");
-              frm.save().then(() => {
-                frappe.msgprint("<b>Audit query closed successfully!</b>");
-                frm.disable_form();
-              });
-            },
-            "Enter Closing Remark",
-            "Close",
-          );
+          frm.trigger("handle_close_query");
         })
         .css({ "background-color": "#dc3545", color: "#ffffff" });
     }
