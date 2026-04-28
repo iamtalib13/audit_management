@@ -81,6 +81,17 @@ class AuditLevel(Document):
                             frappe.db.set_value(
                                 "Employee", row.employee, "company_email", row.email)
 
+    def autoname(self):
+            # Fetch the branch name using the linked ID
+            branch_name = frappe.db.get_value("Sahayog Branch", self.emp_branch, "branch") or "NA"
+
+            
+            # Example: Format as BRANCH-YYYY-#####
+           # Adjust the format string to your preference
+            self.name = f"Audit-{self.division}-{branch_name}"
+           # Or if you are using standard Naming Series:
+           # self.name = frappe.model.naming.make_autoname(f"{branch_name}-.#####")
+
 
 @frappe.whitelist()
 def fetch_employee(employee_id):

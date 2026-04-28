@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:Audit-{division}-{emp_branch}",
+ "autoname": "format:{division}-{emp_branch}",
  "creation": "2024-09-02 11:17:28.344188",
  "default_view": "List",
  "doctype": "DocType",
@@ -746,11 +746,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-25 11:13:48.727673",
+ "modified": "2026-04-28 16:19:14.545283",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
