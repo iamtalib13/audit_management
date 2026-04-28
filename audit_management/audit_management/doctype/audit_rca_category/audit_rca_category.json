@@ -6,7 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "rca_category"
+  "rca_category",
+  "root_cause_analysis"
  ],
  "fields": [
   {
@@ -16,12 +17,17 @@
    "label": "RCA Category",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "root_cause_analysis",
+   "fieldtype": "Text Editor",
+   "label": "Root Cause Analysis (RCA)"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_standard": 1,
  "links": [],
- "modified": "2026-04-17 12:00:00",
+ "modified": "2026-04-28 10:15:00",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit RCA Category",
@@ -41,11 +47,15 @@
    "write": 1
   },
   {
+   "create": 1,
    "read": 1,
+   "write": 1,
    "role": "Audit Manager"
   },
   {
+   "create": 1,
    "read": 1,
+   "write": 1,
    "role": "Audit Member"
   }
  ],
