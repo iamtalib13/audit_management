@@ -79,6 +79,8 @@ def get_audits(start=0, limit=20, filters=None):
 		page_length=limit
 	)
 	
+	current_user = frappe.session.user.lower()
+	
 	# Add metadata for UI
 	for audit in audits:
 		audit.statusClass = "progress" if audit.status == "Pending" else "completed" if audit.status == "Close" else "overdue"
@@ -90,7 +92,7 @@ def get_audits(start=0, limit=20, filters=None):
 		stages = frappe.get_all(
 			"Audit Items",
 			filters={"parent": audit.id},
-			fields=["idx", "employee_name", "user_id", "status"],
+			fields=["idx", "employee_name", "user_id", "email", "status"],
 			order_by="idx asc"
 		)
 
@@ -99,8 +101,14 @@ def get_audits(start=0, limit=20, filters=None):
 			None
 		)
 
+		audit.is_my_turn = False
 		if pending_stage:
 			audit.current_assignee = pending_stage.employee_name or pending_stage.user_id or "Unknown"
+			# Check if pending for current user
+			row_user = (pending_stage.user_id or "").lower()
+			row_email = (pending_stage.email or "").lower()
+			if row_user == current_user or row_email == current_user:
+				audit.is_my_turn = True
 		else:
 			audit.current_assignee = "Completed"
      
@@ -257,9 +265,23 @@ def _get_dashboard_filters():
 	if AUDIT_OVERVIEW_ROLES.intersection(user_roles):
 		return {}
 
-	return {"owner": user}
+	# For Respondents (BM, DH etc.), we return empty filter 
+	# so that DocType's permission_query (which checks child table) applies.
+	return {}
 
 
 def _ensure_create_role():
 	if not can_create_audit():
 		frappe.throw("You are not allowed to create audits.", frappe.PermissionError)
+
+
+@frappe.whitelist()
+def submit_audit_response(docname, response_text, attachment=None):
+	"""Proxy method for portal response submission"""
+	if not docname or not response_text:
+		frappe.throw("Missing required fields")
+
+	# call core logic
+	from audit_management.audit_management.doctype.my_audits.my_audits import submit_response
+	
+	return submit_response(docname, response_text, attachment)
