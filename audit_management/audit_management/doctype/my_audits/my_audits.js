@@ -51,10 +51,25 @@ frappe.ui.form.on("My Audits", {
   },
 
   refresh: function (frm) {
+    if (frm.is_new()) {
+        // Fetch current user employee details for UI immediate display
+        frappe.db.get_value('Employee', { user_id: frappe.session.user }, 
+            ['name', 'employee_name', 'company_email', 'designation', 'branch', 'custom_division'], 
+            (employee) => {
+                if (employee) {
+                    frm.set_value('query_generated_by_empid', employee.name);
+                    frm.set_value('query_generated_by_name', employee.employee_name);
+                    frm.set_value('query_generated_by_mail', employee.company_email);
+                    frm.set_value('query_generated_by_designation', employee.designation);
+                    frm.set_value('query_generated_by_branch', employee.branch);
+                    frm.set_value('emp_division', employee.custom_division);
+                }
+            }
+        );
+    }
     
-
-     // 1. Check if user has permission to edit the tracker
-        let can_edit = frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member");
+    // 1. Check if user has permission to edit the tracker
+    let can_edit = frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member");
 
         // 2. Render the Interactive Tracker
         // render_interactive_tracker(frm, can_edit);
