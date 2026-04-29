@@ -102,8 +102,11 @@ def execute():
         
         if has_data:
             try:
-                # Bypass link validation to prevent errors from missing master data
-                doc.flags.ignore_links = True
+                # Bypass link validation if Branch is missing
+                if doc.get("emp_branch") and not frappe.db.exists("Branch", doc.emp_branch):
+                    frappe.logger().error(f"Migration: Branch {doc.emp_branch} not found for {doc.name}. Clearing to bypass validation.")
+                    doc.emp_branch = None
+                
                 doc.save(ignore_permissions=True)
             except Exception as e:
                 frappe.logger().error(f"Migration: Failed to save {doc.name}: {str(e)}")
