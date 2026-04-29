@@ -102,8 +102,10 @@ def execute():
         
         if has_data:
             try:
-                # We wrap the save to handle any lingering link issues
+                # Bypass link validation to prevent errors from missing master data
+                doc.flags.ignore_links = True
                 doc.save(ignore_permissions=True)
-            except Exception:
+            except Exception as e:
+                frappe.logger().error(f"Migration: Failed to save {doc.name}: {str(e)}")
                 pass
 
