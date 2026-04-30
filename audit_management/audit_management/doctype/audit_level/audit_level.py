@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-from audit_management.audit_management.utils import is_new_system_enabled
+from audit_management.audit_management.utils import is_new_system_enabled, get_user_allowed_divisions
 
 
 class AuditLevel(Document):
@@ -154,51 +154,18 @@ def branch_query(doctype, txt, searchfield, start, page_len, filters):
 # PERMISSION LOGIC (FINAL)
 # -------------------------
 
-def apply_cross_division_access(divisions):
-    """Handle cross-access between specific divisions."""
-    cross_access = ["Multistate", "Retail Banking", "Retail Branch Banking"]
-
-    if any(d in divisions for d in cross_access):
-        return list(set(divisions + cross_access))
-
-    return list(set(divisions))
-
-
-def get_user_allowed_divisions(user):
-    user_div = frappe.db.get_value(
-        "Employee", {"user_id": user}, "custom_division"
-    )
-
-    if not user_div:
-        return []
-
-    settings = frappe.get_single("Audit Management Settings")
-
-    if not hasattr(settings, "division_permissions") or not settings.division_permissions:
-        return [user_div]
-
-    allowed = [
-        row.allowed_division
-        for row in settings.division_permissions
-        if row.source_division == user_div
-    ]
-
-    if user_div not in allowed:
-        allowed.append(user_div)
-
-    return allowed
-
-
 def get_permission_query_conditions(user=None):
     if not user:
         user = frappe.session.user
 
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+    roles = frappe.get_roles(user)
+
+    # System Admins see everything
+    if "Administrator" in roles or "System Manager" in roles:
         return ""
 
+    # Division check
     allowed_divisions = get_user_allowed_divisions(user)
-    allowed_divisions = apply_cross_division_access(allowed_divisions)
-
     if not allowed_divisions:
         return "1=0"
 
@@ -214,12 +181,11 @@ def has_permission(doc, ptype, user=None):
     roles = frappe.get_roles(user)
 
     # 1. System Admins see everything
-    if user == "Administrator" or "System Manager" in roles:
+    if "Administrator" in roles or "System Manager" in roles:
         return True
 
-    # 2. Get allowed divisions (handles Multistate/Retail cross-access)
+    # 2. Get allowed divisions
     allowed_divisions = get_user_allowed_divisions(user)
-    allowed_divisions = apply_cross_division_access(allowed_divisions)
     if not allowed_divisions:
         return False
 
