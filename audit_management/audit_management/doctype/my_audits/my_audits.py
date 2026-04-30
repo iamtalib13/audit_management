@@ -5,7 +5,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now, time_diff_in_seconds, time_diff_in_hours, getdate, nowdate
-from audit_management.audit_management.utils import get_working_days, update_audit_aging
+from audit_management.audit_management.utils import get_working_days, update_audit_aging, get_user_allowed_divisions
 
 
 class MyAudits(Document):
@@ -635,23 +635,6 @@ def send_daily_reminders():
                     reference_doctype=doc.doctype,
                     reference_name=doc.name
                 )
-
-
-def get_user_allowed_divisions(user):
-    user_div = frappe.db.get_value(
-        "Employee", {"user_id": user}, "custom_division")
-    if not user_div:
-        return []
-
-    settings = frappe.get_single("Audit Management Settings")
-    if not hasattr(settings, "division_permissions") or not settings.division_permissions:
-        return [user_div]
-
-    allowed = [
-        row.allowed_division for row in settings.division_permissions if row.source_division == user_div]
-    if user_div not in allowed:
-        allowed.append(user_div)
-    return allowed
 
 
 # def get_permission_query_conditions(user=None):

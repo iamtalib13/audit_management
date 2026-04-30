@@ -29,3 +29,28 @@ def update_audit_aging(doc):
     end_date = getdate(doc.modified) if doc.status == "Close" else getdate(nowdate())
     
     doc.aging = get_working_days(start_date, end_date)
+
+def get_user_allowed_divisions(user):
+    """Fetch allowed divisions for a user based on Audit Management Settings."""
+    user_div = frappe.db.get_value(
+        "Employee", {"user_id": user}, "custom_division"
+    )
+
+    if not user_div:
+        return []
+
+    settings = frappe.get_single("Audit Management Settings")
+
+    if not hasattr(settings, "division_permissions") or not settings.division_permissions:
+        return [user_div]
+
+    allowed = [
+        row.allowed_division
+        for row in settings.division_permissions
+        if row.source_division == user_div
+    ]
+
+    if user_div not in allowed:
+        allowed.append(user_div)
+
+    return allowed
