@@ -185,24 +185,8 @@ class MyAudits(Document):
                 "user_id": row.user_id,
                 "employee_name": row.employee_name,
                 "email": row.email,
-                "status": "Pending"
+                "status": "" # Start as empty, not Pending
             })
-
-    # def before_save(self):
-    #     # 1. Sync Hardcoded Fields to Child Table (Priority for Legacy updates)
-    #     self.sync_old_to_new()
-
-    #     # 2. Sync Child Table to Hardcoded Fields (Priority for UI/Reporting)
-    #     self.sync_new_to_old()
-
-    #     # 3. Populate Stages from Audit Level only if needed
-    #     if (self.is_new() or self.has_value_changed("emp_branch")) and not self.audit_stages:
-    #         populate_audit_stages(self)
-
-    #     # 4. Disable standard notifications if new system is active
-    #     settings = frappe.get_single("Audit Management Settings")
-    #     if settings.use_new_system:
-    #         self.flags.ignore_notifications = True
 
     def before_save(self):
         # 1. Sync Hardcoded Fields to Child Table (Priority for Legacy updates)
@@ -233,7 +217,7 @@ class MyAudits(Document):
                 user_id, m["stage"], m["label"], prefix)
             if row:
                 old_status = self.get(f"{prefix}_user_status")
-                if old_status and row.status != old_status:
+                if self.status != "Draft" and old_status and row.status != old_status:
                     row.status = old_status
 
                 old_resp = self.get(f"{prefix}_response_box")
@@ -705,57 +689,52 @@ def has_permission(doc, ptype, user=None):
         user = frappe.session.user
 
     roles = frappe.get_roles(user)
+    is_audit_manager = "Audit Manager" in roles or "Administrator" in roles or "System Manager" in roles
+    is_audit_team = is_audit_manager or "Audit Member" in roles
 
-    # 1. System Admins see everything
-    if "Administrator" in roles or "System Manager" in roles:
+    # 1. Audit Manager / Admin can ALWAYS see and edit
+    if is_audit_manager:
         return True
 
-    # 2. Check if the query is currently pending for the user (Bypass Division)
-    # This allows users to respond even if they are from a different division
-    stages = doc.get("audit_stages") or []
-    is_currently_pending_for_me = False
-    user_lower = user.lower()
-
-    for row in stages:
-        if row.status == "Pending":
-            r_user = (row.user_id or "").lower()
-            r_email = (row.email or "").lower()
-
-            if r_user == user_lower or r_email == user_lower:
-                is_currently_pending_for_me = True
-                break
-
-    if is_currently_pending_for_me:
-        return True
-
-    # 3. Get allowed divisions (handles Multistate/Retail cross-access)
+    # 2. Division Check (Essential for data sovereignty)
     allowed_divisions = get_user_allowed_divisions(user)
-    if not allowed_divisions:
-        return False
-
-    # 4. Division Check (Mandatory for non-pending cases)
     doc_division = doc.get("emp_division")
-    if not doc_division and doc.is_new():
-        return True
     
-    if doc_division not in allowed_divisions:
-        return False
+    # If division doesn't match and it's not a bypass case, deny
+    if doc_division and doc_division not in allowed_divisions:
+        # Bypass for users who are currently pending (even if from another division)
+        is_pending = False
+        for row in (doc.get("audit_stages") or []):
+            if row.status == "Pending" and (row.user_id == user or row.email == user):
+                is_pending = True
+                break
+        if not is_pending:
+            return False
 
-    # 5. Role-based isolation
-    is_audit_team = "Audit Manager" in roles or "Audit Member" in roles
-    if is_audit_team:
+    # 3. Draft Isolation: Only Creator/Manager
+    if getattr(doc, "status", None) == "Draft":
+        return doc.owner == user or is_audit_manager
+
+    # 4. Access for Audit Members (Non-Managers)
+   # Audit Member: only if NOT draft OR owner
+    if "Audit Member" in roles:
+        if getattr(doc, "status", None) == "Draft":
+            return doc.owner == user
         return True
 
-    # 6. Stage Member / Owner Isolation
-    # Block direct URL access to Drafts for non-audit team members unless they created it
-    if getattr(doc, "status", None) == "Draft" and doc.owner != user:
-        return False
-
-    # Always allow the original creator to see their own request (within their division)
+    # 5. Access for Others (Owner or Current Assignee)
     if doc.owner == user:
         return True
 
-    return False
+   # ✅ Current Pending User
+    for row in (doc.get("audit_stages") or []):
+        if row.status == "Pending" and (row.user_id == user or row.email == user):
+            return True
+
+    # ✅ NEW: Allow users who already responded (history access)
+    for row in (doc.get("audit_stages") or []):
+        if row.status == "Responded" and (row.user_id == user or row.email == user):
+            return True
 
 
 def get_permission_query_conditions(user=None):
@@ -764,40 +743,47 @@ def get_permission_query_conditions(user=None):
 
     roles = frappe.get_roles(user)
 
-    # System Admins see everything
     if "Administrator" in roles or "System Manager" in roles:
         return ""
 
-    # Division check
     allowed_divisions = get_user_allowed_divisions(user)
     divisions_sql = ", ".join(f"{frappe.db.escape(d)}" for d in allowed_divisions) if allowed_divisions else "'None'"
 
-    is_audit_team = "Audit Manager" in roles or "Audit Member" in roles
+    is_audit_manager = "Audit Manager" in roles
+    is_audit_team = is_audit_manager or "Audit Member" in roles
 
-    # Pending responder condition (Bypass Division)
+    # ✅ FIX: correct child table name
     pending_condition = f"""
         EXISTS (
-            SELECT name FROM `tabAudit Items` 
-            WHERE parent = `tabMy Audits`.name 
-            AND status = 'Pending' 
+            SELECT name FROM `tabAudit Items`
+            WHERE parent = `tabMy Audits`.name
+            AND status = 'Pending'
             AND (user_id = '{user}' OR email = '{user}')
         )
     """
 
+    if is_audit_manager:
+        return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
+
     if is_audit_team:
-        # Audit team sees everything in their allowed divisions OR anything pending for them
-        return f"(`tabMy Audits`.emp_division IN ({divisions_sql}) OR {pending_condition})"
-    else:
-        # Stage members (Branch users) see:
-        # 1. Anything pending for them (Any division)
-        # 2. Anything they own (Within their division)
         return f"""
             (
-                ({pending_condition})
+                (`tabMy Audits`.status != 'Draft' AND `tabMy Audits`.emp_division IN ({divisions_sql}))
                 OR 
-                (`tabMy Audits`.owner = '{user}' AND `tabMy Audits`.emp_division IN ({divisions_sql}))
+                (`tabMy Audits`.owner = '{user}')
             )
         """
+
+    # ✅ FINAL CONTROL
+    return f"""
+        (
+            (`tabMy Audits`.status = 'Draft' AND `tabMy Audits`.owner = '{user}')
+            OR
+            ({pending_condition})
+            OR 
+            (`tabMy Audits`.owner = '{user}' AND `tabMy Audits`.emp_division IN ({divisions_sql}))
+        )
+    """
 
 # -------------------------------------------------------------
 # WHITELISTED METHODS (Add these outside the MyAudits class)
