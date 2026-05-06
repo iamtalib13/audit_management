@@ -761,7 +761,14 @@ def get_permission_query_conditions(user=None):
             AND (user_id = '{user}' OR email = '{user}')
         )
     """
-
+    responded_condition = f"""
+    EXISTS (
+        SELECT name FROM `tabAudit Items`
+        WHERE parent = `tabMy Audits`.name
+        AND status = 'Responded'
+        AND (user_id = '{user}' OR email = '{user}')
+    )
+    """
     if is_audit_manager:
         return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
 
@@ -780,6 +787,8 @@ def get_permission_query_conditions(user=None):
             (`tabMy Audits`.status = 'Draft' AND `tabMy Audits`.owner = '{user}')
             OR
             ({pending_condition})
+            OR
+            ({responded_condition})
             OR 
             (`tabMy Audits`.owner = '{user}' AND `tabMy Audits`.emp_division IN ({divisions_sql}))
         )
