@@ -770,16 +770,10 @@ def get_permission_query_conditions(user=None):
     )
     """
     if is_audit_manager:
-        return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
+     return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
 
-    if is_audit_team:
-        return f"""
-            (
-                (`tabMy Audits`.status != 'Draft' AND `tabMy Audits`.emp_division IN ({divisions_sql}))
-                OR 
-                (`tabMy Audits`.owner = '{user}')
-            )
-        """
+    if "Audit Member" in roles and not is_audit_manager:
+      return f"`tabMy Audits`.owner = '{user}'"
 
     # ✅ FINAL CONTROL
     return f"""
