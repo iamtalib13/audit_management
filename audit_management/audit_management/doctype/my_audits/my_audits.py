@@ -128,7 +128,7 @@ class MyAudits(Document):
         # 1. Force the status to Draft upon creation
         if not self.status:
             self.status = "Draft"
-            
+
         # 2. Get logged-in user and fetch their Employee record
         logged_in_user = frappe.session.user
         employee = frappe.db.get_value(
@@ -185,7 +185,7 @@ class MyAudits(Document):
                 "user_id": row.user_id,
                 "employee_name": row.employee_name,
                 "email": row.email,
-                "status": "" # Start as empty, not Pending
+                "status": ""  # Start as empty, not Pending
             })
 
     def before_save(self):
@@ -352,34 +352,123 @@ def get_status_tracker_html(docname):
     return html_output
 
 
-@frappe.whitelist()
-def send_to_next_stage(docname):
-    doc = frappe.get_doc("My Audits", docname)
-    next_row = None
+# @frappe.whitelist()
+# def send_to_next_stage(docname):
+#     doc = frappe.get_doc("My Audits", docname)
+#     next_row = None
 
-    # Find first row that is not responded/skipped and not pending
-    for row in doc.audit_stages:
-        if not row.status:
-            next_row = row
-            break
+#     # Find first row that is not responded/skipped and not pending
+#     for row in doc.audit_stages:
+#         if not row.status:
+#             next_row = row
+#             break
 
-    if next_row:
-        next_row.status = "Pending"
-        next_row.pending_time = now()
-        doc.query_status = f"Pending From {next_row.stage_name}"
-        doc.status = "Pending"
+#     if next_row:
+#         next_row.status = "Pending"
+#         next_row.pending_time = now()
+#         doc.query_status = f"Pending From {next_row.stage_name}"
+#         doc.status = "Pending"
 
-        # Share document with the user (notify=0 to prevent redundant background queue emails)
-        frappe.share.add(doc.doctype, doc.name,
-                         next_row.user_id, read=1, write=1, notify=0)
+#         # Share document with the user (notify=0 to prevent redundant background queue emails)
+#         frappe.share.add(doc.doctype, doc.name,
+#                          next_row.user_id, read=1, write=1, notify=0)
 
-        doc.save()
+#         doc.save()
 
-        # Send Custom Email immediately (New System)
-        send_stage_notification(doc, next_row, action="assign")
-        return _("Query sent to {0}").format(next_row.stage_name)
+#         # Send Custom Email immediately (New System)
+#         send_stage_notification(doc, next_row, action="assign")
+#         return _("Query sent to {0}").format(next_row.stage_name)
+#     else:
+#         return _("No more stages to send to.")
+
+
+def send_stage_notification(doc, stage_row, action="assign"):
+    """
+    Sends dynamic notification using Email Template.
+    action: "assign" (when query is sent to a stage) or "respond" (when a stage responds)
+    """
+    settings = frappe.get_single("Audit Management Settings")
+    template_name = settings.use_new_email_template
+
+    if not template_name:
+        return
+
+    recipients = []
+
+    if action == "assign":
+        recipient_email = None
+
+        if stage_row and stage_row.user_id:
+            recipient_email = frappe.db.get_value(
+                "Employee",
+                {"user_id": stage_row.user_id},
+                "company_email"
+            )
+
+        if not recipient_email and stage_row and stage_row.email:
+            recipient_email = stage_row.email
+
+        if recipient_email:
+            recipients = [recipient_email]
+
     else:
-        return _("No more stages to send to.")
+        if doc.query_generated_by_mail:
+            recipients = [doc.query_generated_by_mail]
+        else:
+            owner_email = frappe.db.get_value("User", doc.owner, "email")
+            if owner_email:
+                recipients = [owner_email]
+
+    if not recipients:
+        frappe.log_error(
+            f"Audit Notification Failed: No recipients for {action} on {doc.name}",
+            "Audit Management"
+        )
+        return
+
+    cc_list = []
+    static_cc = settings.query_cc_emails if action == "assign" else settings.response_cc_emails
+
+    if static_cc:
+        try:
+            rendered_cc = frappe.render_template(static_cc, {"doc": doc})
+        except:
+            rendered_cc = static_cc
+
+        import re
+        emails = re.split(r'[,\\s\\n;]+', rendered_cc)
+        cc_list.extend([e.strip() for e in emails if e.strip() and "@" in e])
+
+    cc_list = list(set([e for e in cc_list if e and e not in recipients]))
+
+    try:
+        from frappe.email.doctype.email_template.email_template import get_email_template
+
+        email_data = get_email_template(template_name, {
+            "doc": doc,
+            "stage": stage_row,
+            "action": action
+        })
+
+        frappe.sendmail(
+            recipients=recipients,
+            cc=cc_list,
+            subject=email_data.get("subject") or f"Audit Update: {doc.name}",
+            message=email_data.get("message"),
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+            now=True
+        )
+        frappe.db.commit()
+
+        frappe.msgprint(_("Email notification sent to {0}").format(
+            ", ".join(recipients)))
+        frappe.logger().info(
+            f"[AUDIT EMAIL] doc={doc.name}, action={action}, user_id={stage_row.user_id if stage_row else ''}, sent_to={', '.join(recipients)}"
+        )
+
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Audit Notification Failed")
 
 
 def send_stage_notification(doc, stage_row, action="assign"):
@@ -409,7 +498,8 @@ def send_stage_notification(doc, stage_row, action="assign"):
                 recipients = [owner_email]
 
     if not recipients:
-        frappe.log_error(f"Audit Notification Failed: No recipients for {action} on {doc.name}", "Audit Management")
+        frappe.log_error(
+            f"Audit Notification Failed: No recipients for {action} on {doc.name}", "Audit Management")
         return
 
     # 2. Collect CC Emails
@@ -422,7 +512,7 @@ def send_stage_notification(doc, stage_row, action="assign"):
             rendered_cc = frappe.render_template(static_cc, {"doc": doc})
         except:
             rendered_cc = static_cc
-            
+
         import re
         # Split by comma, space, newline, or semicolon
         emails = re.split(r'[,\s\n;]+', rendered_cc)
@@ -452,8 +542,9 @@ def send_stage_notification(doc, stage_row, action="assign"):
         )
         # FORCE COMMIT: ensures email is sent immediately
         frappe.db.commit()
-        
-        frappe.msgprint(_("Email notification sent to {0}").format(", ".join(recipients)))
+
+        frappe.msgprint(_("Email notification sent to {0}").format(
+            ", ".join(recipients)))
 
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Audit Notification Failed")
@@ -484,10 +575,10 @@ def submit_response(docname, response_text, attachment=None):
     if found:
         doc.flags.ignore_notifications = True
         doc.save(ignore_permissions=True)
-        
+
         # Trigger notification AFTER successful save
         send_stage_notification(doc, updated_row, action="respond")
-        
+
         return _("Response submitted successfully.")
     else:
         frappe.throw(
@@ -699,7 +790,7 @@ def has_permission(doc, ptype, user=None):
     # 2. Division Check (Essential for data sovereignty)
     allowed_divisions = get_user_allowed_divisions(user)
     doc_division = doc.get("emp_division")
-    
+
     # If division doesn't match and it's not a bypass case, deny
     if doc_division and doc_division not in allowed_divisions:
         # Bypass for users who are currently pending (even if from another division)
@@ -747,7 +838,8 @@ def get_permission_query_conditions(user=None):
         return ""
 
     allowed_divisions = get_user_allowed_divisions(user)
-    divisions_sql = ", ".join(f"{frappe.db.escape(d)}" for d in allowed_divisions) if allowed_divisions else "'None'"
+    divisions_sql = ", ".join(
+        f"{frappe.db.escape(d)}" for d in allowed_divisions) if allowed_divisions else "'None'"
 
     is_audit_manager = "Audit Manager" in roles
     is_audit_team = is_audit_manager or "Audit Member" in roles
@@ -770,10 +862,10 @@ def get_permission_query_conditions(user=None):
     )
     """
     if is_audit_manager:
-     return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
+        return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
 
     if "Audit Member" in roles and not is_audit_manager:
-      return f"`tabMy Audits`.owner = '{user}'"
+        return f"`tabMy Audits`.owner = '{user}'"
 
     # ✅ FINAL CONTROL
     return f"""
@@ -830,14 +922,14 @@ def raise_request(docname, stagename):
         # notify=0 prevents the redundant background queue email
         frappe.share.add(doc.doctype, doc.name, assigned_userid,
                          read=1, write=1, share=1, notify=0)
-        
+
         # Trigger immediate custom notification
         target_row = None
         for row in doc.audit_stages:
             if row.status == "Pending":
                 target_row = row
                 break
-        
+
         if target_row:
             send_stage_notification(doc, target_row, action="assign")
 
