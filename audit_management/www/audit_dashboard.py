@@ -68,6 +68,7 @@ def get_audits(start=0, limit=20, filters=None):
 			"name as id",
 			"query_type as type",
 			"emp_branch as branch",
+			"emp_division as division",
 			"query_generated_by_name as auditor",
 			"status",
 			"creation",

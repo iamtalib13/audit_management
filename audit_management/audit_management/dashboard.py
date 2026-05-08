@@ -41,18 +41,29 @@ def get_dashboard_stats():
             pending_for_me_list = frappe.get_all(
                 "My Audits",
                 filters={"name": ["in", parent_names]},
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch"]
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division"]
             )
 
         # 2. 🔵 FETCH GLOBAL/ROLE STATS
         # --------------------------------------------
+        from audit_management.audit_management.utils import get_user_allowed_divisions
+        allowed_divisions = get_user_allowed_divisions(user)
+        
         filters = {}
-        if is_member and not is_manager:
+        if is_manager:
+            # ✅ RESTRICT BY DIVISION FOR AUDIT MANAGER
+            if allowed_divisions:
+                filters["emp_division"] = ["in", allowed_divisions]
+            else:
+                filters["emp_division"] = "None"
+        elif is_member:
             filters["owner"] = user
-        elif not is_manager:
-            # For Stage Users (no manager/member role), we might limit by division if needed
-            # For now, let's keep it consistent with permission query
-            pass
+        else:
+            # For Stage Users (no manager/member role)
+            if allowed_divisions:
+                filters["emp_division"] = ["in", allowed_divisions]
+            else:
+                filters["emp_division"] = "None"
 
         total_pending = frappe.db.count("My Audits", {**filters, "status": "Pending"})
         high_risk = frappe.db.count("My Audits", {**filters, "risk": "High"})
@@ -61,7 +72,7 @@ def get_dashboard_stats():
         recent_list = frappe.get_all(
             "My Audits",
             filters=filters,
-            fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch"],
+            fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division"],
             order_by="creation desc",
             limit=10
         )
