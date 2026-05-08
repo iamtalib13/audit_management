@@ -10,7 +10,8 @@ def get_dashboard_stats():
     roles = frappe.get_roles(user)
 
     # ✅ Role flags
-    is_manager = "Audit Manager" in roles or "Administrator" in roles or "System Manager" in roles
+    is_admin = "Administrator" in roles or "System Manager" in roles
+    is_manager = "Audit Manager" in roles
     is_member = "Audit Member" in roles
 
     try:
@@ -50,7 +51,10 @@ def get_dashboard_stats():
         allowed_divisions = get_user_allowed_divisions(user)
         
         filters = {}
-        if is_manager:
+        if is_admin:
+            # ✅ Administrator / System Manager sees EVERYTHING
+            pass
+        elif is_manager:
             # ✅ RESTRICT BY DIVISION FOR AUDIT MANAGER
             if allowed_divisions:
                 filters["emp_division"] = ["in", allowed_divisions]
