@@ -3,6 +3,8 @@
 
 import frappe
 from frappe import _
+from frappe.utils import getdate, nowdate
+from audit_management.audit_management.utils import get_working_days
 
 def execute(filters=None):
 	columns = get_columns()
@@ -32,7 +34,7 @@ def get_columns():
 			"width": 150
 		},
 		{
-			"label": _("Target Date / TAT"),
+			"label": _("Target Date"),
 			"fieldname": "action_point_with_tat",
 			"fieldtype": "Data",
 			"width": 150
@@ -40,12 +42,40 @@ def get_columns():
 		{
 			"label": _("Implementation Status"),
 			"fieldname": "status",
-			"fieldtype": "Data",
+			"fieldtype": "Select",
+			"options": "Draft\nPending\nClose",
 			"width": 100
+		},
+		{
+			"label": _("Aging of Commitment"),
+			"fieldname": "aging_commitment",
+			"fieldtype": "Int",
+			"width": 150
 		}
 	]
 
 def get_data(filters):
-	return frappe.get_all("My Audits", 
-		fields=["name", "recommendations", "rca_category", "action_point_with_tat", "status"]
+	query_filters = {}
+	# Only track those with an RCA Category (Commitment)
+	query_filters["rca_category"] = ["is", "set"]
+	
+	if filters.get("rca_category"):
+		query_filters["rca_category"] = filters.get("rca_category")
+	
+	if filters.get("status"):
+		query_filters["status"] = filters.get("status")
+
+	audits = frappe.get_all("My Audits", 
+		filters=query_filters, 
+		fields=["name", "recommendations", "rca_category", "action_point_with_tat", "status", "modified"]
 	)
+
+	for audit in audits:
+		# Aging of commitment: from when it was last modified (committed) until now
+		# or if closed, maybe it's not aging anymore? 
+		# Usually, aging of commitment continues until it's implemented (Close)
+		start_date = getdate(audit.modified)
+		end_date = getdate(nowdate())
+		audit["aging_commitment"] = get_working_days(start_date, end_date)
+
+	return audits

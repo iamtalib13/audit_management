@@ -10,10 +10,10 @@
  "modified": "2026-04-17 12:00:00",
  "modified_by": "Administrator",
  "module": "Audit Management",
- "name": "Pending Audit Queries & Aging Report",
+ "name": "Pending Audit Queries Aging Report",
  "owner": "Administrator",
  "prepared_report": 0,
  "ref_doctype": "My Audits",
- "report_name": "Pending Audit Queries & Aging Report",
+ "report_name": "Pending Audit Queries Aging Report",
  "report_type": "Script Report"
 }
