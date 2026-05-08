@@ -13,168 +13,74 @@ def get_dashboard_stats():
     is_manager = "Audit Manager" in roles or "Administrator" in roles or "System Manager" in roles
     is_member = "Audit Member" in roles
 
-    # ✅ Detect Stage User (child table presence)
-    is_stage_user = frappe.db.exists("Audit Items", {
-        "user_id": user
-    }) or frappe.db.exists("Audit Items", {
-        "email": user
-    })
-
     try:
-        # ----------------------------------------
-        # 🟢 STAGE USER LOGIC (Child Table आधारित)
-        # ----------------------------------------
-        if is_stage_user and not is_manager:
-            pending_query = """
-                SELECT DISTINCT parent
-                FROM `tabAudit Items`
-                WHERE status = 'Pending'
-                AND (user_id = %s OR email = %s)
-            """
+        # 1. 🟢 FETCH PENDING FOR ME (From Child Table)
+        # --------------------------------------------
+        pending_items_query = """
+            SELECT DISTINCT parent
+            FROM `tabAudit Items`
+            WHERE status = 'Pending'
+            AND (user_id = %s OR email = %s)
+        """
+        responded_items_query = """
+            SELECT DISTINCT parent
+            FROM `tabAudit Items`
+            WHERE status = 'Responded'
+            AND (user_id = %s OR email = %s)
+        """
 
-            responded_query = """
-                SELECT DISTINCT parent
-                FROM `tabAudit Items`
-                WHERE status = 'Responded'
-                AND (user_id = %s OR email = %s)
-            """
+        pending_records = frappe.db.sql(pending_items_query, (user, user), as_dict=True)
+        responded_records = frappe.db.sql(responded_items_query, (user, user), as_dict=True)
 
-            pending_records = frappe.db.sql(pending_query, (user, user), as_dict=True)
-            responded_records = frappe.db.sql(responded_query, (user, user), as_dict=True)
+        pending_for_me_count = len(pending_records)
+        responded_by_me_count = len(responded_records)
 
-            pending_count = len(pending_records)
-            responded_count = len(responded_records)
-
-            # 🔹 Pending List
-            pending_list = []
-            for rec in pending_records:
-                audit = frappe.db.get_value(
-                    "My Audits",
-                    rec.parent,
-                    [
-                        "name",
-                        "audit_query_subject_box",
-                        "risk",
-                        "status",
-                        "emp_branch",
-                        "emp_division"
-                    ],
-                    as_dict=True
-                )
-                if audit:
-                    pending_list.append(audit)
-
-            return {
-                "role_type": "stage_user",
-                "pending_for_me": pending_count,
-                "total_pending": pending_count,
-                "responded_by_me": responded_count,
-                "pending_list": pending_list,
-                "recent_list": [],  # ✅ empty
-                "success": True
-            }
-
-        # ----------------------------------------
-        # 🟣 AUDIT MEMBER LOGIC (Own Records)
-        # ----------------------------------------
-        elif is_member and not is_manager:
-            filters = {"owner": user}
-
-            total_pending = frappe.db.count("My Audits", {
-                **filters,
-                "status": "Pending"
-            })
-
-            high_risk = frappe.db.count("My Audits", {
-                **filters,
-                "risk": "High"
-            })
-
-            closed_count = frappe.db.count("My Audits", {
-                "owner": user,
-                "status": "Close"
-            })
-
-            pending_list = frappe.get_all(
+        pending_for_me_list = []
+        if pending_records:
+            parent_names = [r.parent for r in pending_records]
+            pending_for_me_list = frappe.get_all(
                 "My Audits",
-                filters={"owner": user, "status": "Pending"},
-                fields=["name", "audit_query_subject_box", "risk"],
-                limit=10
-            )
-            
-            recent_list = frappe.get_all(
-                "My Audits",
-                filters={"owner": user} if is_member else {},
-                fields=[
-                    "name",
-                    "audit_query_subject_box",
-                    "risk",
-                    "status",
-                    "emp_branch",
-                    "emp_division"
-                ],
-                order_by="creation desc",
-                limit=10
+                filters={"name": ["in", parent_names]},
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch"]
             )
 
-            return {
-              "role_type": "member",
-              "pending_for_me": total_pending,
-              "total_pending": total_pending,
-              "high_risk": high_risk,
-              "closed_count": closed_count,
-              "pending_list": [],  # ❌ not used
-              "recent_list": recent_list,
-              "success": True
-            }
+        # 2. 🔵 FETCH GLOBAL/ROLE STATS
+        # --------------------------------------------
+        filters = {}
+        if is_member and not is_manager:
+            filters["owner"] = user
+        elif not is_manager:
+            # For Stage Users (no manager/member role), we might limit by division if needed
+            # For now, let's keep it consistent with permission query
+            pass
 
-        # ----------------------------------------
-        # 🔴 AUDIT MANAGER (Full Access)
-        # ----------------------------------------
-        else:
-            total_pending = frappe.db.count("My Audits", {
-                "status": "Pending"
-            })
- 
-            high_risk = frappe.db.count("My Audits", {
-                "risk": "High"
-            })
+        total_pending = frappe.db.count("My Audits", {**filters, "status": "Pending"})
+        high_risk = frappe.db.count("My Audits", {**filters, "risk": "High"})
+        closed_count = frappe.db.count("My Audits", {**filters, "status": "Close"})
 
-            closed_count = frappe.db.count("My Audits", {
-                "status": "Close"
-            })
+        recent_list = frappe.get_all(
+            "My Audits",
+            filters=filters,
+            fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch"],
+            order_by="creation desc",
+            limit=10
+        )
 
-            pending_list = frappe.get_all(
-                "My Audits",
-                filters={"status": "Pending"},
-                fields=["name", "audit_query_subject_box", "risk"],
-                limit=10
-            )
+        return {
+            "role_type": "manager" if is_manager else ("member" if is_member else "stage_user"),
+            "pending_for_me": pending_for_me_count,
+            "responded_by_me": responded_by_me_count,
+            "total_pending": total_pending,
+            "high_risk": high_risk,
+            "closed_count": closed_count,
+            "pending_list": pending_for_me_list,
+            "recent_list": recent_list if (is_manager or is_member) else [],
+            "success": True
+        }
 
-            recent_list = frappe.get_all(
-                "My Audits",
-                fields=[
-                    "name",
-                    "audit_query_subject_box",
-                    "risk",
-                    "status",
-                    "emp_branch",
-                    "emp_division"
-                ],
-                order_by="creation desc",
-                limit=10
-            )
-
-            return {
-                "role_type": "manager",
-                "pending_for_me": total_pending,
-                "total_pending": total_pending,
-                "high_risk": high_risk,
-                "closed_count": closed_count,
-                "pending_list": [],
-                "recent_list": recent_list,
-                "success": True
-            }
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Dashboard Stats Error")
+        return {"success": False}
 
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Dashboard Error")
