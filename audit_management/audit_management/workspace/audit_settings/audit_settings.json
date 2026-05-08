@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"MKlkhtKljW\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Audit Management\",\"col\":12}},{\"id\":\"p1n26giu2O\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Settings</span>\",\"col\":12}},{\"id\":\"Xci2NWrop2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New System Setting\",\"col\":3}},{\"id\":\"WXD3YZYEP2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Audit Stage\",\"col\":3}},{\"id\":\"y6Jsmeyasl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Audit Level\",\"col\":3}},{\"id\":\"9yl9jcnKea\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Query Type\",\"col\":3}},{\"id\":\"klyEUeXv6O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Query Category\",\"col\":3}},{\"id\":\"JRZb0B7W7g\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Audit Department\",\"col\":3}},{\"id\":\"vE20YhZ75X\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add RCA Category\",\"col\":3}}]",
+ "content": "[{\"id\":\"p1n26giu2O\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Settings</span>\",\"col\":12}},{\"id\":\"Xci2NWrop2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New System Setting\",\"col\":3}},{\"id\":\"WXD3YZYEP2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Audit Stage\",\"col\":3}},{\"id\":\"y6Jsmeyasl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Audit Level\",\"col\":3}},{\"id\":\"9yl9jcnKea\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Query Type\",\"col\":3}},{\"id\":\"klyEUeXv6O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Query Category\",\"col\":3}},{\"id\":\"JRZb0B7W7g\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add Audit Department\",\"col\":3}},{\"id\":\"vE20YhZ75X\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Add RCA Category\",\"col\":3}},{\"id\":\"MKlkhtKljW\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Audit Management\",\"col\":12}}]",
  "creation": "2026-04-22 13:34:12.997723",
  "custom_blocks": [
   {
@@ -29,7 +29,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-04-28 13:15:47.614283",
+ "modified": "2026-05-09 16:54:08.305450",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Settings",
