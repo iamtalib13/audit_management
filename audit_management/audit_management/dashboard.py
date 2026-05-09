@@ -5,9 +5,13 @@ import frappe
 from frappe import _
 
 @frappe.whitelist()
-def get_dashboard_stats():
+def get_dashboard_stats(pending_start=0, recent_start=0):
     user = frappe.session.user
     roles = frappe.get_roles(user)
+    
+    pending_start = int(pending_start)
+    recent_start = int(recent_start)
+    page_length = 10
 
     # ✅ Role flags
     is_admin = "Administrator" in roles or "System Manager" in roles
@@ -37,13 +41,24 @@ def get_dashboard_stats():
         responded_by_me_count = len(responded_records)
 
         pending_for_me_list = []
+        has_more_pending = False
         if pending_records:
             parent_names = [r.parent for r in pending_records]
             pending_for_me_list = frappe.get_all(
                 "My Audits",
                 filters={"name": ["in", parent_names]},
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division"]
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
+                limit_start=pending_start,
+                limit_page_length=page_length + 1
             )
+            
+            if len(pending_for_me_list) > page_length:
+                has_more_pending = True
+                pending_for_me_list = pending_for_me_list[:page_length]
+
+            # Add Sr. No.
+            for idx, item in enumerate(pending_for_me_list, start=pending_start + 1):
+                item["sr_no"] = idx
 
         # 2. 🔵 FETCH GLOBAL/ROLE STATS
         # --------------------------------------------
@@ -73,13 +88,48 @@ def get_dashboard_stats():
         high_risk = frappe.db.count("My Audits", {**filters, "risk": "High"})
         closed_count = frappe.db.count("My Audits", {**filters, "status": "Close"})
 
-        recent_list = frappe.get_all(
-            "My Audits",
-            filters=filters,
-            fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division"],
-            order_by="creation desc",
-            limit=10
-        )
+        recent_list = []
+        has_more_recent = False
+        if is_manager or is_member:
+            recent_list = frappe.get_all(
+                "My Audits",
+                filters=filters,
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
+                order_by="creation desc",
+                limit_start=recent_start,
+                limit_page_length=page_length + 1
+            )
+            
+            if len(recent_list) > page_length:
+                has_more_recent = True
+                recent_list = recent_list[:page_length]
+
+            # Add Sr. No.
+            for idx, item in enumerate(recent_list, start=recent_start + 1):
+                item["sr_no"] = idx
+
+        # 3. 🟣 ENHANCE BRANCH COLUMN WITH SOL ID
+        # --------------------------------------------
+        all_lists = pending_for_me_list + recent_list
+        if all_lists:
+            audit_levels = list(set([i.emp_branch for i in all_lists if i.emp_branch]))
+            if audit_levels:
+                level_data = frappe.get_all("Audit Level", filters={"name": ["in", audit_levels]}, fields=["name", "emp_branch as sahayog_branch"])
+                level_map = {d.name: d.sahayog_branch for d in level_data}
+                
+                sahayog_branches = list(set([d.sahayog_branch for d in level_data if d.sahayog_branch]))
+                if sahayog_branches:
+                    branch_data = frappe.get_all("Sahayog Branch", filters={"name": ["in", sahayog_branches]}, fields=["name", "branch", "sol_id"])
+                    branch_details_map = {d.name: {"name": d.branch, "sol": d.sol_id} for d in branch_data}
+                    
+                    for item in all_lists:
+                        s_branch_key = level_map.get(item.emp_branch)
+                        if s_branch_key:
+                            details = branch_details_map.get(s_branch_key)
+                            if details:
+                                b_name = details.get("name")
+                                b_sol = details.get("sol")
+                                item.emp_branch = f"{b_name} ({b_sol})" if b_name and b_sol else (b_name or b_sol or s_branch_key)
 
         return {
             "role_type": "manager" if is_manager else ("member" if is_member else "stage_user"),
@@ -89,7 +139,9 @@ def get_dashboard_stats():
             "high_risk": high_risk,
             "closed_count": closed_count,
             "pending_list": pending_for_me_list,
-            "recent_list": recent_list if (is_manager or is_member) else [],
+            "recent_list": recent_list,
+            "has_more_pending": has_more_pending,
+            "has_more_recent": has_more_recent,
             "success": True
         }
 
