@@ -30,27 +30,41 @@ def update_audit_aging(doc):
     
     doc.aging = get_working_days(start_date, end_date)
 
-def get_user_allowed_divisions(user):
-    """Fetch allowed divisions for a user based on Audit Management Settings."""
+def get_user_allowed_divisions(user=None):
+    """
+    Fetch all divisions user can access.
+
+    Includes:
+    - User's own division
+    - Cross division mappings from settings
+    """
+
+    if not user:
+        user = frappe.session.user
+
+    # Get employee division
     user_div = frappe.db.get_value(
-        "Employee", {"user_id": user}, "custom_division"
+        "Employee",
+        {"user_id": user},
+        "custom_division"
     )
 
     if not user_div:
         return []
 
+    allowed_divisions = {user_div}
+
     settings = frappe.get_single("Audit Management Settings")
 
-    if not hasattr(settings, "division_permissions") or not settings.division_permissions:
-        return [user_div]
+    if not getattr(settings, "division_permissions", None):
+        return list(allowed_divisions)
 
-    allowed = [
-        row.allowed_division
-        for row in settings.division_permissions
-        if row.source_division == user_div
-    ]
+    # Add mapped divisions
+    for row in settings.division_permissions:
+        if (
+            row.source_division == user_div
+            and row.allowed_division
+        ):
+            allowed_divisions.add(row.allowed_division)
 
-    if user_div not in allowed:
-        allowed.append(user_div)
-
-    return allowed
+    return list(allowed_divisions)
