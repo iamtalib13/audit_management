@@ -108,6 +108,29 @@ def get_dashboard_stats(pending_start=0, recent_start=0):
             for idx, item in enumerate(recent_list, start=recent_start + 1):
                 item["sr_no"] = idx
 
+        # 3. 🟣 ENHANCE BRANCH COLUMN WITH SOL ID
+        # --------------------------------------------
+        all_lists = pending_for_me_list + recent_list
+        if all_lists:
+            audit_levels = list(set([i.emp_branch for i in all_lists if i.emp_branch]))
+            if audit_levels:
+                level_data = frappe.get_all("Audit Level", filters={"name": ["in", audit_levels]}, fields=["name", "emp_branch as sahayog_branch"])
+                level_map = {d.name: d.sahayog_branch for d in level_data}
+                
+                sahayog_branches = list(set([d.sahayog_branch for d in level_data if d.sahayog_branch]))
+                if sahayog_branches:
+                    branch_data = frappe.get_all("Sahayog Branch", filters={"name": ["in", sahayog_branches]}, fields=["name", "branch", "sol_id"])
+                    branch_details_map = {d.name: {"name": d.branch, "sol": d.sol_id} for d in branch_data}
+                    
+                    for item in all_lists:
+                        s_branch_key = level_map.get(item.emp_branch)
+                        if s_branch_key:
+                            details = branch_details_map.get(s_branch_key)
+                            if details:
+                                b_name = details.get("name")
+                                b_sol = details.get("sol")
+                                item.emp_branch = f"{b_name} ({b_sol})" if b_name and b_sol else (b_name or b_sol or s_branch_key)
+
         return {
             "role_type": "manager" if is_manager else ("member" if is_member else "stage_user"),
             "pending_for_me": pending_for_me_count,
