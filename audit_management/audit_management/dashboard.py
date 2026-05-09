@@ -5,9 +5,13 @@ import frappe
 from frappe import _
 
 @frappe.whitelist()
-def get_dashboard_stats():
+def get_dashboard_stats(pending_start=0, recent_start=0):
     user = frappe.session.user
     roles = frappe.get_roles(user)
+    
+    pending_start = int(pending_start)
+    recent_start = int(recent_start)
+    page_length = 10
 
     # ✅ Role flags
     is_admin = "Administrator" in roles or "System Manager" in roles
@@ -37,15 +41,23 @@ def get_dashboard_stats():
         responded_by_me_count = len(responded_records)
 
         pending_for_me_list = []
+        has_more_pending = False
         if pending_records:
             parent_names = [r.parent for r in pending_records]
             pending_for_me_list = frappe.get_all(
                 "My Audits",
                 filters={"name": ["in", parent_names]},
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"]
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
+                limit_start=pending_start,
+                limit_page_length=page_length + 1
             )
+            
+            if len(pending_for_me_list) > page_length:
+                has_more_pending = True
+                pending_for_me_list = pending_for_me_list[:page_length]
+
             # Add Sr. No.
-            for idx, item in enumerate(pending_for_me_list, start=1):
+            for idx, item in enumerate(pending_for_me_list, start=pending_start + 1):
                 item["sr_no"] = idx
 
         # 2. 🔵 FETCH GLOBAL/ROLE STATS
@@ -76,16 +88,25 @@ def get_dashboard_stats():
         high_risk = frappe.db.count("My Audits", {**filters, "risk": "High"})
         closed_count = frappe.db.count("My Audits", {**filters, "status": "Close"})
 
-        recent_list = frappe.get_all(
-            "My Audits",
-            filters=filters,
-            fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
-            order_by="creation desc",
-            limit=10
-        )
-        # Add Sr. No.
-        for idx, item in enumerate(recent_list, start=1):
-            item["sr_no"] = idx
+        recent_list = []
+        has_more_recent = False
+        if is_manager or is_member:
+            recent_list = frappe.get_all(
+                "My Audits",
+                filters=filters,
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
+                order_by="creation desc",
+                limit_start=recent_start,
+                limit_page_length=page_length + 1
+            )
+            
+            if len(recent_list) > page_length:
+                has_more_recent = True
+                recent_list = recent_list[:page_length]
+
+            # Add Sr. No.
+            for idx, item in enumerate(recent_list, start=recent_start + 1):
+                item["sr_no"] = idx
 
         return {
             "role_type": "manager" if is_manager else ("member" if is_member else "stage_user"),
@@ -95,7 +116,9 @@ def get_dashboard_stats():
             "high_risk": high_risk,
             "closed_count": closed_count,
             "pending_list": pending_for_me_list,
-            "recent_list": recent_list if (is_manager or is_member) else [],
+            "recent_list": recent_list,
+            "has_more_pending": has_more_pending,
+            "has_more_recent": has_more_recent,
             "success": True
         }
 
