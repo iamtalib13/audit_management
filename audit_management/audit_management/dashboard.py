@@ -42,7 +42,7 @@ def get_dashboard_stats():
             pending_for_me_list = frappe.get_all(
                 "My Audits",
                 filters={"name": ["in", parent_names]},
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division"]
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"]
             )
             # Add Sr. No.
             for idx, item in enumerate(pending_for_me_list, start=1):
@@ -79,7 +79,7 @@ def get_dashboard_stats():
         recent_list = frappe.get_all(
             "My Audits",
             filters=filters,
-            fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division"],
+            fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
             order_by="creation desc",
             limit=10
         )
