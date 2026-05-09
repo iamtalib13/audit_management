@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:{emp_branch}-{DD}{MM}{YYYY}-{###}",
+ "autoname": "format:{emp_branch}-{DD}{MM}{YY}-{###}",
  "creation": "2024-09-02 15:38:12.323236",
  "default_view": "List",
  "doctype": "DocType",
@@ -1225,7 +1225,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-27 15:48:15.407169",
+ "modified": "2026-05-09 12:28:06.947259",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
