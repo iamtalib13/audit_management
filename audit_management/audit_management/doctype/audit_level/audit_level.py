@@ -82,16 +82,31 @@ class AuditLevel(Document):
                                 "Employee", row.employee, "company_email", row.email)
 
     def autoname(self):
-            # Fetch the branch name using the linked ID
-            branch_name = frappe.db.get_value("Sahayog Branch", self.emp_branch, "branch") or "NA"
+        # Fetch SOL ID from linked branch
+        sol_id = frappe.db.get_value(
+            "Sahayog Branch",
+            self.emp_branch,
+            "sol_id"
+        ) or "NA"
 
-            
-            # Example: Format as BRANCH-YYYY-#####
-           # Adjust the format string to your preference
-            self.name = f"Audit-{self.division}-{branch_name}"
-           # Or if you are using standard Naming Series:
-           # self.name = frappe.model.naming.make_autoname(f"{branch_name}-.#####")
+        division = (self.division or "").strip()
 
+        # Generate smart division abbreviation
+        words = division.split()
+
+        if len(words) == 1:
+            # Single word → first 3 chars
+            division_abbr = words[0][:3].upper()
+
+        elif words[0].isupper() and len(words[0]) <= 5:
+            # Existing acronym like JLL, HR, IT
+            division_abbr = words[0].upper()
+
+        else:
+            # Multi-word → initials
+            division_abbr = "".join(word[0] for word in words).upper()
+
+        self.name = f"{sol_id}-{division_abbr}"
 
 @frappe.whitelist()
 def fetch_employee(employee_id):
