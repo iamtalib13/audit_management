@@ -44,6 +44,9 @@ def get_dashboard_stats():
                 filters={"name": ["in", parent_names]},
                 fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division"]
             )
+            # Add Sr. No.
+            for idx, item in enumerate(pending_for_me_list, start=1):
+                item["sr_no"] = idx
 
         # 2. 🔵 FETCH GLOBAL/ROLE STATS
         # --------------------------------------------
@@ -80,6 +83,9 @@ def get_dashboard_stats():
             order_by="creation desc",
             limit=10
         )
+        # Add Sr. No.
+        for idx, item in enumerate(recent_list, start=1):
+            item["sr_no"] = idx
 
         return {
             "role_type": "manager" if is_manager else ("member" if is_member else "stage_user"),
