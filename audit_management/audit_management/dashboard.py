@@ -87,6 +87,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0):
         total_pending = frappe.db.count("My Audits", {**filters, "status": "Pending"})
         high_risk = frappe.db.count("My Audits", {**filters, "risk": "High"})
         closed_count = frappe.db.count("My Audits", {**filters, "status": "Close"})
+        draft_count = frappe.db.count("My Audits", {**filters, "status": "Draft"})
 
         recent_list = []
         has_more_recent = False
@@ -138,6 +139,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0):
             "total_pending": total_pending,
             "high_risk": high_risk,
             "closed_count": closed_count,
+            "draft_count": draft_count,
             "pending_list": pending_for_me_list,
             "recent_list": recent_list,
             "has_more_pending": has_more_pending,
