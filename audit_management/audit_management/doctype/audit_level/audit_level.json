@@ -9,6 +9,7 @@
  "engine": "InnoDB",
  "field_order": [
   "emp_branch",
+  "sahayog_branch",
   "column_break_usmq",
   "division",
   "stage_1_bm_section",
@@ -421,14 +422,15 @@
   {
    "fieldname": "emp_branch",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Branch",
-   "options": "Sahayog Branch"
+   "options": "Branch"
   },
   {
    "fieldname": "division",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Division",
-   "read_only": 1
+   "options": "Division"
   },
   {
    "fieldname": "column_break_v1upb",
@@ -742,11 +744,17 @@
   {
    "fieldname": "column_break_usmq",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sahayog_branch",
+   "fieldtype": "Link",
+   "label": "Sahayog Branch",
+   "options": "Sahayog Branch"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-28 16:19:14.545283",
+ "modified": "2026-05-12 10:48:32.608825",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",
