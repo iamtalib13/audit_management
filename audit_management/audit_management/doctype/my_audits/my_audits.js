@@ -2354,7 +2354,8 @@ function open_stages_modal(frm) {
                 target_row.idx = idx + 1; // Required by Frappe for sequence tracking
                 
                 if (!target_row.status) {
-                    target_row.status = 'Pending';
+                    // target_row.status = 'Pending';
+                    target_row.status = '';
                 }
             });
             
