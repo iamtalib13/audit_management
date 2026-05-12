@@ -782,11 +782,15 @@ def get_permission_query_conditions(user=None):
         (
             (`tabMy Audits`.status = 'Draft' AND `tabMy Audits`.owner = '{user}')
             OR
-            ({pending_condition})
-            OR
-            ({responded_condition})
-            OR 
             (`tabMy Audits`.owner = '{user}' AND `tabMy Audits`.emp_division IN ({divisions_sql}))
+            OR
+            (
+                `tabMy Audits`.status != 'Draft' AND (
+                    ({pending_condition})
+                    OR
+                    ({responded_condition})
+                )
+            )
         )
     """
 
