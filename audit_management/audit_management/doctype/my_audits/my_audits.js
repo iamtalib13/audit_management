@@ -51,6 +51,15 @@ frappe.ui.form.on("My Audits", {
   },
 
   refresh: function (frm) {
+    // Filter branch (Audit Level) based on the current user's division
+    frm.set_query("emp_branch", function() {
+        return {
+            filters: {
+                "division": frm.doc.emp_division
+            }
+        };
+    });
+
     if (frm.is_new()) {
         // Fetch current user employee details for UI immediate display
         frappe.db.get_value('Employee', { user_id: frappe.session.user }, 
