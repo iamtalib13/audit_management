@@ -160,7 +160,7 @@ def execute():
                         "employee": emp,
                         "employee_name": emp_name,
                         "email": email,
-                        "status": doc.get(f"{prefix}_user_status") or "Pending",
+                        "status": doc.get(f"{prefix}_user_status"),
                         "response": doc.get(f"{prefix}_response_box"),
                         "attachment": doc.get(f"{prefix}_attach_box"),
                         "pending_time": doc.get(f"{prefix}_pending_time")
