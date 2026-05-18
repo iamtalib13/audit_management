@@ -82,29 +82,39 @@ class AuditLevel(Document):
                                 "Employee", row.employee, "company_email", row.email)
 
     def autoname(self):
-        if not self.division:
-            self.division = get_user_division()
+        # Fetch SOL ID from linked Sahayog Branch
+        if not self.sahayog_branch:
+            # Fallback to legacy field if sahayog_branch is not yet selected during migration
+            branch_to_use = self.sahayog_branch or self.emp_branch
+            if not branch_to_use:
+                frappe.throw("Sahayog Branch is mandatory for naming.")
+        else:
+            branch_to_use = self.sahayog_branch
 
-        sol_id = self.sahayog_branch
-
-        if not sol_id:
-            frappe.throw("Sahayog Branch is mandatory before naming.")
+        sol_id = frappe.db.get_value(
+            "Sahayog Branch",
+            branch_to_use,
+            "sol_id"
+        ) or "NA"
 
         division = (self.division or "").strip()
 
+        # Generate smart division abbreviation
         words = division.split()
 
         if len(words) == 1:
+            # Single word → first 3 chars
             division_abbr = words[0][:3].upper()
 
         elif words[0].isupper() and len(words[0]) <= 5:
+            # Existing acronym like JLL, HR, IT
             division_abbr = words[0].upper()
 
         else:
+            # Multi-word → initials
             division_abbr = "".join(word[0] for word in words).upper()
 
-        self.name = f"{sol_id}-{division_abbr}"
-            
+        self.name = f"{sol_id}-{division_abbr}"            
 @frappe.whitelist()
 def fetch_employee(employee_id):
     """Fetch employee data safely using Frappe API instead of raw SQL."""
