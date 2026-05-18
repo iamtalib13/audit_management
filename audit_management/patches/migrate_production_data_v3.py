@@ -1,94 +1,169 @@
 import frappe
 
-def ensure_branch_exists(branch_name):
-    if branch_name and not frappe.db.exists("Branch", branch_name):
-        frappe.get_doc({"doctype": "Branch", "branch": branch_name}).insert(ignore_permissions=True)
+
+def get_division_from_user(user):
+    """Helper to fetch division from Employee record linked to user."""
+    if not user:
+        return None
+    
+    # Check Employee linked to user_id
+    emp = frappe.db.get_value(
+        "Employee", 
+        {"user_id": user}, 
+        ["custom_division", "department"], 
+        as_dict=True
+    )
+    
+    if emp:
+        return emp.custom_division or emp.department
+    return None
+
 
 def execute():
-    # 1. Ensure Audit Stages exist
-    stages = ["BM", "DH", "COM", "RM", "ROM", "ZM", "ZOM", "GM", "HR", "COO", "CEO"]
+    """
+    PRODUCTION-GRADE MIGRATION PATCH (V3)
+    Focus: Audit Level Setup with robust SOL-based branch mapping and division set.
+    """
+    print("\n================ PATCH V3 STARTED (Audit Level) ================\n")
+
+    summary = {
+        "total": 0,
+        "success": 0,
+        "failed": 0,
+        "division_updated": 0,
+        "branch_updated": 0,
+        "stages_populated": 0
+    }
+
+    stages = [
+        "BM", "DH", "COM", "RM", "ROM",
+        "ZM", "ZOM", "GM", "HR", "CHRO", "COO", "CFO", "CEO"
+    ]
+
     for s in stages:
         if not frappe.db.exists("Audit Stage", s):
             try:
                 frappe.get_doc({"doctype": "Audit Stage", "name": s, "stage_name": s}).insert(ignore_permissions=True)
-            except Exception: pass
+                print(f"Created Audit Stage: {s}")
+            except Exception:
+                frappe.log_error(title=f"Audit Stage Creation Failed - {s}")
 
-    # 2. Migrate Audit Level
-    for al in frappe.get_all("Audit Level", pluck="name"):
-        try:
-            doc = frappe.get_doc("Audit Level", al)
-            if doc.get("audit_stages"): continue
-            
-            mapping = [
-                {"stage": 1, "name": "BM",  "user": doc.stage_1_bm_user_id,  "emp": doc.stage_1_bm_emp_id, "n": doc.stage_1_bm_name},
-                {"stage": 2, "name": "DH",  "user": doc.stage_2_dh_user_id,  "emp": doc.stage_2_dh_emp_id, "n": doc.stage_2_dh_name},
-                {"stage": 2, "name": "COM", "user": doc.stage_2_com_user_id, "emp": doc.stage_2_com_emp_id, "n": doc.stage_2_com_name},
-                {"stage": 3, "name": "RM",  "user": doc.stage_3_rm_user_id,  "emp": doc.stage_3_rm_emp_id, "n": doc.stage_3_rm_name},
-                {"stage": 3, "name": "ROM", "user": doc.stage_3_rom_user_id, "emp": doc.stage_3_rom_emp_id, "n": doc.stage_3_rom_name},
-                {"stage": 4, "name": "ZM",  "user": doc.stage_4_zm_user_id,  "emp": doc.stage_4_zm_emp_id, "n": doc.stage_4_zm_name},
-                {"stage": 4, "name": "ZOM", "user": doc.stage_4_zom_user_id, "emp": doc.stage_4_zom_emp_id, "n": doc.stage_4_zom_name},
-                {"stage": 5, "name": "GM",  "user": doc.stage_5_gm_user_id,  "emp": doc.stage_5_gm_emp_id, "n": doc.stage_5_gm_name},
-                {"stage": 6, "name": "HR",  "user": doc.stage_6_hr_user_id,  "emp": doc.stage_6_hr_emp_id, "n": doc.stage_6_hr_name},
-                {"stage": 8, "name": "COO", "user": doc.stage_8_coo_user_id, "emp": doc.stage_8_coo_emp_id, "n": doc.stage_8_coo_name},
-                {"stage": 10,"name": "CEO", "user": doc.stage_10_ceo_user_id,"emp": doc.stage_10_ceo_emp_id, "n": doc.stage_10_ceo_name},
-            ]
-            for s in mapping:
-                if s.get("emp"):
-                    doc.append("audit_stages", {"stage": s["stage"], "stage_name": s["name"], "employee": s["emp"], "user_id": s["user"], "employee_name": s["n"], "status": "Pending"})
-            doc.flags.ignore_links = True
-            doc.flags.ignore_mandatory = True
-            doc.save(ignore_permissions=True)
-            frappe.db.commit()
-        except Exception:
-            frappe.db.rollback()
-            frappe.log_error(frappe.get_traceback(), f"Audit Level Migration Failed: {al}")
-
-    # 3. Migrate My Audits (using the logic that worked for you)
-    ma_mapping = [
-        {"prefix": "bm", "stage": 1, "label": "BM"},
-        {"prefix": "dh", "stage": 2, "label": "DH"},
-        {"prefix": "com", "stage": 2, "label": "COM"},
-        {"prefix": "rm", "stage": 3, "label": "RM"},
-        {"prefix": "rom", "stage": 3, "label": "ROM"},
-        {"prefix": "zm", "stage": 4, "label": "ZM"},
-        {"prefix": "zom", "stage": 4, "label": "ZOM"},
-        {"prefix": "gm", "stage": 5, "label": "GM"},
-        {"prefix": "hr", "stage": 6, "label": "HR"},
-        {"prefix": "coo", "stage": 7, "label": "COO"},
-        {"prefix": "ceo", "stage": 8, "label": "CEO"}
+    al_mapping = [
+        {"stage": 1, "name": "BM", "prefix": "stage_1_bm"},
+        {"stage": 2, "name": "DH", "prefix": "stage_2_dh"},
+        {"stage": 2, "name": "COM", "prefix": "stage_2_com"},
+        {"stage": 3, "name": "RM", "prefix": "stage_3_rm"},
+        {"stage": 3, "name": "ROM", "prefix": "stage_3_rom"},
+        {"stage": 4, "name": "ZM", "prefix": "stage_4_zm"},
+        {"stage": 4, "name": "ZOM", "prefix": "stage_4_zom"},
+        {"stage": 5, "name": "GM", "prefix": "stage_5_gm"},
+        {"stage": 6, "name": "HR", "prefix": "stage_6_hr"},
+        {"stage": 7, "name": "CHRO", "prefix": "stage_7_chro"},
+        {"stage": 8, "name": "COO", "prefix": "stage_8_coo"},
+        {"stage": 9, "name": "CFO", "prefix": "stage_9_cfo"},
+        {"stage": 10, "name": "CEO", "prefix": "stage_10_ceo"},
     ]
-    for ma in frappe.get_all("My Audits", pluck="name"):
+
+    all_al = frappe.get_all("Audit Level", pluck="name")
+    summary["total"] = len(all_al)
+
+    processed = 0
+    for al_name in all_al:
+        processed += 1
         try:
-            doc = frappe.get_doc("My Audits", ma)
-            if doc.get("audit_stages"): continue
-            ensure_branch_exists(doc.emp_branch)
-            
-            has_data = False
-            for m in ma_mapping:
-                uid = doc.get(f"{m['prefix']}_user_id")
-                eml = doc.get(f"{m['prefix']}_mail")
-                emp = None
-                if uid: emp = frappe.db.get_value("Employee", {"user_id": uid}, "name")
-                if not emp and eml: emp = frappe.db.get_value("Employee", {"company_email": eml}, "name")
+            print(f"Processing Audit Level: {al_name}")
+            doc = frappe.get_doc("Audit Level", al_name)
+            updated = False
+
+            # A. Set Division from Owner
+            if not doc.division:
+                div = get_division_from_user(doc.owner)
+                if div:
+                    doc.division = div
+                    summary["division_updated"] += 1
+                    updated = True
+                    print(f"  [SET] Division: {div}")
+
+            # B. Set Sahayog Branch (SOL Match -> Name Match)
+            if not doc.sahayog_branch and doc.emp_branch:
+                # Normalization
+                branch_name = (doc.emp_branch or "").strip()
                 
-                if emp:
+                # 1. Get SOL ID from old Branch Doctype
+                sol_id = frappe.db.get_value("Branch", branch_name, "sol_id")
+                
+                # 2. Match using SOL ID
+                if sol_id:
+                    sb = frappe.db.get_value("Sahayog Branch", {"sol_id": sol_id}, "name")
+                    if sb:
+                        doc.sahayog_branch = sb
+                        updated = True
+                        summary["branch_updated"] += 1
+                        print(f"  [SOL MATCH] {branch_name} -> {sb}")
+
+                # 3. Name fallback
+                if not doc.sahayog_branch:
+                    sb = frappe.db.get_value("Sahayog Branch", {"branch": branch_name}, "name")
+                    if not sb and frappe.db.exists("Sahayog Branch", branch_name):
+                        sb = branch_name # Direct match
+                        
+                    if sb:
+                        doc.sahayog_branch = sb
+                        updated = True
+                        summary["branch_updated"] += 1
+                        print(f"  [NAME MATCH] {branch_name} -> {sb}")
+                
+                # Log failure
+                if not doc.sahayog_branch:
+                    print(f"  [MISSING] Sahayog Branch not found for {branch_name}")
+                    frappe.log_error(
+                        title="Missing Sahayog Branch Mapping",
+                        message=f"Audit Level: {doc.name}\nBranch: {branch_name}\nSOL ID: {sol_id}"
+                    )
+
+            # C. Populate Audit Stages
+            existing_stages = [d.stage_name for d in doc.audit_stages]
+            stages_added = 0
+            for m in al_mapping:
+                if m["name"] in existing_stages: continue
+                
+                p = m["prefix"]
+                emp_id = doc.get(f"{p}_emp_id") or (doc.get("stage_9_cfo_emp_id") if m["name"] == "CFO" else None)
+                
+                if emp_id:
                     doc.append("audit_stages", {
-                        "stage": m["stage"], "stage_name": m["label"],
-                        "employee": emp, "user_id": uid,
-                        "employee_name": doc.get(f"{m['prefix']}_name"),
-                        "email": eml,
-                        "status": doc.get(f"{m['prefix']}_user_status") or "Pending",
-                        "response": doc.get(f"{m['prefix']}_response_box"),
-                        "attachment": doc.get(f"{m['prefix']}_attach_box"),
-                        "pending_time": doc.get(f"{m['prefix']}_pending_time")
+                        "stage": m["stage"],
+                        "stage_name": m["name"],
+                        "employee": emp_id,
+                        "user_id": doc.get(f"{p}_user_id") or (doc.get("stage_9_user_id") if m["name"] == "CFO" else None),
+                        "employee_name": doc.get(f"{p}_name") or (doc.get("stage_9_cfo_name") if m["name"] == "CFO" else None),
+                        "email": doc.get(f"{p}_mail") or (doc.get("stage_9_cfo_mail") if m["name"] == "CFO" else None),
                     })
-                    has_data = True
-            
-            if has_data:
-                doc.flags.ignore_links = True
+                    stages_added += 1
+                    updated = True
+
+            if stages_added > 0:
+                summary["stages_populated"] += 1
+
+            if updated:
+                doc.flags.ignore_validate = True
                 doc.flags.ignore_mandatory = True
+                doc.flags.ignore_links = True
+                doc.flags.ignore_version = True  # Added ignore_version
                 doc.save(ignore_permissions=True)
-                frappe.db.commit()
-        except Exception:
+                
+                if processed % 50 == 0:
+                    frappe.db.commit()
+            
+            summary["success"] += 1
+
+        except Exception as e:
             frappe.db.rollback()
-            frappe.log_error(frappe.get_traceback(), f"My Audits Migration Failed: {ma}")
+            summary["failed"] += 1
+            print(f"  [FAILED] {al_name}: {str(e)}")
+            frappe.log_error(title=f"Audit Level Migration Failed - {al_name}")
+
+    frappe.db.commit() # Final commit
+    print("\n================ MIGRATION SUMMARY (V3) ================")
+    for key, val in summary.items(): print(f"{key.replace('_', ' ').title()}: {val}")
+    print("========================================================\n")
