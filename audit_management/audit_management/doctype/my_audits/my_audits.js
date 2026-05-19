@@ -52,36 +52,50 @@ frappe.ui.form.on("My Audits", {
 
   refresh: function (frm) {
     // Filter branch (Audit Level) based on the current user's division
-    frm.set_query("emp_branch", function() {
-        return {
-            filters: {
-                "division": frm.doc.emp_division
-            }
-        };
+    frm.set_query("emp_branch", function () {
+      return {
+        filters: {
+          division: frm.doc.emp_division,
+        },
+      };
     });
 
     if (frm.is_new()) {
-        // Fetch current user employee details for UI immediate display
-        frappe.db.get_value('Employee', { user_id: frappe.session.user }, 
-            ['name', 'employee_name', 'company_email', 'designation', 'branch', 'custom_division'], 
-            (employee) => {
-                if (employee) {
-                    frm.set_value('query_generated_by_empid', employee.name);
-                    frm.set_value('query_generated_by_name', employee.employee_name);
-                    frm.set_value('query_generated_by_mail', employee.company_email);
-                    frm.set_value('query_generated_by_designation', employee.designation);
-                    frm.set_value('query_generated_by_branch', employee.branch);
-                    frm.set_value('emp_division', employee.custom_division);
-                }
-            }
-        );
+      // Fetch current user employee details for UI immediate display
+      frappe.db.get_value(
+        "Employee",
+        { user_id: frappe.session.user },
+        [
+          "name",
+          "employee_name",
+          "company_email",
+          "designation",
+          "branch",
+          "custom_division",
+        ],
+        (employee) => {
+          if (employee) {
+            frm.set_value("query_generated_by_empid", employee.name);
+            frm.set_value("query_generated_by_name", employee.employee_name);
+            frm.set_value("query_generated_by_mail", employee.company_email);
+            frm.set_value(
+              "query_generated_by_designation",
+              employee.designation,
+            );
+            frm.set_value("query_generated_by_branch", employee.branch);
+            frm.set_value("emp_division", employee.custom_division);
+          }
+        },
+      );
     }
-    
-    // 1. Check if user has permission to edit the tracker
-    let can_edit = frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member");
 
-        // 2. Render the Interactive Tracker
-        // render_interactive_tracker(frm, can_edit);
+    // 1. Check if user has permission to edit the tracker
+    let can_edit =
+      frappe.user_roles.includes("Audit Manager") ||
+      frappe.user_roles.includes("Audit Member");
+
+    // 2. Render the Interactive Tracker
+    // render_interactive_tracker(frm, can_edit);
 
     // let logged_in_user = frappe.session.user;
     //     console.log("Logged In User ID:", logged_in_user);
@@ -95,7 +109,6 @@ frappe.ui.form.on("My Audits", {
     //                 // console.log("Employee Details:", employee);
     //                 console.log("Custom Division:", employee.custom_division); // ✅ correct key
     //                 // frm.set_df_property('custom_division', 'read_only', 1);
-
 
     //                 // ✅ Set emp_division field on the form
     //                 frm.set_value('emp_division', employee.custom_division);
@@ -122,31 +135,28 @@ frappe.ui.form.on("My Audits", {
           frm.trigger("old_system_refresh");
         }
       });
-      // 🌟 FINAL FIX: KEEP STATUS AS "DRAFT", SHOW SAVE ONLY ON MODIFY 🌟
-        if (!frm.is_new()) {
-            // Wait for background scripts (like employee data fetches) to finish
-            setTimeout(() => {
-                
-                // 1. Tell Frappe the form is "clean" (Not modified)
-                frm.doc.__unsaved = 0;
-                
-                // 2. Hide the Save button manually without touching the "Draft" header status!
-                frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
-                
-            }, 800);
-            
-            // 3. Optional: Add a real-time listener. 
-            // If Frappe ever forces it back on, this ensures it only stays visible if the form is actually modified.
-            setInterval(() => {
-                if (!frm.is_dirty()) {
-                    frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
-                } else {
-                    frm.page.wrapper.find('.primary-action[data-label="Save"]').show();
-                }
-            }, 1000);
-        } 
-  },
+    // 🌟 FINAL FIX: KEEP STATUS AS "DRAFT", SHOW SAVE ONLY ON MODIFY 🌟
+    if (!frm.is_new()) {
+      // Wait for background scripts (like employee data fetches) to finish
+      setTimeout(() => {
+        // 1. Tell Frappe the form is "clean" (Not modified)
+        frm.doc.__unsaved = 0;
 
+        // 2. Hide the Save button manually without touching the "Draft" header status!
+        frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
+      }, 800);
+
+      // 3. Optional: Add a real-time listener.
+      // If Frappe ever forces it back on, this ensures it only stays visible if the form is actually modified.
+      setInterval(() => {
+        if (!frm.is_dirty()) {
+          frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
+        } else {
+          frm.page.wrapper.find('.primary-action[data-label="Save"]').show();
+        }
+      }, 1000);
+    }
+  },
 
   // refresh: function(frm) {
   //       // 1. Check if user has permission to edit the tracker
@@ -162,7 +172,9 @@ frappe.ui.form.on("My Audits", {
     frm.trigger("handle_read_only_new");
 
     // ✅ ADD THIS HERE (Ensure it loads the new interactive one)
-    let can_edit = frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member");
+    let can_edit =
+      frappe.user_roles.includes("Audit Manager") ||
+      frappe.user_roles.includes("Audit Member");
     render_interactive_tracker(frm, can_edit);
 
     // Ensure audit_stages is visible and well-formatted
@@ -517,10 +529,9 @@ frappe.ui.form.on("My Audits", {
   //   }
   // },
 
-
   //   setup_dynamic_buttons: function (frm) {
   //   if (frm.is_new() || frm.doc.status === "Close") return;
-    
+
   //   const is_audit_team =
   //     frappe.user.has_role("Audit Manager") ||
   //     frappe.user.has_role("Audit Member");
@@ -567,11 +578,11 @@ frappe.ui.form.on("My Audits", {
   //   const pending_row = (frm.doc.audit_stages || []).find(
   //     (row) => row.status === "Pending" && row.user_id === current_user,
   //   );
-    
+
   //   if (pending_row) {
   //     frm
   //       .add_custom_button(__("Submit Response"), function () {
-            
+
   //         // Create the Modal Dialog
   //         let d = new frappe.ui.Dialog({
   //           title: __("Submit Audit Response"),
@@ -620,407 +631,406 @@ frappe.ui.form.on("My Audits", {
   //   }
   // },
 
-// current working 
-//   setup_dynamic_buttons: function (frm) {
-//   if (frm.is_new() || frm.doc.status === "Close") return;
+  // current working
+  //   setup_dynamic_buttons: function (frm) {
+  //   if (frm.is_new() || frm.doc.status === "Close") return;
 
-//   const current_user = frappe.session.user;
+  //   const current_user = frappe.session.user;
 
-//   const has_action_access =
-//     frappe.user.has_role("Audit Manager") ||
-//     frappe.user.has_role("Audit Member") ||
-//     frappe.user.has_role("Administrator") ||
-//     current_user === "Administrator";
+  //   const has_action_access =
+  //     frappe.user.has_role("Audit Manager") ||
+  //     frappe.user.has_role("Audit Member") ||
+  //     frappe.user.has_role("Administrator") ||
+  //     current_user === "Administrator";
 
-//   if (has_action_access) {
-//     const next_row = (frm.doc.audit_stages || []).find((row) => !row.status);
+  //   if (has_action_access) {
+  //     const next_row = (frm.doc.audit_stages || []).find((row) => !row.status);
 
-//     if (next_row) {
-//       frm.add_custom_button(
-//         __("Send to {0}", [next_row.stage_name]),
-//         function () {
-//           frappe.call({
-//             method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
-//             args: { docname: frm.doc.name },
-//             callback: function (r) {
-//               if (r.message) {
-//                 frappe.show_alert({ message: r.message, indicator: "green" });
-//                 frm.reload_doc();
-//               }
-//             },
-//           });
-//         },
-//         __("Actions")
-//       ).css({ "background-color": "#28a745", color: "white" });
-//     }
+  //     if (next_row) {
+  //       frm.add_custom_button(
+  //         __("Send to {0}", [next_row.stage_name]),
+  //         function () {
+  //           frappe.call({
+  //             method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
+  //             args: { docname: frm.doc.name },
+  //             callback: function (r) {
+  //               if (r.message) {
+  //                 frappe.show_alert({ message: r.message, indicator: "green" });
+  //                 frm.reload_doc();
+  //               }
+  //             },
+  //           });
+  //         },
+  //         __("Actions")
+  //       ).css({ "background-color": "#28a745", color: "white" });
+  //     }
 
-//     frm.add_custom_button(
-//       __("Close Query"),
-//       function () {
-//         frm.trigger("handle_close_query");
-//       },
-//       __("Actions")
-//     ).css({ "background-color": "#dc3545", color: "white" });
-//   }
+  //     frm.add_custom_button(
+  //       __("Close Query"),
+  //       function () {
+  //         frm.trigger("handle_close_query");
+  //       },
+  //       __("Actions")
+  //     ).css({ "background-color": "#dc3545", color: "white" });
+  //   }
 
-//   const pending_row = (frm.doc.audit_stages || []).find(
-//     (row) => row.status === "Pending" && row.user_id === current_user
-//   );
+  //   const pending_row = (frm.doc.audit_stages || []).find(
+  //     (row) => row.status === "Pending" && row.user_id === current_user
+  //   );
 
-//   if (pending_row) {
-//     frm.add_custom_button(__("Submit Response"), function () {
-//       let d = new frappe.ui.Dialog({
-//         title: __("Submit Response"),
-//         fields: [
-//           {
-//             label: __("Response"),
-//             fieldname: "response_text",
-//             fieldtype: "Small Text",
-//             reqd: 1,
-//           },
-//           {
-//             label: __("Attachment"),
-//             fieldname: "attachment",
-//             fieldtype: "Attach",
-//           },
-//         ],
-//         primary_action_label: __("Submit"),
-//         primary_action(values) {
-//           frappe.call({
-//             method: "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
-//             args: {
-//               docname: frm.doc.name,
-//               response_text: values.response_text,
-//               attachment: values.attachment,
-//             },
-//             freeze: true,
-//             freeze_message: __("Submitting Response..."),
-//             callback: function (r) {
-//               if (r.message) {
-//                 d.hide();
-//                 frappe.show_alert({
-//                   message: r.message,
-//                   indicator: "green",
-//                 });
-//                 frm.reload_doc();
-//               }
-//             },
-//           });
-//         },
-//       });
+  //   if (pending_row) {
+  //     frm.add_custom_button(__("Submit Response"), function () {
+  //       let d = new frappe.ui.Dialog({
+  //         title: __("Submit Response"),
+  //         fields: [
+  //           {
+  //             label: __("Response"),
+  //             fieldname: "response_text",
+  //             fieldtype: "Small Text",
+  //             reqd: 1,
+  //           },
+  //           {
+  //             label: __("Attachment"),
+  //             fieldname: "attachment",
+  //             fieldtype: "Attach",
+  //           },
+  //         ],
+  //         primary_action_label: __("Submit"),
+  //         primary_action(values) {
+  //           frappe.call({
+  //             method: "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
+  //             args: {
+  //               docname: frm.doc.name,
+  //               response_text: values.response_text,
+  //               attachment: values.attachment,
+  //             },
+  //             freeze: true,
+  //             freeze_message: __("Submitting Response..."),
+  //             callback: function (r) {
+  //               if (r.message) {
+  //                 d.hide();
+  //                 frappe.show_alert({
+  //                   message: r.message,
+  //                   indicator: "green",
+  //                 });
+  //                 frm.reload_doc();
+  //               }
+  //             },
+  //           });
+  //         },
+  //       });
 
-//       d.show();
-//     }).css({ "background-color": "#1e6eb2", color: "white" });
-//   }
-// },
+  //       d.show();
+  //     }).css({ "background-color": "#1e6eb2", color: "white" });
+  //   }
+  // },
 
+  // my current working
+  // setup_dynamic_buttons: function (frm) {
+  //     if (frm.is_new() || frm.doc.status === "Close") return;
 
+  //     const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
+  //     const current_user = frappe.session.user;
 
-// my current working
-// setup_dynamic_buttons: function (frm) {
-//     if (frm.is_new() || frm.doc.status === "Close") return;
+  //     // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
+  //     // if (frm.doc.status === "Draft" && is_audit_team) {
+  //     //     frm.add_custom_button(__("Raise Request"), function () {
 
-//     const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
-//     const current_user = frappe.session.user;
+  //     //         // Get available stages from the child table
+  //     //         let stages = (frm.doc.audit_stages || []).map(r => r.stagename);
+  //     //         if (!stages.length) {
+  //     //             frappe.msgprint("<b>Please add stages in the operational tracking section first.</b>");
+  //     //             return;
+  //     //         }
 
-//     // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
-//     // if (frm.doc.status === "Draft" && is_audit_team) {
-//     //     frm.add_custom_button(__("Raise Request"), function () {
-            
-//     //         // Get available stages from the child table
-//     //         let stages = (frm.doc.audit_stages || []).map(r => r.stagename);
-//     //         if (!stages.length) {
-//     //             frappe.msgprint("<b>Please add stages in the operational tracking section first.</b>");
-//     //             return;
-//     //         }
+  //     //         // Prompt auditor to select who gets the ticket first
+  //     //         frappe.prompt([
+  //     //             {
+  //     //                 label: 'Select Target Stage',
+  //     //                 fieldname: 'stagename',
+  //     //                 fieldtype: 'Select',
+  //     //                 options: stages.join('\n'),
+  //     //                 reqd: 1,
+  //     //                 description: "Select the stage to send this request to."
+  //     //             }
+  //     //         ], function(values) {
+  //     //             frappe.call({
+  //     //                 method: "auditmanagement.auditmanagement.doctype.myaudits.myaudits.raise_request",
+  //     //                 args: {
+  //     //                     docname: frm.doc.name,
+  //     //                     stagename: values.stagename
+  //     //                 },
+  //     //                 freeze: true,
+  //     //                 freeze_message: "Raising Request...",
+  //     //                 callback: function(r) {
+  //     //                     if (!r.exc) {
+  //     //                         frappe.show_alert({message: "Request Raised Successfully", indicator: "green"});
+  //     //                         frm.reload_doc();
+  //     //                     }
+  //     //                 }
+  //     //             });
+  //     //         }, __('Raise Audit Request'), __('Raise Request'));
 
-//     //         // Prompt auditor to select who gets the ticket first
-//     //         frappe.prompt([
-//     //             {
-//     //                 label: 'Select Target Stage',
-//     //                 fieldname: 'stagename',
-//     //                 fieldtype: 'Select',
-//     //                 options: stages.join('\n'),
-//     //                 reqd: 1,
-//     //                 description: "Select the stage to send this request to."
-//     //             }
-//     //         ], function(values) {
-//     //             frappe.call({
-//     //                 method: "auditmanagement.auditmanagement.doctype.myaudits.myaudits.raise_request",
-//     //                 args: {
-//     //                     docname: frm.doc.name,
-//     //                     stagename: values.stagename
-//     //                 },
-//     //                 freeze: true,
-//     //                 freeze_message: "Raising Request...",
-//     //                 callback: function(r) {
-//     //                     if (!r.exc) {
-//     //                         frappe.show_alert({message: "Request Raised Successfully", indicator: "green"});
-//     //                         frm.reload_doc();
-//     //                     }
-//     //                 }
-//     //             });
-//     //         }, __('Raise Audit Request'), __('Raise Request'));
+  //     //     }, __("Actions")).css({ "background-color": "#007bff", "color": "white" });
+  //     // }
 
-//     //     }, __("Actions")).css({ "background-color": "#007bff", "color": "white" });
-//     // }
+  //     		// 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
+  // 		if (frm.doc.status === "Draft" && is_audit_team) {
+  // 			frm.add_custom_button(__('Raise Request'), function() {
+  // 				// FIX 1: Use frm.doc.auditstages (no underscore) to match your Python/Doctype schema
+  // 				let stages = (frm.doc.auditstages || []).map(r => r.stagename);
 
-//     		// 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
-// 		if (frm.doc.status === "Draft" && is_audit_team) {
-// 			frm.add_custom_button(__('Raise Request'), function() {
-// 				// FIX 1: Use frm.doc.auditstages (no underscore) to match your Python/Doctype schema
-// 				let stages = (frm.doc.auditstages || []).map(r => r.stagename);
-				
-// 				if (!stages.length) {
-// 					frappe.msgprint('<b>Please add stages in the operational tracking section first. Ensure you have saved the document.</b>');
-// 					return;
-// 				}
+  // 				if (!stages.length) {
+  // 					frappe.msgprint('<b>Please add stages in the operational tracking section first. Ensure you have saved the document.</b>');
+  // 					return;
+  // 				}
 
-// 				// Prompt auditor to select who gets the ticket first
-// 				frappe.prompt([
-// 					{
-// 						label: 'Select Target Stage',
-// 						fieldname: 'stagename',
-// 						fieldtype: 'Select',
-// 						options: stages.join('\n'), // FIX 2: Creates the newline separated options list
-// 						default: stages[0],         // FIX 3: Automatically selects the first stage
-// 						reqd: 1,
-// 						description: 'Select the stage to send this request to.'
-// 					}
-// 				], function(values) {
-// 					frappe.call({
-// 						method: "auditmanagement.auditmanagement.doctype.myaudits.myaudits.raise_request",
-// 						args: {
-// 							docname: frm.doc.name,
-// 							stagename: values.stagename
-// 						},
-// 						freeze: true,
-// 						freeze_message: "Raising Request...",
-// 						callback: function(r) {
-// 							if (!r.exc) {
-// 								frappe.show_alert({message: __('Request Raised Successfully'), indicator: 'green'});
-// 								frm.reload_doc();
-// 							}
-// 						}
-// 					});
-// 				}, __('Raise Audit Request'), __('Raise Request'));
-// 			}, __('Actions')).css({"background-color": "#007bff", "color": "white"});
-// 		}
+  // 				// Prompt auditor to select who gets the ticket first
+  // 				frappe.prompt([
+  // 					{
+  // 						label: 'Select Target Stage',
+  // 						fieldname: 'stagename',
+  // 						fieldtype: 'Select',
+  // 						options: stages.join('\n'), // FIX 2: Creates the newline separated options list
+  // 						default: stages[0],         // FIX 3: Automatically selects the first stage
+  // 						reqd: 1,
+  // 						description: 'Select the stage to send this request to.'
+  // 					}
+  // 				], function(values) {
+  // 					frappe.call({
+  // 						method: "auditmanagement.auditmanagement.doctype.myaudits.myaudits.raise_request",
+  // 						args: {
+  // 							docname: frm.doc.name,
+  // 							stagename: values.stagename
+  // 						},
+  // 						freeze: true,
+  // 						freeze_message: "Raising Request...",
+  // 						callback: function(r) {
+  // 							if (!r.exc) {
+  // 								frappe.show_alert({message: __('Request Raised Successfully'), indicator: 'green'});
+  // 								frm.reload_doc();
+  // 							}
+  // 						}
+  // 					});
+  // 				}, __('Raise Audit Request'), __('Raise Request'));
+  // 			}, __('Actions')).css({"background-color": "#007bff", "color": "white"});
+  // 		}
 
-//     // 2. PENDING STATE: Find the exact row that is currently pending
-//     const pending_row = (frm.doc.audit_stages || []).find(
-//         (row) => row.status === "Pending" && (row.userid === current_user || row.email === current_user)
-//     );
+  //     // 2. PENDING STATE: Find the exact row that is currently pending
+  //     const pending_row = (frm.doc.audit_stages || []).find(
+  //         (row) => row.status === "Pending" && (row.userid === current_user || row.email === current_user)
+  //     );
 
-//     // Show Submit Response ONLY if the document is pending, and the logged-in user is the current active assignee
-//     if (pending_row && frm.doc.status === "Pending") {
-//         frm.add_custom_button(__("Submit Response"), function () {
-            
-//             let d = new frappe.ui.Dialog({
-//                 title: 'Submit Response',
-//                 fields: [
-//                     {
-//                         label: 'Response',
-//                         fieldname: 'response_text',
-//                         fieldtype: 'Small Text',
-//                         reqd: 1,
-//                     },
-//                     {
-//                         label: 'Attachment',
-//                         fieldname: 'attachment',
-//                         fieldtype: 'Attach',
-//                     }
-//                 ],
-//                 primary_action_label: 'Submit',
-//                 primary_action: function (values) {
-//                     frappe.call({
-//                         method: "auditmanagement.auditmanagement.doctype.myaudits.myaudits.submit_response",
-//                         args: {
-//                             docname: frm.doc.name,
-//                             response_text: values.response_text,
-//                             attachment: values.attachment,
-//                         },
-//                         freeze: true,
-//                         freeze_message: "Submitting Response...",
-//                         callback: function (r) {
-//                             if (r.message) {
-//                                 d.hide();
-//                                 frappe.show_alert({ message: r.message, indicator: "green" });
-//                                 frm.reload_doc();
-//                             }
-//                         }
-//                     });
-//                 }
-//             });
-//             d.show();
-//         }).css({ "background-color": "#1e6eb2", "color": "white" });
-//     }
+  //     // Show Submit Response ONLY if the document is pending, and the logged-in user is the current active assignee
+  //     if (pending_row && frm.doc.status === "Pending") {
+  //         frm.add_custom_button(__("Submit Response"), function () {
 
-//     // 3. AUDITOR REVIEW (Close Query or Escalate)
-//     if (frm.doc.status === "Pending" && is_audit_team) {
-        
-//         // Add Close Query button
-//         frm.add_custom_button(__("Close Query"), function () {
-//             frm.trigger("handle_close_query");
-//         }, __("Actions")).css({ "background-color": "#dc3545", "color": "white" });
+  //             let d = new frappe.ui.Dialog({
+  //                 title: 'Submit Response',
+  //                 fields: [
+  //                     {
+  //                         label: 'Response',
+  //                         fieldname: 'response_text',
+  //                         fieldtype: 'Small Text',
+  //                         reqd: 1,
+  //                     },
+  //                     {
+  //                         label: 'Attachment',
+  //                         fieldname: 'attachment',
+  //                         fieldtype: 'Attach',
+  //                     }
+  //                 ],
+  //                 primary_action_label: 'Submit',
+  //                 primary_action: function (values) {
+  //                     frappe.call({
+  //                         method: "auditmanagement.auditmanagement.doctype.myaudits.myaudits.submit_response",
+  //                         args: {
+  //                             docname: frm.doc.name,
+  //                             response_text: values.response_text,
+  //                             attachment: values.attachment,
+  //                         },
+  //                         freeze: true,
+  //                         freeze_message: "Submitting Response...",
+  //                         callback: function (r) {
+  //                             if (r.message) {
+  //                                 d.hide();
+  //                                 frappe.show_alert({ message: r.message, indicator: "green" });
+  //                                 frm.reload_doc();
+  //                             }
+  //                         }
+  //                     });
+  //                 }
+  //             });
+  //             d.show();
+  //         }).css({ "background-color": "#1e6eb2", "color": "white" });
+  //     }
 
-//         // Add Manual Escalate/Re-assign button if needed
-//         const next_row = frm.doc.audit_stages.find(row => !row.status);
-//         if (next_row) {
-//             frm.add_custom_button(__("Send to {0}", [next_row.stagename]), function () {
-//                 frappe.call({
-//                     method: "auditmanagement.auditmanagement.doctype.myaudits.myaudits.send_to_next_stage",
-//                     args: { docname: frm.doc.name },
-//                     callback: function (r) {
-//                         if (r.message) {
-//                             frappe.show_alert({ message: r.message, indicator: "green" });
-//                             frm.reload_doc();
-//                         }
-//                     }
-//                 });
-//             }, __("Actions")).css({ "background-color": "#28a745", "color": "white" });
-//         }
-//     }
-// },
+  //     // 3. AUDITOR REVIEW (Close Query or Escalate)
+  //     if (frm.doc.status === "Pending" && is_audit_team) {
 
-// setup_dynamic_buttons: function (frm) {
-//     // Return early if it's a completely new, unsaved document, or if it's closed.
-//     if (frm.is_new() || frm.doc.status === "Close") return;
+  //         // Add Close Query button
+  //         frm.add_custom_button(__("Close Query"), function () {
+  //             frm.trigger("handle_close_query");
+  //         }, __("Actions")).css({ "background-color": "#dc3545", "color": "white" });
 
-//     const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
-//     const current_user = frappe.session.user;
+  //         // Add Manual Escalate/Re-assign button if needed
+  //         const next_row = frm.doc.audit_stages.find(row => !row.status);
+  //         if (next_row) {
+  //             frm.add_custom_button(__("Send to {0}", [next_row.stagename]), function () {
+  //                 frappe.call({
+  //                     method: "auditmanagement.auditmanagement.doctype.myaudits.myaudits.send_to_next_stage",
+  //                     args: { docname: frm.doc.name },
+  //                     callback: function (r) {
+  //                         if (r.message) {
+  //                             frappe.show_alert({ message: r.message, indicator: "green" });
+  //                             frm.reload_doc();
+  //                         }
+  //                     }
+  //                 });
+  //             }, __("Actions")).css({ "background-color": "#28a745", "color": "white" });
+  //         }
+  //     }
+  // },
 
-//     // 🌟 FIX: Safely retrieve the child table regardless of whether it's named 'auditstages' or 'audit_stages'
-//     const audit_table = frm.doc.auditstages || frm.doc.audit_stages || [];
+  // setup_dynamic_buttons: function (frm) {
+  //     // Return early if it's a completely new, unsaved document, or if it's closed.
+  //     if (frm.is_new() || frm.doc.status === "Close") return;
 
-//     // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
-//     if (frm.doc.status === "Draft" && is_audit_team) {
-//         frm.add_custom_button(__('Raise Request'), function() {
-            
-//             // 🌟 FIX: Safely extract the stage names and filter out any empty data
-//             let stages = audit_table
-//                 .map(r => r.stagename || r.stage_name)
-//                 .filter(Boolean); 
-            
-//             if (stages.length === 0) {
-//                 frappe.msgprint('<b>Please add stages in the operational tracking section first. Ensure you have saved the document.</b>');
-//                 return;
-//             }
+  //     const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
+  //     const current_user = frappe.session.user;
 
-//             // Prompt auditor to select who gets the ticket first
-//             frappe.prompt([
-//                 {
-//                     label: 'Select Target Stage',
-//                     fieldname: 'stagename',
-//                     fieldtype: 'Select',
-//                     options: stages.join('\n'), // Renders options correctly
-//                     default: stages[0],         // Sets default to the first stage
-//                     reqd: 1,
-//                     description: 'Select the stage to send this request to.'
-//                 }
-//             ], function(values) {
-//                 frappe.call({
-//                     method: "audit_management.audit_management.doctype.my_audits.my_audits.raise_request",
-//                     args: {
-//                         docname: frm.doc.name,
-//                         stagename: values.stagename
-//                     },
-//                     freeze: true,
-//                     freeze_message: "Raising Request...",
-//                     callback: function(r) {
-//                         if (!r.exc) {
-//                             frappe.show_alert({message: __('Request Raised Successfully'), indicator: 'green'});
-//                             frm.reload_doc();
-//                         }
-//                     }
-//                 });
-//             }, __('Raise Audit Request'), __('Raise Request'));
-//         }, __('Actions')).css({"background-color": "#007bff", "color": "white"});
-//     }
+  //     // 🌟 FIX: Safely retrieve the child table regardless of whether it's named 'auditstages' or 'audit_stages'
+  //     const audit_table = frm.doc.auditstages || frm.doc.audit_stages || [];
 
-//     // 2. PENDING STATE: Find the exact row that is currently pending
-//     // 🌟 FIX: Used the safe `audit_table` variable to prevent "Cannot read properties of undefined (reading 'find')" errors
-//     const pending_row = audit_table.find(
-//         (row) => row.status === "Pending" && (row.userid === current_user || row.email === current_user)
-//     );
+  //     // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
+  //     if (frm.doc.status === "Draft" && is_audit_team) {
+  //         frm.add_custom_button(__('Raise Request'), function() {
 
-//     // Show Submit Response ONLY if the document is pending, and the logged-in user is the current active assignee
-//     if (pending_row && frm.doc.status === "Pending") {
-//         frm.add_custom_button(__("Submit Response"), function () {
-            
-//             let d = new frappe.ui.Dialog({
-//                 title: 'Submit Response',
-//                 fields: [
-//                     {
-//                         label: 'Response',
-//                         fieldname: 'response_text',
-//                         fieldtype: 'Small Text',
-//                         reqd: 1,
-//                     },
-//                     {
-//                         label: 'Attachment',
-//                         fieldname: 'attachment',
-//                         fieldtype: 'Attach',
-//                     }
-//                 ],
-//                 primary_action_label: 'Submit',
-//                 primary_action: function (values) {
-//                     frappe.call({
-//                         method: "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
-//                         args: {
-//                             docname: frm.doc.name,
-//                             response_text: values.response_text,
-//                             attachment: values.attachment,
-//                         },
-//                         freeze: true,
-//                         freeze_message: "Submitting Response...",
-//                         callback: function (r) {
-//                             if (r.message) {
-//                                 d.hide();
-//                                 frappe.show_alert({ message: r.message, indicator: "green" });
-//                                 frm.reload_doc();
-//                             }
-//                         }
-//                     });
-//                 }
-//             });
-//             d.show();
-//         }).css({ "background-color": "#1e6eb2", "color": "white" });
-//     }
+  //             // 🌟 FIX: Safely extract the stage names and filter out any empty data
+  //             let stages = audit_table
+  //                 .map(r => r.stagename || r.stage_name)
+  //                 .filter(Boolean);
 
-//     // 3. AUDITOR REVIEW (Close Query or Escalate)
-//     if (frm.doc.status === "Pending" && is_audit_team) {
-        
-//         // Add Close Query button
-//         frm.add_custom_button(__("Close Query"), function () {
-//             frm.trigger("handle_close_query");
-//         }, __("Actions")).css({ "background-color": "#dc3545", "color": "white" });
+  //             if (stages.length === 0) {
+  //                 frappe.msgprint('<b>Please add stages in the operational tracking section first. Ensure you have saved the document.</b>');
+  //                 return;
+  //             }
 
-//         // Add Manual Escalate/Re-assign button if needed
-//         // 🌟 FIX: Safely find the next row using `audit_table`
-//         const next_row = audit_table.find(row => !row.status);
-//         if (next_row) {
-//             frm.add_custom_button(__("Send to {0}", [next_row.stagename || next_row.stage_name]), function () {
-//                 frappe.call({
-//                     method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
-//                     args: { docname: frm.doc.name },
-//                     callback: function (r) {
-//                         if (r.message) {
-//                             frappe.show_alert({ message: r.message, indicator: "green" });
-//                             frm.reload_doc();
-//                         }
-//                     }
-//                 });
-//             }, __("Actions")).css({ "background-color": "#28a745", "color": "white" });
-//         }
-//     }
-// },
+  //             // Prompt auditor to select who gets the ticket first
+  //             frappe.prompt([
+  //                 {
+  //                     label: 'Select Target Stage',
+  //                     fieldname: 'stagename',
+  //                     fieldtype: 'Select',
+  //                     options: stages.join('\n'), // Renders options correctly
+  //                     default: stages[0],         // Sets default to the first stage
+  //                     reqd: 1,
+  //                     description: 'Select the stage to send this request to.'
+  //                 }
+  //             ], function(values) {
+  //                 frappe.call({
+  //                     method: "audit_management.audit_management.doctype.my_audits.my_audits.raise_request",
+  //                     args: {
+  //                         docname: frm.doc.name,
+  //                         stagename: values.stagename
+  //                     },
+  //                     freeze: true,
+  //                     freeze_message: "Raising Request...",
+  //                     callback: function(r) {
+  //                         if (!r.exc) {
+  //                             frappe.show_alert({message: __('Request Raised Successfully'), indicator: 'green'});
+  //                             frm.reload_doc();
+  //                         }
+  //                     }
+  //                 });
+  //             }, __('Raise Audit Request'), __('Raise Request'));
+  //         }, __('Actions')).css({"background-color": "#007bff", "color": "white"});
+  //     }
 
+  //     // 2. PENDING STATE: Find the exact row that is currently pending
+  //     // 🌟 FIX: Used the safe `audit_table` variable to prevent "Cannot read properties of undefined (reading 'find')" errors
+  //     const pending_row = audit_table.find(
+  //         (row) => row.status === "Pending" && (row.userid === current_user || row.email === current_user)
+  //     );
 
-setup_dynamic_buttons: function (frm) {
+  //     // Show Submit Response ONLY if the document is pending, and the logged-in user is the current active assignee
+  //     if (pending_row && frm.doc.status === "Pending") {
+  //         frm.add_custom_button(__("Submit Response"), function () {
+
+  //             let d = new frappe.ui.Dialog({
+  //                 title: 'Submit Response',
+  //                 fields: [
+  //                     {
+  //                         label: 'Response',
+  //                         fieldname: 'response_text',
+  //                         fieldtype: 'Small Text',
+  //                         reqd: 1,
+  //                     },
+  //                     {
+  //                         label: 'Attachment',
+  //                         fieldname: 'attachment',
+  //                         fieldtype: 'Attach',
+  //                     }
+  //                 ],
+  //                 primary_action_label: 'Submit',
+  //                 primary_action: function (values) {
+  //                     frappe.call({
+  //                         method: "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
+  //                         args: {
+  //                             docname: frm.doc.name,
+  //                             response_text: values.response_text,
+  //                             attachment: values.attachment,
+  //                         },
+  //                         freeze: true,
+  //                         freeze_message: "Submitting Response...",
+  //                         callback: function (r) {
+  //                             if (r.message) {
+  //                                 d.hide();
+  //                                 frappe.show_alert({ message: r.message, indicator: "green" });
+  //                                 frm.reload_doc();
+  //                             }
+  //                         }
+  //                     });
+  //                 }
+  //             });
+  //             d.show();
+  //         }).css({ "background-color": "#1e6eb2", "color": "white" });
+  //     }
+
+  //     // 3. AUDITOR REVIEW (Close Query or Escalate)
+  //     if (frm.doc.status === "Pending" && is_audit_team) {
+
+  //         // Add Close Query button
+  //         frm.add_custom_button(__("Close Query"), function () {
+  //             frm.trigger("handle_close_query");
+  //         }, __("Actions")).css({ "background-color": "#dc3545", "color": "white" });
+
+  //         // Add Manual Escalate/Re-assign button if needed
+  //         // 🌟 FIX: Safely find the next row using `audit_table`
+  //         const next_row = audit_table.find(row => !row.status);
+  //         if (next_row) {
+  //             frm.add_custom_button(__("Send to {0}", [next_row.stagename || next_row.stage_name]), function () {
+  //                 frappe.call({
+  //                     method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
+  //                     args: { docname: frm.doc.name },
+  //                     callback: function (r) {
+  //                         if (r.message) {
+  //                             frappe.show_alert({ message: r.message, indicator: "green" });
+  //                             frm.reload_doc();
+  //                         }
+  //                     }
+  //                 });
+  //             }, __("Actions")).css({ "background-color": "#28a745", "color": "white" });
+  //         }
+  //     }
+  // },
+
+  setup_dynamic_buttons: function (frm) {
     if (frm.is_new()) return;
 
-    const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
+    const is_audit_team =
+      frappe.user.has_role("Audit Manager") ||
+      frappe.user.has_role("Audit Member");
     const current_user = (frappe.session.user || "").toLowerCase();
     const audit_table = frm.doc.auditstages || frm.doc.audit_stages || [];
 
@@ -1031,127 +1041,166 @@ setup_dynamic_buttons: function (frm) {
 
     // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
     if (frm.doc.status === "Draft" && is_audit_team) {
-        frm.add_custom_button(__('Raise Request'), function() {
+      frm
+        .add_custom_button(
+          __("Raise Request"),
+          function () {
             let stages = audit_table
-                .map(r => r.stagename || r.stage_name)
-                .filter(Boolean); 
-            
+              .map((r) => r.stagename || r.stage_name)
+              .filter(Boolean);
+
             if (stages.length === 0) {
-                frappe.msgprint('<b>Please add stages in the operational tracking section first. Ensure you have saved the document.</b>');
-                return;
+              frappe.msgprint(
+                "<b>Please add stages in the operational tracking section first. Ensure you have saved the document.</b>",
+              );
+              return;
             }
 
-            frappe.prompt([
+            frappe.prompt(
+              [
                 {
-                    label: 'Select Target Stage',
-                    fieldname: 'stagename',
-                    fieldtype: 'Select',
-                    options: stages.join('\n'), 
-                    default: stages[0],         
-                    reqd: 1,
-                    description: 'Select the stage to send this request to.'
-                }
-            ], function(values) {
+                  label: "Select Target Stage",
+                  fieldname: "stagename",
+                  fieldtype: "Select",
+                  options: stages.join("\n"),
+                  default: stages[0],
+                  reqd: 1,
+                  description: "Select the stage to send this request to.",
+                },
+              ],
+              function (values) {
                 frappe.call({
-                    method: "audit_management.audit_management.doctype.my_audits.my_audits.raise_request",
-                    args: {
-                        docname: frm.doc.name,
-                        stagename: values.stagename
-                    },
-                    freeze: true,
-                    freeze_message: "Raising Request...",
-                    callback: function(r) {
-                        if (!r.exc) {
-                            frappe.show_alert({message: __('Request Raised Successfully'), indicator: 'green'});
-                            frm.reload_doc();
-                        }
+                  method:
+                    "audit_management.audit_management.doctype.my_audits.my_audits.raise_request",
+                  args: {
+                    docname: frm.doc.name,
+                    stagename: values.stagename,
+                  },
+                  freeze: true,
+                  freeze_message: "Raising Request...",
+                  callback: function (r) {
+                    if (!r.exc) {
+                      frappe.show_alert({
+                        message: __("Request Raised Successfully"),
+                        indicator: "green",
+                      });
+                      frm.reload_doc();
                     }
+                  },
                 });
-            }, __('Raise Audit Request'), __('Raise Request'));
-        }, __('Actions')).css({"background-color": "#007bff", "color": "white"});
+              },
+              __("Raise Audit Request"),
+              __("Raise Request"),
+            );
+          },
+          __("Actions"),
+        )
+        .css({ "background-color": "#007bff", color: "white" });
     }
 
     // 2. PENDING STATE: Find the exact row that is currently pending
     const pending_row = audit_table.find((row) => {
-        // 🌟 FIX: Look for 'user_id' instead of 'userid' based on your schema
-        let r_user = (row.user_id || row.userid || "").toLowerCase();
-        let status = row.status;
-        
-        let is_match = (status === "Pending" && r_user === current_user);
-        
-        console.log(`-> Row Stage: ${row.stagename || row.stage_name} | Status: ${status} | Row UserID: ${r_user} | Matches Current User? ${is_match}`);
-        
-        return is_match;
+      // 🌟 FIX: Look for 'user_id' instead of 'userid' based on your schema
+      let r_user = (row.user_id || row.userid || "").toLowerCase();
+      let status = row.status;
+
+      let is_match = status === "Pending" && r_user === current_user;
+
+      console.log(
+        `-> Row Stage: ${row.stagename || row.stage_name} | Status: ${status} | Row UserID: ${r_user} | Matches Current User? ${is_match}`,
+      );
+
+      return is_match;
     });
 
     // Show Submit Response ONLY if the document is pending, and the logged-in user is the current active assignee
     if (pending_row && frm.doc.status === "Pending") {
-        
-        frm.add_custom_button(__("Submit Response"), function () {
-            let d = new frappe.ui.Dialog({
-                title: 'Submit Response',
-                fields: [
-                    {
-                        label: 'Response',
-                        fieldname: 'response_text',
-                        fieldtype: 'Small Text',
-                        reqd: 1,
-                    },
-                    {
-                        label: 'Attachment',
-                        fieldname: 'attachment',
-                        fieldtype: 'Attach',
-                    }
-                ],
-                primary_action_label: 'Submit',
-                primary_action: function (values) {
-                    frappe.call({
-                        method: "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
-                        args: {
-                            docname: frm.doc.name,
-                            response_text: values.response_text,
-                            attachment: values.attachment,
-                        },
-                        freeze: true,
-                        freeze_message: "Submitting Response...",
-                        callback: function (r) {
-                            if (r.message) {
-                                d.hide();
-                                frappe.show_alert({ message: r.message, indicator: "green" });
-                                frm.reload_doc();
-                            }
-                        }
+      frm
+        .add_custom_button(__("Submit Response"), function () {
+          let d = new frappe.ui.Dialog({
+            title: "Submit Response",
+            fields: [
+              {
+                label: "Response",
+                fieldname: "response_text",
+                fieldtype: "Small Text",
+                reqd: 1,
+              },
+              {
+                label: "Attachment",
+                fieldname: "attachment",
+                fieldtype: "Attach",
+              },
+            ],
+            primary_action_label: "Submit",
+            primary_action: function (values) {
+              frappe.call({
+                method:
+                  "audit_management.audit_management.doctype.my_audits.my_audits.submit_response",
+                args: {
+                  docname: frm.doc.name,
+                  response_text: values.response_text,
+                  attachment: values.attachment,
+                },
+                freeze: true,
+                freeze_message: "Submitting Response...",
+                callback: function (r) {
+                  if (r.message) {
+                    d.hide();
+                    frappe.show_alert({
+                      message: r.message,
+                      indicator: "green",
                     });
-                }
-            });
-            d.show();
-        }).css({ "background-color": "#1e6eb2", "color": "white" });
+                    frm.reload_doc();
+                  }
+                },
+              });
+            },
+          });
+          d.show();
+        })
+        .css({ "background-color": "#1e6eb2", color: "white" });
     }
 
     // 3. AUDITOR REVIEW (Close Query or Escalate)
     if (frm.doc.status === "Pending" && is_audit_team) {
-        
-        frm.add_custom_button(__("Close Query"), function () {
+      frm
+        .add_custom_button(
+          __("Close Query"),
+          function () {
             frm.trigger("handle_close_query");
-        }, __("Actions")).css({ "background-color": "#dc3545", "color": "white" });
+          },
+          __("Actions"),
+        )
+        .css({ "background-color": "#dc3545", color: "white" });
 
-        const next_row = audit_table.find(row => !row.status);
-        if (next_row) {
-            frm.add_custom_button(__("Send to {0}", [next_row.stagename || next_row.stage_name]), function () {
-                frappe.call({
-                    method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
-                    args: { docname: frm.doc.name },
-                    callback: function (r) {
-                        if (r.message) {
-                            frappe.show_alert({ message: r.message, indicator: "green" });
-                            frm.reload_doc();
-                        }
-                    }
-                });
-            }, __("Actions")).css({ "background-color": "#28a745", "color": "white" });
-        }
+      const next_row = audit_table.find((row) => !row.status);
+      if (next_row) {
+        frm
+          .add_custom_button(
+            __("Send to {0}", [next_row.stagename || next_row.stage_name]),
+            function () {
+              frappe.call({
+                method:
+                  "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
+                args: { docname: frm.doc.name },
+                callback: function (r) {
+                  if (r.message) {
+                    frappe.show_alert({
+                      message: r.message,
+                      indicator: "green",
+                    });
+                    frm.reload_doc();
+                  }
+                },
+              });
+            },
+            __("Actions"),
+          )
+          .css({ "background-color": "#28a745", color: "white" });
+      }
     }
-},
+  },
 
   // handle_read_only_new: function (frm) {
   //   const is_audit_team =
@@ -1221,7 +1270,7 @@ setup_dynamic_buttons: function (frm) {
   //     frm.disable_form();
   //   }
   // },
-  
+
   handle_read_only_new: function (frm) {
     const is_audit_team =
       frappe.user.has_role("Audit Manager") ||
@@ -1241,12 +1290,12 @@ setup_dynamic_buttons: function (frm) {
     // } else if (is_audit_team || frm.doc.status === "Draft") {
     //   frm.enable_save();
     // }
-            // 1. Strict Save Button Logic
-        if (!frm.is_new() && frm.doc.status !== "Draft") {
-            frm.disable_save(); // Completely hides the Save button for everyone
-        } else {
-            frm.enable_save();  // Shows it only during New / Draft states
-        }
+    // 1. Strict Save Button Logic
+    if (!frm.is_new() && frm.doc.status !== "Draft") {
+      frm.disable_save(); // Completely hides the Save button for everyone
+    } else {
+      frm.enable_save(); // Shows it only during New / Draft states
+    }
 
     // 2. Audit Details Read-Only Logic
     if (!is_audit_team && frm.doc.status !== "Draft") {
@@ -1286,13 +1335,13 @@ setup_dynamic_buttons: function (frm) {
       { status_field: "gm_user_status", box_field: "gm_response_box" },
       { status_field: "hr_user_status", box_field: "hr_response_box" },
       { status_field: "coo_user_status", box_field: "coo_response_box" },
-      { status_field: "ceo_user_status", box_field: "ceo_response_box" }
+      { status_field: "ceo_user_status", box_field: "ceo_response_box" },
     ];
 
-    stages_mapping.forEach(stage => {
-        if (frm.doc[stage.status_field] === "Responded") {
-            frm.set_df_property(stage.box_field, "read_only", 1);
-        }
+    stages_mapping.forEach((stage) => {
+      if (frm.doc[stage.status_field] === "Responded") {
+        frm.set_df_property(stage.box_field, "read_only", 1);
+      }
     });
 
     // Hide old generic current_response_box since we moved to the Modal
@@ -1304,7 +1353,7 @@ setup_dynamic_buttons: function (frm) {
       frm.disable_form();
     }
   },
-  
+
   handle_close_query: function (frm) {
     let d = new frappe.ui.Dialog({
       title: __("Enter Resolution Details"),
@@ -1316,23 +1365,28 @@ setup_dynamic_buttons: function (frm) {
           options: "Audit RCA Category",
           reqd: 1,
           default: frm.doc.rca_category,
-          onchange: function() {
+          onchange: function () {
             let val = this.get_value();
             if (val) {
-              frappe.db.get_value("Audit RCA Category", val, "root_cause_analysis", (r) => {
-                if (r && r.root_cause_analysis) {
-                  d.set_value("root_cause_analysis", r.root_cause_analysis);
-                }
-              });
+              frappe.db.get_value(
+                "Audit RCA Category",
+                val,
+                "root_cause_analysis",
+                (r) => {
+                  if (r && r.root_cause_analysis) {
+                    d.set_value("root_cause_analysis", r.root_cause_analysis);
+                  }
+                },
+              );
             }
-          }
+          },
         },
         {
           fieldtype: "HTML",
           fieldname: "rca_help",
           options: `<div class="small text-muted" style="margin-top: -10px; margin-bottom: 10px;">
             ${__("If the category is not present, use 'Create New' in the link above.")}
-          </div>`
+          </div>`,
         },
         {
           label: __("Root Cause Analysis (RCA)"),
@@ -1381,7 +1435,7 @@ setup_dynamic_buttons: function (frm) {
             frm.reload_doc();
           }
         });
-      }
+      },
     });
     d.show();
   },
@@ -1992,44 +2046,43 @@ setup_dynamic_buttons: function (frm) {
 
   reopen_query: function (frm) {
     if (frm.doc.status === "Close") {
-      const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
+      const is_audit_team =
+        frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member");
       if (is_audit_team) {
-        frm.add_custom_button(__('Reopen Query'), function() {
-          let d = new frappe.ui.Dialog({
-            title: __('Reopen Audit Query'),
-            fields: [
-              {
-                label: __('Reopen'),
-                fieldname: 'reopen',
-                fieldtype: 'Check',
-                reqd: 1,
-                description: __('Check this to confirm reopening the query.')
-              }
-            ],
-            primary_action_label: __('Submit'),
-            primary_action(values) {
-              if (values.reopen) {
-                d.hide();
+        frm.add_custom_button(
+          __("Reopen Query"),
+          function () {
+            frappe.confirm(
+              __("Are you sure you want to reopen this query?"),
+              () => {
+                // Mark reopen checkbox
+                frm.set_value("reopen", 1);
+
+                // Update status
                 frm.set_value("status", "Pending");
-                // Clear closing details to allow fresh closure later
+
+                // Clear closing details for fresh closure
                 frm.set_value("closing_remark", "");
-                
+
                 frm.save().then((r) => {
                   if (!r.exc) {
                     frappe.show_alert({
                       message: __("Query Reopened Successfully"),
                       indicator: "green",
                     });
+
                     frm.reload_doc();
                   }
                 });
-              } else {
-                frappe.msgprint(__('Please check the Reopen checkbox to proceed.'));
-              }
-            }
-          });
-          d.show();
-        }, __('Actions')).css({"background-color": "#ffc107", "color": "black"});
+              },
+              () => {
+                // No Action
+              },
+            );
+          },
+          __("Actions"),
+        );
       }
     }
   },
@@ -2057,13 +2110,12 @@ setup_dynamic_buttons: function (frm) {
   },
 });
 
-
 function render_interactive_tracker(frm, can_edit) {
-    // 1. Inject the CSS globally into the document head (only once)
-    if (!document.getElementById('custom-audit-tracker-style')) {
-        let style = document.createElement('style');
-        style.id = 'custom-audit-tracker-style';
-        style.innerHTML = `
+  // 1. Inject the CSS globally into the document head (only once)
+  if (!document.getElementById("custom-audit-tracker-style")) {
+    let style = document.createElement("style");
+    style.id = "custom-audit-tracker-style";
+    style.innerHTML = `
             /* Modern tracker styling */
             .modern-audit-tracker {
                 font-family: inherit;
@@ -2164,19 +2216,19 @@ function render_interactive_tracker(frm, can_edit) {
                 z-index: 999;
             }
         `;
-        document.head.appendChild(style);
-    }
+    document.head.appendChild(style);
+  }
 
-    if (!frm.doc.audit_stages || frm.doc.audit_stages.length === 0) {
-        frm.set_intro(''); // Clear if no stages
-        return;
-    }
+  if (!frm.doc.audit_stages || frm.doc.audit_stages.length === 0) {
+    frm.set_intro(""); // Clear if no stages
+    return;
+  }
 
-    // Modern SVG Chevron instead of -->
-    const arrow_svg = `<svg class="modern-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 4px;"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+  // Modern SVG Chevron instead of -->
+  const arrow_svg = `<svg class="modern-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 4px;"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
 
-    // 2. Build the HTML wrapper
-    let html = `
+  // 2. Build the HTML wrapper
+  let html = `
         <div class="custom-interactive-tracker-wrapper modern-audit-tracker" style="display: flex; align-items: center; gap: 4px; width: 100%;">
             
             <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department">
@@ -2189,95 +2241,104 @@ function render_interactive_tracker(frm, can_edit) {
             <div id="draggable-stages" style="display: flex; align-items: center; flex-wrap: wrap; flex: 1; row-gap: 8px;">
     `;
 
-    // Generate pills from the actual child table
-    frm.doc.audit_stages.forEach((row, index) => {
-        let pill_class = row.status === 'Pending' ? 'pill-pending' : 
-                         row.status === 'Responded' ? 'pill-responded' : 
-                         row.status === 'Skipped' ? 'pill-skipped' : 'pill-default';
+  // Generate pills from the actual child table
+  frm.doc.audit_stages.forEach((row, index) => {
+    let pill_class =
+      row.status === "Pending"
+        ? "pill-pending"
+        : row.status === "Responded"
+          ? "pill-responded"
+          : row.status === "Skipped"
+            ? "pill-skipped"
+            : "pill-default";
 
-        // Get the best available name for the tooltip
-        let emp_name = row.employee_name || row.employee || row.user_id || 'Unassigned';
+    // Get the best available name for the tooltip
+    let emp_name =
+      row.employee_name || row.employee || row.user_id || "Unassigned";
 
-        html += `
-            <div class="stage-pill-container sortable-item" style="display: flex; align-items: center; cursor: ${can_edit ? 'grab' : 'not-allowed'};">
+    html += `
+            <div class="stage-pill-container sortable-item" style="display: flex; align-items: center; cursor: ${can_edit ? "grab" : "not-allowed"};">
                 <div class="modern-pill ${pill_class}" data-tooltip="${emp_name}">
                     ${row.stage_name}
                 </div>
                 ${arrow_svg}
             </div>
         `;
-    });
+  });
 
-    html += `</div>`; // End draggable-stages
+  html += `</div>`; // End draggable-stages
 
-    // Add Settings Icon if user has permission
-    if (can_edit) {
-        html += `
+  // Add Settings Icon if user has permission
+  if (can_edit) {
+    html += `
             <div style="margin-left: auto; padding: 6px; border-radius: 50%; background: #eff6ff; cursor: pointer; color: #1d4ed8; transition: background 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" id="edit-tracker-settings" data-tooltip="Tracker Settings" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </div>
         `;
+  }
+
+  html += `</div>`; // End wrapper
+
+  // 3. Clear ALL existing intro messages before setting the new one
+  frm.page.wrapper.find(".form-message-container").empty();
+
+  // Set the intro natively via Frappe
+  frm.set_intro(html, "blue");
+
+  // FORCE REMOVE the Close Button via Javascript as a secondary bulletproof measure
+  setTimeout(() => {
+    let wrapper = frm.page.wrapper.find(".custom-interactive-tracker-wrapper");
+    if (wrapper.length > 0) {
+      wrapper.closest(".form-message").find(".close-message").remove();
     }
+  }, 50);
 
-    html += `</div>`; // End wrapper
+  // 4. Make it Draggable (if permitted)
+  if (can_edit) {
+    let el = document.getElementById("draggable-stages");
 
-    // 3. Clear ALL existing intro messages before setting the new one
-    frm.page.wrapper.find('.form-message-container').empty();
-    
-    // Set the intro natively via Frappe
-    frm.set_intro(html, 'blue');
+    if (typeof Sortable !== "undefined") {
+      new Sortable(el, {
+        animation: 150,
+        draggable: ".sortable-item",
+        ghostClass: "sortable-ghost",
+        onEnd: function (evt) {
+          let old_index = evt.oldIndex;
+          let new_index = evt.newIndex;
 
-    // FORCE REMOVE the Close Button via Javascript as a secondary bulletproof measure
-    setTimeout(() => {
-        let wrapper = frm.page.wrapper.find('.custom-interactive-tracker-wrapper');
-        if (wrapper.length > 0) {
-            wrapper.closest('.form-message').find('.close-message').remove();
-        }
-    }, 50);
+          if (old_index === new_index) return;
 
-    // 4. Make it Draggable (if permitted)
-    if (can_edit) {
-        let el = document.getElementById('draggable-stages');
-        
-        if (typeof Sortable !== 'undefined') {
-            new Sortable(el, {
-                animation: 150,
-                draggable: '.sortable-item', 
-                ghostClass: 'sortable-ghost',
-                onEnd: function (evt) {
-                    let old_index = evt.oldIndex;
-                    let new_index = evt.newIndex;
+          let moved_item = frm.doc.audit_stages.splice(old_index, 1)[0];
+          frm.doc.audit_stages.splice(new_index, 0, moved_item);
 
-                    if (old_index === new_index) return;
+          frm.doc.audit_stages.forEach((row, i) => {
+            row.stage = i + 1;
+            row.idx = i + 1;
+          });
 
-                    let moved_item = frm.doc.audit_stages.splice(old_index, 1)[0];
-                    frm.doc.audit_stages.splice(new_index, 0, moved_item);
+          frm.dirty();
+          frm.refresh_field("audit_stages");
 
-                    frm.doc.audit_stages.forEach((row, i) => {
-                        row.stage = i + 1;
-                        row.idx = i + 1; 
-                    });
-
-                    frm.dirty();
-                    frm.refresh_field('audit_stages');
-                    
-                    frm.save().then(() => {
-                        frappe.show_alert({message: 'Stage order saved successfully', indicator: 'green'});
-                    });
-                }
+          frm.save().then(() => {
+            frappe.show_alert({
+              message: "Stage order saved successfully",
+              indicator: "green",
             });
-        }
-
-        // Attach Settings Modal Click Event
-        setTimeout(() => {
-            let settings_icon = document.getElementById('edit-tracker-settings');
-            if (settings_icon) {
-                settings_icon.onclick = function() {
-                    open_stages_modal(frm);
-                };
-            }
-        }, 100);
+          });
+        },
+      });
     }
+
+    // Attach Settings Modal Click Event
+    setTimeout(() => {
+      let settings_icon = document.getElementById("edit-tracker-settings");
+      if (settings_icon) {
+        settings_icon.onclick = function () {
+          open_stages_modal(frm);
+        };
+      }
+    }, 100);
+  }
 }
 
 // function open_stages_modal(frm) {
@@ -2302,7 +2363,7 @@ function render_interactive_tracker(frm, can_edit) {
 //         primary_action_label: 'Save Changes',
 //         primary_action: function() {
 //             let values = d.get_values();
-            
+
 //             // Clear current form table
 //             frm.clear_table('audit_stages');
 
@@ -2333,138 +2394,160 @@ function render_interactive_tracker(frm, can_edit) {
 //             employee_name: row.employee_name
 //         };
 //     });
-    
+
 //     d.fields_dict.temp_stages.df.data = existing_data;
 //     d.fields_dict.temp_stages.grid.refresh();
-    
+
 //     d.show();
 // }
 
-
 function open_stages_modal(frm) {
-    let d = new frappe.ui.Dialog({
-        title: 'Edit Audit Stages',
-        size: 'large',
+  let d = new frappe.ui.Dialog({
+    title: "Edit Audit Stages",
+    size: "large",
+    fields: [
+      {
+        fieldname: "temp_stages",
+        fieldtype: "Table",
+        label: "Stages",
+        cannot_add_rows: false,
+        in_place_edit: true,
+        data: [],
         fields: [
-            {
-                fieldname: 'temp_stages',
-                fieldtype: 'Table',
-                label: 'Stages',
-                cannot_add_rows: false,
-                in_place_edit: true,
-                data: [],
-                fields: [
-                    // Hidden field to permanently track the exact database ID
-                    { fieldtype: 'Data', fieldname: 'stage_id', hidden: 1 }, 
-                    
-                    // Visible fields
-                    { fieldtype: 'Link', fieldname: 'stage_name', options: 'Audit Stage', in_list_view: 1, label: 'Stage Name', reqd: 1 },
-                    { fieldtype: 'Link', fieldname: 'employee', options: 'Employee', in_list_view: 1, label: 'Employee ID', reqd: 1 },
-                    { fieldtype: 'Data', fieldname: 'employee_name', in_list_view: 1, label: 'Employee Name', read_only: 1 }
-                ]
-            }
+          // Hidden field to permanently track the exact database ID
+          { fieldtype: "Data", fieldname: "stage_id", hidden: 1 },
+
+          // Visible fields
+          {
+            fieldtype: "Link",
+            fieldname: "stage_name",
+            options: "Audit Stage",
+            in_list_view: 1,
+            label: "Stage Name",
+            reqd: 1,
+          },
+          {
+            fieldtype: "Link",
+            fieldname: "employee",
+            options: "Employee",
+            in_list_view: 1,
+            label: "Employee ID",
+            reqd: 1,
+          },
+          {
+            fieldtype: "Data",
+            fieldname: "employee_name",
+            in_list_view: 1,
+            label: "Employee Name",
+            read_only: 1,
+          },
         ],
-        primary_action_label: 'Save Changes',
-        primary_action: function() {
-            // Force grid to commit any active edits
-            if (document.activeElement) document.activeElement.blur();
-            
-            let grid_data = d.fields_dict.temp_stages.grid.get_data();
-            
-            // 1. Store EXACT references to existing memory objects so we don't lose responses!
-            let old_rows_map = {};
-            (frm.doc.audit_stages || []).forEach(r => {
-                old_rows_map[r.name] = r;
-            });
-            
-            // 2. Empty the array WITHOUT deleting from frappe.locals memory
-            // This completely prevents the "Missing Fields" framework error
-            frm.doc.audit_stages = [];
-            
-            // 3. Rebuild the child table perfectly
-            grid_data.forEach((row, idx) => {
-                let target_row;
-                
-                if (row.stage_id && old_rows_map[row.stage_id]) {
-                    // Re-use the existing Frappe object (retains responses, attachments, status)
-                    target_row = old_rows_map[row.stage_id];
-                    // Push it manually back into the form array
-                    frm.doc.audit_stages.push(target_row);
-                } else {
-                    // It's a completely new row added via the modal
-                    // This automatically creates it in memory and pushes it to doc.audit_stages
-                    target_row = frm.add_child('audit_stages');
-                }
-                
-                // 4. Update the values from the modal safely
-                target_row.stage_name = row.stage_name;
-                target_row.employee = row.employee;
-                target_row.employee_name = row.employee_name;
-                target_row.stage = idx + 1;
-                target_row.idx = idx + 1; // Required by Frappe for sequence tracking
-                
-                if (!target_row.status) {
-                    // target_row.status = 'Pending';
-                    target_row.status = '';
-                }
-            });
-            
-            frm.refresh_field('audit_stages');
-            frm.dirty(); // Tell Frappe the document has unsaved changes
-            
-            // Save the document and refresh the UI tracker
-            frm.save().then(() => {
-                frappe.show_alert({message: 'Stages updated successfully', indicator: 'green'});
-                render_interactive_tracker(frm, true);
-                d.hide();
-            });
+      },
+    ],
+    primary_action_label: "Save Changes",
+    primary_action: function () {
+      // Force grid to commit any active edits
+      if (document.activeElement) document.activeElement.blur();
+
+      let grid_data = d.fields_dict.temp_stages.grid.get_data();
+
+      // 1. Store EXACT references to existing memory objects so we don't lose responses!
+      let old_rows_map = {};
+      (frm.doc.audit_stages || []).forEach((r) => {
+        old_rows_map[r.name] = r;
+      });
+
+      // 2. Empty the array WITHOUT deleting from frappe.locals memory
+      // This completely prevents the "Missing Fields" framework error
+      frm.doc.audit_stages = [];
+
+      // 3. Rebuild the child table perfectly
+      grid_data.forEach((row, idx) => {
+        let target_row;
+
+        if (row.stage_id && old_rows_map[row.stage_id]) {
+          // Re-use the existing Frappe object (retains responses, attachments, status)
+          target_row = old_rows_map[row.stage_id];
+          // Push it manually back into the form array
+          frm.doc.audit_stages.push(target_row);
+        } else {
+          // It's a completely new row added via the modal
+          // This automatically creates it in memory and pushes it to doc.audit_stages
+          target_row = frm.add_child("audit_stages");
         }
-    });
 
-    // Populate the modal with data, binding the exact Database ID to 'stage_id'
-    let existing_data = (frm.doc.audit_stages || []).map(row => {
-        return {
-            stage_id: row.name, // Link to the original memory row
-            stage_name: row.stage_name,
-            employee: row.employee,
-            employee_name: row.employee_name
-        };
-    });
-    
-    d.fields_dict.temp_stages.df.data = existing_data;
-    d.fields_dict.temp_stages.grid.refresh();
-    d.show();
-    
-    // --- ENABLE DRAG AND DROP IN THE MODAL ---
-    setTimeout(() => {
-        let grid_body = d.$wrapper.find('.grid-body .rows')[0];
-        
-        if (grid_body && typeof Sortable !== 'undefined') {
-            d.$wrapper.find('.grid-row').css('cursor', 'grab');
+        // 4. Update the values from the modal safely
+        target_row.stage_name = row.stage_name;
+        target_row.employee = row.employee;
+        target_row.employee_name = row.employee_name;
+        target_row.stage = idx + 1;
+        target_row.idx = idx + 1; // Required by Frappe for sequence tracking
 
-            new Sortable(grid_body, {
-                animation: 150,
-                handle: '.grid-row', 
-                ghostClass: 'sortable-ghost',
-                onEnd: function (evt) {
-                    let old_index = evt.oldIndex;
-                    let new_index = evt.newIndex;
-
-                    if (old_index === new_index) return;
-
-                    let data_array = d.fields_dict.temp_stages.grid.data;
-                    let moved_item = data_array.splice(old_index, 1)[0];
-                    data_array.splice(new_index, 0, moved_item);
-
-                    data_array.forEach((row, i) => {
-                        row.idx = i + 1;
-                        row._idx = i + 1;
-                    });
-
-                    d.fields_dict.temp_stages.grid.refresh();
-                    d.$wrapper.find('.grid-row').css('cursor', 'grab');
-                }
-            });
+        if (!target_row.status) {
+          // target_row.status = 'Pending';
+          target_row.status = "";
         }
-    }, 300);
+      });
+
+      frm.refresh_field("audit_stages");
+      frm.dirty(); // Tell Frappe the document has unsaved changes
+
+      // Save the document and refresh the UI tracker
+      frm.save().then(() => {
+        frappe.show_alert({
+          message: "Stages updated successfully",
+          indicator: "green",
+        });
+        render_interactive_tracker(frm, true);
+        d.hide();
+      });
+    },
+  });
+
+  // Populate the modal with data, binding the exact Database ID to 'stage_id'
+  let existing_data = (frm.doc.audit_stages || []).map((row) => {
+    return {
+      stage_id: row.name, // Link to the original memory row
+      stage_name: row.stage_name,
+      employee: row.employee,
+      employee_name: row.employee_name,
+    };
+  });
+
+  d.fields_dict.temp_stages.df.data = existing_data;
+  d.fields_dict.temp_stages.grid.refresh();
+  d.show();
+
+  // --- ENABLE DRAG AND DROP IN THE MODAL ---
+  setTimeout(() => {
+    let grid_body = d.$wrapper.find(".grid-body .rows")[0];
+
+    if (grid_body && typeof Sortable !== "undefined") {
+      d.$wrapper.find(".grid-row").css("cursor", "grab");
+
+      new Sortable(grid_body, {
+        animation: 150,
+        handle: ".grid-row",
+        ghostClass: "sortable-ghost",
+        onEnd: function (evt) {
+          let old_index = evt.oldIndex;
+          let new_index = evt.newIndex;
+
+          if (old_index === new_index) return;
+
+          let data_array = d.fields_dict.temp_stages.grid.data;
+          let moved_item = data_array.splice(old_index, 1)[0];
+          data_array.splice(new_index, 0, moved_item);
+
+          data_array.forEach((row, i) => {
+            row.idx = i + 1;
+            row._idx = i + 1;
+          });
+
+          d.fields_dict.temp_stages.grid.refresh();
+          d.$wrapper.find(".grid-row").css("cursor", "grab");
+        },
+      });
+    }
+  }, 300);
 }
