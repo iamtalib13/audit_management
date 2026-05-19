@@ -1,7 +1,6 @@
 {
  "actions": [],
  "allow_import": 1,
- "allow_rename": 1,
  "autoname": "format:{division}-{emp_branch}",
  "creation": "2024-09-02 11:17:28.344188",
  "default_view": "List",
@@ -13,6 +12,7 @@
   "sahayog_branch",
   "column_break_usmq",
   "division",
+  "branch_name",
   "stage_1_bm_section",
   "stage_1_bm_emp_id",
   "column_break_4v6eo",
@@ -423,12 +423,14 @@
   {
    "fieldname": "emp_branch",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Branch",
    "options": "Sahayog Branch"
   },
   {
    "fieldname": "division",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Division",
    "options": "Division"
   },
@@ -748,14 +750,30 @@
   {
    "fieldname": "sahayog_branch",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Sahayog Branch",
    "options": "Sahayog Branch",
    "reqd": 1
+  },
+  {
+   "fetch_from": "sahayog_branch.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Branch Name"
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-05-18 12:52:15.685862",
+ "links": [
+  {
+   "group": "My Audits Query",
+   "link_doctype": "My Audits",
+   "link_fieldname": "emp_branch"
+  }
+ ],
+ "modified": "2026-05-19 17:35:40.156110",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Level",
@@ -807,6 +825,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "emp_branch",
+ "title_field": "sahayog_branch",
  "track_changes": 1
 }
