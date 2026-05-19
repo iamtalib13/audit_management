@@ -200,6 +200,7 @@
   "query_generated_by_name",
   "column_break_gw78v",
   "query_generated_by_designation",
+  "reopen",
   "column_break_eophe",
   "query_generated_by_branch"
  ],
@@ -1206,11 +1207,17 @@
    "fieldname": "auditor_details_tab",
    "fieldtype": "Tab Break",
    "label": "Auditor Details"
+  },
+  {
+   "default": "0",
+   "fieldname": "reopen",
+   "fieldtype": "Check",
+   "label": "Reopen"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-09 14:38:09.002063",
+ "modified": "2026-05-19 16:58:04.498537",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
