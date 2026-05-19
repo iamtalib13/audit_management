@@ -290,15 +290,15 @@
    "fieldname": "primary_nature",
    "fieldtype": "Link",
    "label": "Primary Nature of Query",
-   "options": "Audit Primary Nature",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.__islocal",
+   "options": "Audit Primary Nature"
   },
   {
    "fieldname": "department_alignment",
    "fieldtype": "Link",
    "label": "Departmental & Product Alignment",
-   "options": "Audit Department",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.__islocal",
+   "options": "Audit Department"
   },
   {
    "fieldname": "tracking_section",

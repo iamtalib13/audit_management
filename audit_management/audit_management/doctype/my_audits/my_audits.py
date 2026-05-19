@@ -13,6 +13,12 @@ class MyAudits(Document):
         update_audit_aging(self)
         if self.status == "Close":
             self.validate_resolution_fields()
+        
+        # Enforce mandatory fields for new records
+        if self.is_new():
+            for field in ["query_type", "primary_nature", "department_alignment"]:
+                if not self.get(field):
+                    frappe.throw(_("{0} is mandatory for new records").format(self.meta.get_label(field)))
 
     # def before_insert(self):
     #     # Only populate the stages child table when the document is first created
