@@ -29,22 +29,6 @@ def get_employee_from_mapping(uid=None, email=None, employee_name=None):
 
     return emp
 
-def get_division_from_user(user):
-    """Helper to fetch division from Employee record linked to user."""
-    if not user:
-        return None
-    
-    emp = frappe.db.get_value(
-        "Employee", 
-        {"user_id": user}, 
-        ["custom_division", "department"], 
-        as_dict=True
-    )
-    
-    if emp:
-        return emp.custom_division or emp.department
-    return None
-
 def execute():
     """
     PRODUCTION-GRADE MIGRATION PATCH (V4)
@@ -92,14 +76,13 @@ def execute():
             print(f"Processing My Audit: {ma_name}")
             updated = False
 
-            # 1. Set emp_division from Owner if missing
+            # 1. Set emp_division
             if not doc.emp_division:
-                div = get_division_from_user(doc.owner)
-                if div:
-                    doc.emp_division = div
-                    updated = True
-                    summary["division_updated"] += 1
-                    print(f"  [SET] Division: {div}")
+                frappe.db.set_value("My Audits", ma_name, "emp_division", "Retail Branch Banking", update_modified=False)
+                doc.reload()
+                updated = True
+                summary["division_updated"] += 1
+                print(f"  [SET] Division: Retail Branch Banking")
 
             # 2. Populate audit_stages child table (Stage-wise check)
             existing_stages = [d.stage_name for d in doc.audit_stages]

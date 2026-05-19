@@ -1,24 +1,6 @@
 import frappe
 
 
-def get_division_from_user(user):
-    """Helper to fetch division from Employee record linked to user."""
-    if not user:
-        return None
-    
-    # Check Employee linked to user_id
-    emp = frappe.db.get_value(
-        "Employee", 
-        {"user_id": user}, 
-        ["custom_division", "department"], 
-        as_dict=True
-    )
-    
-    if emp:
-        return emp.custom_division or emp.department
-    return None
-
-
 def execute():
     """
     PRODUCTION-GRADE MIGRATION PATCH (V3)
@@ -75,14 +57,13 @@ def execute():
             doc = frappe.get_doc("Audit Level", al_name)
             updated = False
 
-            # A. Set Division from Owner
+            # A. Set Division
             if not doc.division:
-                div = get_division_from_user(doc.owner)
-                if div:
-                    doc.division = div
-                    summary["division_updated"] += 1
-                    updated = True
-                    print(f"  [SET] Division: {div}")
+                frappe.db.set_value("Audit Level", al_name, "division", "Retail Branch Banking", update_modified=False)
+                doc.reload()
+                summary["division_updated"] += 1
+                updated = True
+                print(f"  [SET] Division: Retail Branch Banking")
 
             # B. Set Sahayog Branch (SOL Match -> Name Match)
             if not doc.sahayog_branch and doc.emp_branch:
