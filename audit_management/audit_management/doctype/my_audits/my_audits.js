@@ -402,6 +402,7 @@ frappe.ui.form.on("My Audits", {
 
         if (current_status !== "Draft") {
           frm.trigger("close_query");
+          frm.trigger("reopen_query");
         }
       }
     }
@@ -1017,11 +1018,16 @@ frappe.ui.form.on("My Audits", {
 
 
 setup_dynamic_buttons: function (frm) {
-    if (frm.is_new() || frm.doc.status === "Close") return;
+    if (frm.is_new()) return;
 
     const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
     const current_user = (frappe.session.user || "").toLowerCase();
     const audit_table = frm.doc.auditstages || frm.doc.audit_stages || [];
+
+    // 0. REOPEN LOGIC: Only Audit Team can reopen a Closed query
+    frm.trigger("reopen_query");
+
+    if (frm.doc.status === "Close") return;
 
     // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
     if (frm.doc.status === "Draft" && is_audit_team) {
@@ -1981,6 +1987,50 @@ setup_dynamic_buttons: function (frm) {
           frm.trigger("handle_close_query");
         })
         .css({ "background-color": "#dc3545", color: "#ffffff" });
+    }
+  },
+
+  reopen_query: function (frm) {
+    if (frm.doc.status === "Close") {
+      const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
+      if (is_audit_team) {
+        frm.add_custom_button(__('Reopen Query'), function() {
+          let d = new frappe.ui.Dialog({
+            title: __('Reopen Audit Query'),
+            fields: [
+              {
+                label: __('Reopen'),
+                fieldname: 'reopen',
+                fieldtype: 'Check',
+                reqd: 1,
+                description: __('Check this to confirm reopening the query.')
+              }
+            ],
+            primary_action_label: __('Submit'),
+            primary_action(values) {
+              if (values.reopen) {
+                d.hide();
+                frm.set_value("status", "Pending");
+                // Clear closing details to allow fresh closure later
+                frm.set_value("closing_remark", "");
+                
+                frm.save().then((r) => {
+                  if (!r.exc) {
+                    frappe.show_alert({
+                      message: __("Query Reopened Successfully"),
+                      indicator: "green",
+                    });
+                    frm.reload_doc();
+                  }
+                });
+              } else {
+                frappe.msgprint(__('Please check the Reopen checkbox to proceed.'));
+              }
+            }
+          });
+          d.show();
+        }, __('Actions')).css({"background-color": "#ffc107", "color": "black"});
+      }
     }
   },
 
