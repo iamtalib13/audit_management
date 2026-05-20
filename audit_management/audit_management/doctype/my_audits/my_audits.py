@@ -11,7 +11,7 @@ from audit_management.audit_management.utils import get_working_days, update_aud
 class MyAudits(Document):
     def validate(self):
         update_audit_aging(self)
-        if self.status == "Close":
+        if self.status == "Closed":
             self.validate_resolution_fields()
         
         # Enforce mandatory fields for new records
@@ -599,7 +599,7 @@ def submit_response(docname, response_text, attachment=None):
 #                         stage_names.append(n_row.stage_name)
 #                 doc.query_status = f"Pending From {', '.join(stage_names)}"
 #             else:
-#                 doc.status = "Close"
+#                 doc.status = "Closed"
 #                 doc.query_status = "Completed"
 
 #             doc.save(ignore_permissions=True)

@@ -14,7 +14,7 @@ def get_audit_counts(is_admin=None):
     counts["total_count"] = frappe.db.count("My Audits", filters)
     counts["draft_count"] = frappe.db.count("My Audits", {**filters, "status": "Draft"})
     counts["pending_count"] = frappe.db.count("My Audits", {**filters, "status": "Pending"})
-    counts["close_count"] = frappe.db.count("My Audits", {**filters, "status": "Close"})
+    counts["close_count"] = frappe.db.count("My Audits", {**filters, "status": "Closed"})
 
     if is_new:
         child_filters = ""
