@@ -51,20 +51,41 @@ frappe.ui.form.on("My Audits", {
   },
 
   refresh: function (frm) {
-    // 1. Inject Creation/Closing Date into Header
+    // 1. Inject Creation/Closing Date & Aging into Header
     if (!frm.is_new() && frm.doc.creation) {
       setTimeout(() => {
         let header_status = frm.page.wrapper.find(".indicator-pill").first();
-        if (header_status.length > 0 && frm.page.wrapper.find(".date-tag").length === 0) {
-          let date_html = `<span class="date-tag" style="margin-left: 10px; font-size: 12px; color: #6c757d; font-weight: 500;">`;
-          date_html += `Created: ${frappe.datetime.str_to_user(frm.doc.creation)}`;
+        
+        // Remove existing date-tag if it exists to allow re-injection on status change
+        frm.page.wrapper.find(".date-tag").remove();
+        
+        if (header_status.length > 0) {
+          const created_date = frappe.datetime.str_to_user(frm.doc.creation.split(' ')[0]);
           
-          if (frm.doc.status === "Close" && frm.doc.modified) {
-            date_html += ` | Closed: ${frappe.datetime.str_to_user(frm.doc.modified)}`;
+          let date_html = `<span class="date-tag" style="margin-left: 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 8px; color: #475569;">`;
+          
+          // Helper for icon + text
+          const item = (label, val) => `<span style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px 10px; border-radius: 4px; white-space: nowrap;"><span style="color: #64748b; font-weight: 600;">${label}:</span> <span style="color: #1e293b;">${val}</span></span>`;
+          
+          date_html += item("Created", created_date);
+          
+          if (frm.doc.status === "Close" && frm.doc.closing_date) {
+            const closed_date = frappe.datetime.str_to_user(frm.doc.closing_date);
+            date_html += item("Closed", closed_date);
+          }
+          
+          if (frm.doc.aging !== undefined && frm.doc.aging !== null) {
+              date_html += item("Aging", `${frm.doc.aging} Days`);
           }
           
           date_html += `</span>`;
           header_status.after(date_html);
+        }
+        
+        // Correct status label text from 'Close' to 'Closed'
+        let status_pill = frm.page.wrapper.find(".indicator-pill").first();
+        if (status_pill.text().trim() === "Close") {
+            status_pill.text("Closed");
         }
       }, 500);
     }
@@ -1057,7 +1078,7 @@ frappe.ui.form.on("My Audits", {
 
     if (frm.doc.status === "Close") return;
 
-    // 1. DRAFT STATE: Only Audit Team can see "Raise Request" and "Send to All" Action
+    // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
     if (frm.doc.status === "Draft" && is_audit_team) {
       frm
         .add_custom_button(
@@ -1074,38 +1095,63 @@ frappe.ui.form.on("My Audits", {
               return;
             }
 
+            // Add blank first option + Send to All
+            let options = ["", "Send to All", ...stages];
+
             frappe.prompt(
               [
                 {
                   label: "Select Target Stage",
                   fieldname: "stagename",
                   fieldtype: "Select",
-                  options: stages.join("\n"),
-                  default: stages[0],
+                  options: options.join("\n"),
+                  default: options[0],
                   reqd: 1,
-                  description: "Select the stage to send this request to.",
+                  description: "Select a stage or 'Send to All' to trigger all stages.",
                 },
               ],
               function (values) {
-                frappe.call({
-                  method:
-                    "audit_management.audit_management.doctype.my_audits.my_audits.raise_request",
-                  args: {
-                    docname: frm.doc.name,
-                    stagename: values.stagename,
-                  },
-                  freeze: true,
-                  freeze_message: "Raising Request...",
-                  callback: function (r) {
-                    if (!r.exc) {
-                      frappe.show_alert({
-                        message: __("Request Raised Successfully"),
-                        indicator: "green",
-                      });
-                      frm.reload_doc();
-                    }
-                  },
-                });
+                if (!values.stagename) {
+                    frappe.msgprint("Please select a valid option.");
+                    return;
+                }
+                
+                if (values.stagename === "Send to All") {
+                  frappe.confirm(__("Are you sure you want to send this query to all stages?"), () => {
+                    frappe.call({
+                      method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all_stages",
+                      args: { docname: frm.doc.name },
+                      freeze: true,
+                      freeze_message: "Sending to all stages...",
+                      callback: function (r) {
+                        if (r.message) {
+                          frappe.show_alert({ message: r.message, indicator: "green" });
+                          frm.reload_doc();
+                        }
+                      }
+                    });
+                  });
+                } else {
+                  frappe.call({
+                    method:
+                      "audit_management.audit_management.doctype.my_audits.my_audits.raise_request",
+                    args: {
+                      docname: frm.doc.name,
+                      stagename: values.stagename,
+                    },
+                    freeze: true,
+                    freeze_message: "Raising Request...",
+                    callback: function (r) {
+                      if (!r.exc) {
+                        frappe.show_alert({
+                          message: __("Request Raised Successfully"),
+                          indicator: "green",
+                        });
+                        frm.reload_doc();
+                      }
+                    },
+                  });
+                }
               },
               __("Raise Audit Request"),
               __("Raise Request"),
@@ -1113,28 +1159,6 @@ frappe.ui.form.on("My Audits", {
           },
         )
         .css({ "background-color": "#007bff", color: "white" });
-
-      frm
-        .add_custom_button(
-          __("Send to All"),
-          function () {
-            frappe.confirm(__("Are you sure you want to send this query to all stages?"), () => {
-              frappe.call({
-                method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all_stages",
-                args: { docname: frm.doc.name },
-                freeze: true,
-                freeze_message: "Sending to all stages...",
-                callback: function (r) {
-                  if (r.message) {
-                    frappe.show_alert({ message: r.message, indicator: "green" });
-                    frm.reload_doc();
-                  }
-                }
-              });
-            });
-          },
-        )
-        .css({ "background-color": "#6f42c1", color: "white" });
     }
 
     // 2. PENDING STATE: Find the exact row that is currently pending
@@ -1462,6 +1486,7 @@ frappe.ui.form.on("My Audits", {
         frm.set_value("action_point_with_tat", data.action_point_with_tat);
         frm.set_value("recommendations", data.recommendations);
         frm.set_value("closing_remark", data.closing_remark);
+        frm.set_value("closing_date", frappe.datetime.nowdate());
         frm.set_value("status", "Close");
         frm.save().then((r) => {
           if (!r.exc) {
@@ -2101,6 +2126,7 @@ frappe.ui.form.on("My Audits", {
 
                 // Clear closing details for fresh closure
                 frm.set_value("closing_remark", "");
+                frm.set_value("closing_date", "");
 
                 frm.save().then((r) => {
                   if (!r.exc) {
@@ -2263,14 +2289,18 @@ function render_interactive_tracker(frm, can_edit) {
   // Modern SVG Chevron instead of -->
   const arrow_svg = `<svg class="modern-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 4px;"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
 
-  // Format date helper
-  const fmt_date = (d) => (d ? frappe.datetime.str_to_user(d) : "");
+  // Format age helper
+  const fmt_age = (d) => {
+    if (!d) return "";
+    let diff = frappe.datetime.get_diff(frappe.datetime.now_datetime(), d);
+    return diff <= 0 ? "Today" : diff + " days";
+  };
 
   // 2. Build the HTML wrapper
   let html = `
         <div class="custom-interactive-tracker-wrapper modern-audit-tracker" style="display: flex; align-items: center; gap: 4px; width: 100%; flex-wrap: wrap;">
             
-            <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department | Created: ${fmt_date(frm.doc.creation)}">
+            <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department | Created: ${frappe.datetime.str_to_user(frm.doc.creation.split(' ')[0])}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                 AUDIT TEAM
             </div>
@@ -2295,12 +2325,14 @@ function render_interactive_tracker(frm, can_edit) {
     let emp_name =
       row.employee_name || row.employee || row.user_id || "Unassigned";
     
-    // Prepare time info
+    // Prepare time info (Date + Aging)
     let time_info = "";
     if (row.status === "Pending" && row.pending_time) {
-      time_info = ` | Pending Since: ${fmt_date(row.pending_time)}`;
+      let d = frappe.datetime.str_to_user(row.pending_time.split(' ')[0]);
+      time_info = ` | Pending: ${d} (${fmt_age(row.pending_time)})`;
     } else if (row.status === "Responded" && row.response_time) {
-      time_info = ` | Responded: ${fmt_date(row.response_time)}`;
+      let d = frappe.datetime.str_to_user(row.response_time.split(' ')[0]);
+      time_info = ` | Responded: ${d} (${fmt_age(row.response_time)} ago)`;
     }
 
     html += `

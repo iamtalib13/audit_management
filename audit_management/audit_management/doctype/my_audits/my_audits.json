@@ -191,6 +191,7 @@
   "ceo_response_box",
   "closing_remark_section",
   "closing_remark",
+  "closing_date",
   "audit_items_section",
   "audit_stages",
   "auditor_details_tab",
@@ -223,7 +224,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "\nDraft\nPending\nClose"
+   "options": "\nDraft\nPending\nClosed"
   },
   {
    "fieldname": "bm_user_id",
@@ -653,6 +654,12 @@
    "fieldtype": "Data",
    "label": "<b>Closing Remark from Audit Team</b>",
    "read_only_depends_on": "eval:doc.closing_remark!==null;"
+  },
+  {
+   "fieldname": "closing_date",
+   "fieldtype": "Date",
+   "label": "Closing Date",
+   "read_only": 1
   },
   {
    "fieldname": "closing_remark_section",
@@ -1217,7 +1224,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-19 16:58:04.498537",
+ "modified": "2026-05-20 13:57:17.647932",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
