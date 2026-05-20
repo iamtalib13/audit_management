@@ -55,15 +55,18 @@ frappe.ui.form.on("My Audits", {
     if (!frm.is_new() && frm.doc.creation) {
       setTimeout(() => {
         let header_status = frm.page.wrapper.find(".indicator-pill").first();
-        if (header_status.length > 0 && frm.page.wrapper.find(".date-tag").length === 0) {
-          // Format date (DD-MM-YYYY)
+        
+        // Remove existing date-tag if it exists to allow re-injection on status change
+        frm.page.wrapper.find(".date-tag").remove();
+        
+        if (header_status.length > 0) {
           const created_date = frappe.datetime.str_to_user(frm.doc.creation.split(' ')[0]);
           let date_html = `<span class="date-tag" style="margin-left: 10px; font-size: 12px; color: #6c757d; font-weight: 500;">`;
           
           date_html += `Created: ${created_date}`;
           
-          if (frm.doc.status === "Close" && frm.doc.modified) {
-            const closed_date = frappe.datetime.str_to_user(frm.doc.modified.split(' ')[0]);
+          if (frm.doc.status === "Close" && frm.doc.closing_date) {
+            const closed_date = frappe.datetime.str_to_user(frm.doc.closing_date);
             date_html += ` | Closed: ${closed_date}`;
           }
           
@@ -1474,6 +1477,7 @@ frappe.ui.form.on("My Audits", {
         frm.set_value("action_point_with_tat", data.action_point_with_tat);
         frm.set_value("recommendations", data.recommendations);
         frm.set_value("closing_remark", data.closing_remark);
+        frm.set_value("closing_date", frappe.datetime.nowdate());
         frm.set_value("status", "Close");
         frm.save().then((r) => {
           if (!r.exc) {
@@ -2113,6 +2117,7 @@ frappe.ui.form.on("My Audits", {
 
                 // Clear closing details for fresh closure
                 frm.set_value("closing_remark", "");
+                frm.set_value("closing_date", "");
 
                 frm.save().then((r) => {
                   if (!r.exc) {
