@@ -61,18 +61,21 @@ frappe.ui.form.on("My Audits", {
         
         if (header_status.length > 0) {
           const created_date = frappe.datetime.str_to_user(frm.doc.creation.split(' ')[0]);
-          let date_html = `<span class="date-tag" style="margin-left: 10px; font-size: 12px; color: #6c757d; font-weight: 500;">`;
           
-          date_html += `Created: ${created_date}`;
+          let date_html = `<span class="date-tag" style="margin-left: 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 8px; color: #475569;">`;
+          
+          // Helper for icon + text
+          const item = (label, val) => `<span style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px 10px; border-radius: 4px; white-space: nowrap;"><span style="color: #64748b; font-weight: 600;">${label}:</span> <span style="color: #1e293b;">${val}</span></span>`;
+          
+          date_html += item("Created", created_date);
           
           if (frm.doc.status === "Close" && frm.doc.closing_date) {
             const closed_date = frappe.datetime.str_to_user(frm.doc.closing_date);
-            date_html += ` | Closed: ${closed_date}`;
+            date_html += item("Closed", closed_date);
           }
           
-          // Add Aging value if available
           if (frm.doc.aging !== undefined && frm.doc.aging !== null) {
-              date_html += ` | Aging: ${frm.doc.aging} Days`;
+              date_html += item("Aging", `${frm.doc.aging} Days`);
           }
           
           date_html += `</span>`;
