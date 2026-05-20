@@ -51,6 +51,24 @@ frappe.ui.form.on("My Audits", {
   },
 
   refresh: function (frm) {
+    // 1. Inject Creation/Closing Date into Header
+    if (!frm.is_new() && frm.doc.creation) {
+      setTimeout(() => {
+        let header_status = frm.page.wrapper.find(".indicator-pill").first();
+        if (header_status.length > 0 && frm.page.wrapper.find(".date-tag").length === 0) {
+          let date_html = `<span class="date-tag" style="margin-left: 10px; font-size: 12px; color: #6c757d; font-weight: 500;">`;
+          date_html += `Created: ${frappe.datetime.str_to_user(frm.doc.creation)}`;
+          
+          if (frm.doc.status === "Close" && frm.doc.modified) {
+            date_html += ` | Closed: ${frappe.datetime.str_to_user(frm.doc.modified)}`;
+          }
+          
+          date_html += `</span>`;
+          header_status.after(date_html);
+        }
+      }, 500);
+    }
+    
     // Filter branch (Audit Level) based on the current user's division
     frm.set_query("emp_branch", function () {
       return {
