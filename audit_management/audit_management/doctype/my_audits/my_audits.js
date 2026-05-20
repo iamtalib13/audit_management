@@ -1073,6 +1073,40 @@ frappe.ui.form.on("My Audits", {
     const current_user = (frappe.session.user || "").toLowerCase();
     const audit_table = frm.doc.auditstages || frm.doc.audit_stages || [];
 
+    // View Audit History Button (Prominent)
+    if (!frm.is_new()) {
+        frm.add_custom_button(__('Audit History'), function() {
+            frappe.call({
+                method: 'audit_management.audit_management.doctype.my_audits.my_audits.get_audit_history_summary',
+                args: { docname: frm.doc.name },
+                callback: function(r) {
+                    let rows = r.message;
+                    let html = `<table class='table table-bordered table-striped' id='audit-history-table'>
+                        <thead><tr><th>Sr.</th><th>Event</th><th>User</th><th>Date/Time</th><th>Status</th></tr></thead>
+                        <tbody>`;
+                    rows.forEach((row, index) => {
+                        html += `<tr><td>${index + 1}</td><td>${row.event}</td><td>${row.user}</td><td>${row.date}</td><td>${row.status}</td></tr>`;
+                    });
+                    html += `</tbody></table>`;
+                    
+                    let d = new frappe.ui.Dialog({
+                        title: __('Audit History'),
+                        size: 'extra-large'
+                    });
+                    
+                    // Add Export button to header
+                    d.header.append(`<button class="btn btn-sm btn-primary" style="margin-right: 40px;">Export to CSV</button>`);
+                    d.header.find('.btn-primary').on('click', () => {
+                        frappe.tools.downloadify(rows, ["event", "user", "date", "status"], "AuditHistory");
+                    });
+
+                    d.show();
+                    $(d.body).html(html);
+                }
+            });
+        }).css({ "background-color": "#4a90e2", "color": "white" });
+    }
+
     // 0. REOPEN LOGIC: Only Audit Team can reopen a Closed query
     frm.trigger("reopen_query");
 

@@ -827,9 +827,59 @@ def get_permission_query_conditions(user=None):
         )
     """
 
-# -------------------------------------------------------------
-# WHITELISTED METHODS (Add these outside the MyAudits class)
-# -------------------------------------------------------------
+from frappe.utils import now, time_diff_in_seconds, time_diff_in_hours, getdate, nowdate, format_datetime
+
+@frappe.whitelist()
+def get_audit_history_summary(docname):
+    doc = frappe.get_doc("My Audits", docname)
+    
+    def get_full_name(user_id):
+        if not user_id: return ""
+        if user_id == "System/Audit Team": return "System/Audit Team"
+        return frappe.db.get_value("User", user_id, "full_name") or user_id
+
+    # Formatted History List
+    history = []
+    
+    # Creator Info
+    history.append({
+        "event": "Query Created",
+        "user": doc.query_generated_by_name or get_full_name(doc.owner),
+        "date": format_datetime(doc.creation, "dd-MM-yyyy hh:mm a"),
+        "status": "Created"
+    })
+    
+    # Stages Info
+    creator_name = doc.query_generated_by_name or get_full_name(doc.owner)
+    for row in doc.audit_stages:
+        if row.status or row.pending_time:
+            history.append({
+                "event": f"Assigned to {row.stage_name} ({row.employee_name})",
+                "user": creator_name,
+                "date": format_datetime(row.pending_time, "dd-MM-yyyy hh:mm a") if row.pending_time else "",
+                "status": "Pending"
+            })
+            if row.status == "Responded":
+                history.append({
+                    "event": f"Response from {row.stage_name}",
+                    "user": row.employee_name,
+                    "date": format_datetime(row.response_time, "dd-MM-yyyy hh:mm a") if row.response_time else "",
+                    "status": "Responded"
+                })
+
+    # Closure Info
+    if doc.status == "Closed":
+        # Attempt to find who closed it
+        closed_by_id = frappe.db.get_value("Version", {"ref_doctype": "My Audits", "docname": doc.name, "data": ["like", "%status%Closed%"]}, "owner")
+        history.append({
+            "event": "Query Closed",
+            "user": get_full_name(closed_by_id) or "System/Audit Team",
+            "date": format_datetime(str(doc.closing_date) + " 00:00:00", "dd-MM-yyyy hh:mm a") if doc.closing_date else "",
+            "status": "Closed"
+        })
+        
+    return history
+
 
 
 @frappe.whitelist()
