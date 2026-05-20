@@ -359,6 +359,33 @@ def get_status_tracker_html(docname):
 
 
 @frappe.whitelist()
+def send_to_all_stages(docname):
+    doc = frappe.get_doc("My Audits", docname)
+    
+    if doc.status != "Draft":
+        frappe.throw("Only Draft requests can be sent to all stages.")
+
+    if not doc.get("audit_stages"):
+        frappe.throw("No stages found to assign.")
+
+    for row in doc.get("audit_stages"):
+        if row.user_id:
+            row.status = "Pending"
+            row.pending_time = frappe.utils.now()
+            
+            # Share document
+            frappe.share.add(doc.doctype, doc.name, row.user_id, read=1, write=1, share=1, notify=0)
+            
+            # Send Notification
+            send_stage_notification(doc, row, action="assign")
+            
+    doc.status = "Pending"
+    doc.query_status = "Pending From All Stages"
+    doc.save(ignore_permissions=True)
+    
+    return "Query sent to all stages successfully!"
+
+@frappe.whitelist()
 def send_to_next_stage(docname):
     doc = frappe.get_doc("My Audits", docname)
     next_row = None

@@ -1057,7 +1057,7 @@ frappe.ui.form.on("My Audits", {
 
     if (frm.doc.status === "Close") return;
 
-    // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
+    // 1. DRAFT STATE: Only Audit Team can see "Raise Request" and "Send to All" Action
     if (frm.doc.status === "Draft" && is_audit_team) {
       frm
         .add_custom_button(
@@ -1113,6 +1113,28 @@ frappe.ui.form.on("My Audits", {
           },
         )
         .css({ "background-color": "#007bff", color: "white" });
+
+      frm
+        .add_custom_button(
+          __("Send to All"),
+          function () {
+            frappe.confirm(__("Are you sure you want to send this query to all stages?"), () => {
+              frappe.call({
+                method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all_stages",
+                args: { docname: frm.doc.name },
+                freeze: true,
+                freeze_message: "Sending to all stages...",
+                callback: function (r) {
+                  if (r.message) {
+                    frappe.show_alert({ message: r.message, indicator: "green" });
+                    frm.reload_doc();
+                  }
+                }
+              });
+            });
+          },
+        )
+        .css({ "background-color": "#6f42c1", color: "white" });
     }
 
     // 2. PENDING STATE: Find the exact row that is currently pending
