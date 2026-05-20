@@ -69,7 +69,7 @@ frappe.ui.form.on("My Audits", {
           
           date_html += item("Created", created_date);
           
-          if (frm.doc.status === "Close" && frm.doc.closing_date) {
+          if (frm.doc.status === "Closed" && frm.doc.closing_date) {
             const closed_date = frappe.datetime.str_to_user(frm.doc.closing_date);
             date_html += item("Closed", closed_date);
           }
@@ -84,7 +84,7 @@ frappe.ui.form.on("My Audits", {
         
         // Correct status label text from 'Close' to 'Closed'
         let status_pill = frm.page.wrapper.find(".indicator-pill").first();
-        if (status_pill.text().trim() === "Close") {
+        if (status_pill.text().trim() === "Closed") {
             status_pill.text("Closed");
         }
       }, 500);
@@ -331,7 +331,7 @@ frappe.ui.form.on("My Audits", {
         .css({ "background-color": "#28a745", color: "white" });
     }
 
-    if (frm.doc.status === "Close") {
+    if (frm.doc.status === "Closed") {
       frm.disable_form();
     }
 
@@ -493,7 +493,7 @@ frappe.ui.form.on("My Audits", {
   },
 
   // setup_dynamic_buttons: function (frm) {
-  //   if (frm.is_new() || frm.doc.status === "Close") return;
+  //   if (frm.is_new() || frm.doc.status === "Closed") return;
   //   const is_audit_team =
   //     frappe.user.has_role("Audit Manager") ||
   //     frappe.user.has_role("Audit Member");
@@ -569,7 +569,7 @@ frappe.ui.form.on("My Audits", {
   // },
 
   //   setup_dynamic_buttons: function (frm) {
-  //   if (frm.is_new() || frm.doc.status === "Close") return;
+  //   if (frm.is_new() || frm.doc.status === "Closed") return;
 
   //   const is_audit_team =
   //     frappe.user.has_role("Audit Manager") ||
@@ -672,7 +672,7 @@ frappe.ui.form.on("My Audits", {
 
   // current working
   //   setup_dynamic_buttons: function (frm) {
-  //   if (frm.is_new() || frm.doc.status === "Close") return;
+  //   if (frm.is_new() || frm.doc.status === "Closed") return;
 
   //   const current_user = frappe.session.user;
 
@@ -766,7 +766,7 @@ frappe.ui.form.on("My Audits", {
 
   // my current working
   // setup_dynamic_buttons: function (frm) {
-  //     if (frm.is_new() || frm.doc.status === "Close") return;
+  //     if (frm.is_new() || frm.doc.status === "Closed") return;
 
   //     const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
   //     const current_user = frappe.session.user;
@@ -933,7 +933,7 @@ frappe.ui.form.on("My Audits", {
 
   // setup_dynamic_buttons: function (frm) {
   //     // Return early if it's a completely new, unsaved document, or if it's closed.
-  //     if (frm.is_new() || frm.doc.status === "Close") return;
+  //     if (frm.is_new() || frm.doc.status === "Closed") return;
 
   //     const is_audit_team = frappe.user.has_role("Audit Manager") || frappe.user.has_role("Audit Member");
   //     const current_user = frappe.session.user;
@@ -1076,7 +1076,7 @@ frappe.ui.form.on("My Audits", {
     // 0. REOPEN LOGIC: Only Audit Team can reopen a Closed query
     frm.trigger("reopen_query");
 
-    if (frm.doc.status === "Close") return;
+    if (frm.doc.status === "Closed") return;
 
     // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
     if (frm.doc.status === "Draft" && is_audit_team) {
@@ -1327,7 +1327,7 @@ frappe.ui.form.on("My Audits", {
   //   frm.refresh_field("current_response_box");
   //   frm.refresh_field("current_response_attach");
 
-  //   if (frm.doc.status === "Close") {
+  //   if (frm.doc.status === "Closed") {
   //     frm.disable_form();
   //   }
   // },
@@ -1381,7 +1381,7 @@ frappe.ui.form.on("My Audits", {
     }
 
     // Show the resolution section ONLY when the query is closed
-    frm.toggle_display("resolution_section", frm.doc.status === "Close");
+    frm.toggle_display("resolution_section", frm.doc.status === "Closed");
     // ---------------------------------------------------------
 
     // 5. Freeze Completed Stage Response Boxes
@@ -1410,7 +1410,7 @@ frappe.ui.form.on("My Audits", {
     frm.set_df_property("current_response_attach", "hidden", 1);
     frm.toggle_display("response_section", false);
 
-    if (frm.doc.status === "Close") {
+    if (frm.doc.status === "Closed") {
       frm.disable_form();
     }
   },
@@ -1478,7 +1478,7 @@ frappe.ui.form.on("My Audits", {
           default: frm.doc.closing_remark,
         },
       ],
-      primary_action_label: __("Close"),
+      primary_action_label: __("Closed"),
       primary_action(data) {
         d.hide();
         frm.set_value("rca_category", data.rca_category);
@@ -1487,7 +1487,7 @@ frappe.ui.form.on("My Audits", {
         frm.set_value("recommendations", data.recommendations);
         frm.set_value("closing_remark", data.closing_remark);
         frm.set_value("closing_date", frappe.datetime.nowdate());
-        frm.set_value("status", "Close");
+        frm.set_value("status", "Closed");
         frm.save().then((r) => {
           if (!r.exc) {
             frappe.show_alert({
@@ -2097,7 +2097,7 @@ frappe.ui.form.on("My Audits", {
   },
 
   close_query: function (frm) {
-    if (frm.doc.status !== "Close") {
+    if (frm.doc.status !== "Closed") {
       frm
         .add_custom_button(__("Close Query"), function () {
           frm.trigger("handle_close_query");
@@ -2107,7 +2107,7 @@ frappe.ui.form.on("My Audits", {
   },
 
   reopen_query: function (frm) {
-    if (frm.doc.status === "Close") {
+    if (frm.doc.status === "Closed") {
       const is_audit_team =
         frappe.user.has_role("Audit Manager") ||
         frappe.user.has_role("Audit Member");
