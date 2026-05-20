@@ -81,6 +81,12 @@ frappe.ui.form.on("My Audits", {
           date_html += `</span>`;
           header_status.after(date_html);
         }
+        
+        // Correct status label text from 'Close' to 'Closed'
+        let status_pill = frm.page.wrapper.find(".indicator-pill").first();
+        if (status_pill.text().trim() === "Close") {
+            status_pill.text("Closed");
+        }
       }, 500);
     }
     
