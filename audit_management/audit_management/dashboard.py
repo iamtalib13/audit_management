@@ -42,12 +42,20 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None):
 
         pending_for_me_list = []
         has_more_pending = False
-        if pending_records:
-            parent_names = [r.parent for r in pending_records]
+        
+        # Use responded records if status is 'Responded', otherwise use pending
+        active_records = pending_records
+        if status == 'Responded':
+            active_records = responded_records
+
+        if active_records:
+            parent_names = [r.parent for r in active_records]
             
             # Apply status filter if provided
             p_filters = {"name": ["in", parent_names]}
-            if status:
+            # If stage user selects 'Pending', we filter the parent by 'Pending' too.
+            # If they select 'Responded', we already have the parents from 'responded_records'.
+            if status and status != 'Responded':
                 p_filters["status"] = status
 
             pending_for_me_list = frappe.get_all(
