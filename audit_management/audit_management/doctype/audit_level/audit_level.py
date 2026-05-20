@@ -12,11 +12,29 @@ class AuditLevel(Document):
             self.division = get_user_division()
 
     def validate(self):
+        self.validate_duplicate()
         if is_new_system_enabled():
             self.remove_blank_rows()
             self.update_employee_emails()
         else:
             self.sync_new_to_old_stages()
+
+    def validate_duplicate(self):
+        """Prevents duplicate record creation for same branch + division combo."""
+        duplicate = frappe.db.exists(
+            "Audit Level",
+            {
+                "sahayog_branch": self.sahayog_branch,
+                "division": self.division,
+                "name": ["!=", self.name]
+            }
+        )
+        if duplicate:
+            frappe.throw(
+                frappe._("An Audit Level configuration already exists for Branch: <b>{0}</b> and Division: <b>{1}</b>.").format(
+                    self.sahayog_branch, self.division
+                )
+            )
 
     def remove_blank_rows(self):
         cleaned_rows = []
