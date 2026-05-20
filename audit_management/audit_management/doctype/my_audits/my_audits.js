@@ -1057,7 +1057,7 @@ frappe.ui.form.on("My Audits", {
 
     if (frm.doc.status === "Close") return;
 
-    // 1. DRAFT STATE: Only Audit Team can see "Raise Request" and "Send to All" Action
+    // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
     if (frm.doc.status === "Draft" && is_audit_team) {
       frm
         .add_custom_button(
@@ -1074,38 +1074,63 @@ frappe.ui.form.on("My Audits", {
               return;
             }
 
+            // Add blank first option + Send to All
+            let options = ["", "Send to All", ...stages];
+
             frappe.prompt(
               [
                 {
                   label: "Select Target Stage",
                   fieldname: "stagename",
                   fieldtype: "Select",
-                  options: stages.join("\n"),
-                  default: stages[0],
+                  options: options.join("\n"),
+                  default: options[0],
                   reqd: 1,
-                  description: "Select the stage to send this request to.",
+                  description: "Select a stage or 'Send to All' to trigger all stages.",
                 },
               ],
               function (values) {
-                frappe.call({
-                  method:
-                    "audit_management.audit_management.doctype.my_audits.my_audits.raise_request",
-                  args: {
-                    docname: frm.doc.name,
-                    stagename: values.stagename,
-                  },
-                  freeze: true,
-                  freeze_message: "Raising Request...",
-                  callback: function (r) {
-                    if (!r.exc) {
-                      frappe.show_alert({
-                        message: __("Request Raised Successfully"),
-                        indicator: "green",
-                      });
-                      frm.reload_doc();
-                    }
-                  },
-                });
+                if (!values.stagename) {
+                    frappe.msgprint("Please select a valid option.");
+                    return;
+                }
+                
+                if (values.stagename === "Send to All") {
+                  frappe.confirm(__("Are you sure you want to send this query to all stages?"), () => {
+                    frappe.call({
+                      method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all_stages",
+                      args: { docname: frm.doc.name },
+                      freeze: true,
+                      freeze_message: "Sending to all stages...",
+                      callback: function (r) {
+                        if (r.message) {
+                          frappe.show_alert({ message: r.message, indicator: "green" });
+                          frm.reload_doc();
+                        }
+                      }
+                    });
+                  });
+                } else {
+                  frappe.call({
+                    method:
+                      "audit_management.audit_management.doctype.my_audits.my_audits.raise_request",
+                    args: {
+                      docname: frm.doc.name,
+                      stagename: values.stagename,
+                    },
+                    freeze: true,
+                    freeze_message: "Raising Request...",
+                    callback: function (r) {
+                      if (!r.exc) {
+                        frappe.show_alert({
+                          message: __("Request Raised Successfully"),
+                          indicator: "green",
+                        });
+                        frm.reload_doc();
+                      }
+                    },
+                  });
+                }
               },
               __("Raise Audit Request"),
               __("Raise Request"),
@@ -1113,28 +1138,6 @@ frappe.ui.form.on("My Audits", {
           },
         )
         .css({ "background-color": "#007bff", color: "white" });
-
-      frm
-        .add_custom_button(
-          __("Send to All"),
-          function () {
-            frappe.confirm(__("Are you sure you want to send this query to all stages?"), () => {
-              frappe.call({
-                method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all_stages",
-                args: { docname: frm.doc.name },
-                freeze: true,
-                freeze_message: "Sending to all stages...",
-                callback: function (r) {
-                  if (r.message) {
-                    frappe.show_alert({ message: r.message, indicator: "green" });
-                    frm.reload_doc();
-                  }
-                }
-              });
-            });
-          },
-        )
-        .css({ "background-color": "#6f42c1", color: "white" });
     }
 
     // 2. PENDING STATE: Find the exact row that is currently pending
