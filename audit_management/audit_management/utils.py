@@ -26,7 +26,7 @@ def get_working_days(start_date, end_date):
 def update_audit_aging(doc):
     """Calculates aging from creation date to now (or closure date)."""
     start_date = getdate(doc.creation)
-    end_date = getdate(doc.modified) if doc.status == "Close" else getdate(nowdate())
+    end_date = getdate(doc.modified) if doc.status == "Closed" else getdate(nowdate())
     
     doc.aging = get_working_days(start_date, end_date)
 
