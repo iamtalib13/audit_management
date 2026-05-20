@@ -5,7 +5,7 @@ import frappe
 from frappe import _
 
 @frappe.whitelist()
-def get_dashboard_stats(pending_start=0, recent_start=0):
+def get_dashboard_stats(pending_start=0, recent_start=0, status=None):
     user = frappe.session.user
     roles = frappe.get_roles(user)
     
@@ -44,9 +44,15 @@ def get_dashboard_stats(pending_start=0, recent_start=0):
         has_more_pending = False
         if pending_records:
             parent_names = [r.parent for r in pending_records]
+            
+            # Apply status filter if provided
+            p_filters = {"name": ["in", parent_names]}
+            if status:
+                p_filters["status"] = status
+
             pending_for_me_list = frappe.get_all(
                 "My Audits",
-                filters={"name": ["in", parent_names]},
+                filters=p_filters,
                 fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
                 limit_start=pending_start,
                 limit_page_length=page_length + 1
@@ -92,9 +98,14 @@ def get_dashboard_stats(pending_start=0, recent_start=0):
         recent_list = []
         has_more_recent = False
         if is_manager or is_member:
+            # Apply status filter if provided
+            r_filters = filters.copy()
+            if status:
+                r_filters["status"] = status
+
             recent_list = frappe.get_all(
                 "My Audits",
-                filters=filters,
+                filters=r_filters,
                 fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
                 order_by="creation desc",
                 limit_start=recent_start,
