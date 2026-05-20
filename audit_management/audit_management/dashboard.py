@@ -53,7 +53,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None):
             pending_for_me_list = frappe.get_all(
                 "My Audits",
                 filters=p_filters,
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"],
                 limit_start=pending_start,
                 limit_page_length=page_length + 1
             )
@@ -106,7 +106,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None):
             recent_list = frappe.get_all(
                 "My Audits",
                 filters=r_filters,
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"],
                 order_by="creation desc",
                 limit_start=recent_start,
                 limit_page_length=page_length + 1
