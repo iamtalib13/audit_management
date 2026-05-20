@@ -5,7 +5,7 @@ import frappe
 from frappe import _
 
 @frappe.whitelist()
-def get_dashboard_stats(pending_start=0, recent_start=0):
+def get_dashboard_stats(pending_start=0, recent_start=0, status=None):
     user = frappe.session.user
     roles = frappe.get_roles(user)
     
@@ -42,12 +42,26 @@ def get_dashboard_stats(pending_start=0, recent_start=0):
 
         pending_for_me_list = []
         has_more_pending = False
-        if pending_records:
-            parent_names = [r.parent for r in pending_records]
+        
+        # Use responded records if status is 'Responded', otherwise use pending
+        active_records = pending_records
+        if status == 'Responded':
+            active_records = responded_records
+
+        if active_records:
+            parent_names = [r.parent for r in active_records]
+            
+            # Apply status filter if provided
+            p_filters = {"name": ["in", parent_names]}
+            # If stage user selects 'Pending', we filter the parent by 'Pending' too.
+            # If they select 'Responded', we already have the parents from 'responded_records'.
+            if status and status != 'Responded':
+                p_filters["status"] = status
+
             pending_for_me_list = frappe.get_all(
                 "My Audits",
-                filters={"name": ["in", parent_names]},
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
+                filters=p_filters,
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"],
                 limit_start=pending_start,
                 limit_page_length=page_length + 1
             )
@@ -92,10 +106,15 @@ def get_dashboard_stats(pending_start=0, recent_start=0):
         recent_list = []
         has_more_recent = False
         if is_manager or is_member:
+            # Apply status filter if provided
+            r_filters = filters.copy()
+            if status:
+                r_filters["status"] = status
+
             recent_list = frappe.get_all(
                 "My Audits",
-                filters=filters,
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging"],
+                filters=r_filters,
+                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"],
                 order_by="creation desc",
                 limit_start=recent_start,
                 limit_page_length=page_length + 1
