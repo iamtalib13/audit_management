@@ -1111,7 +1111,6 @@ frappe.ui.form.on("My Audits", {
               __("Raise Request"),
             );
           },
-          __("Actions"),
         )
         .css({ "background-color": "#007bff", color: "white" });
     }
@@ -1188,7 +1187,6 @@ frappe.ui.form.on("My Audits", {
           function () {
             frm.trigger("handle_close_query");
           },
-          __("Actions"),
         )
         .css({ "background-color": "#dc3545", color: "white" });
 
@@ -1213,7 +1211,6 @@ frappe.ui.form.on("My Audits", {
                 },
               });
             },
-            __("Actions"),
           )
           .css({ "background-color": "#28a745", color: "white" });
       }
@@ -2098,8 +2095,7 @@ frappe.ui.form.on("My Audits", {
                 // No Action
               },
             );
-          },
-          __("Actions"),
+          }
         );
       }
     }
