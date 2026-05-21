@@ -42,29 +42,50 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
             WHERE status = 'Responded'
             AND (user_id = %s OR email = %s)
         """
+        not_responded_items_query = """
+            SELECT DISTINCT parent
+            FROM `tabAudit Items`
+            WHERE status = 'No Response'
+            AND (user_id = %s OR email = %s)
+        """
 
         pending_records = frappe.db.sql(pending_items_query, (user, user), as_dict=True)
         responded_records = frappe.db.sql(responded_items_query, (user, user), as_dict=True)
+        not_responded_records = frappe.db.sql(not_responded_items_query, (user, user), as_dict=True)
 
         pending_for_me_count = len(pending_records)
         responded_by_me_count = len(responded_records)
+        not_responded_count = len(not_responded_records)
 
         pending_for_me_list = []
         has_more_pending = False
         
-        # Use responded records if status contains 'Responded', otherwise use pending
-        active_records = pending_records
+        # We only process this list if the user is a stage user or we need these counts
+        # Identify which parent records to fetch for the UI list
+        selected_parents = []
         if 'Responded' in status_list:
-            active_records = responded_records
+            selected_parents = [r.parent for r in responded_records]
+        elif 'No Response' in status_list:
+            selected_parents = [r.parent for r in not_responded_records]
+        elif 'Pending' in status_list:
+            selected_parents = [r.parent for r in pending_records]
+        else:
+            # Default: All unique parents across all categories
+            selected_parents = list(set(
+                [r.parent for r in pending_records] + 
+                [r.parent for r in responded_records] + 
+                [r.parent for r in not_responded_records]
+            ))
 
-        if active_records:
-            parent_names = [r.parent for r in active_records]
+        if selected_parents:
+            p_filters = {"name": ["in", selected_parents]}
             
-            # Apply filters
-            p_filters = {"name": ["in", parent_names]}
-            
+            # Dropdown filters (if any)
             if status_list:
-                actual_statuses = [s for s in status_list if s != 'Responded']
+                # Parent status can be anything, but usually Pending/Closed
+                # We only filter if the user selected a status from the dropdown
+                # that matches the parent doctype status options.
+                actual_statuses = [s for s in status_list if s in ['Draft', 'Pending', 'Closed']]
                 if actual_statuses:
                     p_filters["status"] = ["in", actual_statuses]
             
@@ -78,6 +99,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
                 "My Audits",
                 filters=p_filters,
                 fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"],
+                order_by="creation desc",
                 limit_start=pending_start,
                 limit_page_length=page_length + 1
             )
@@ -86,7 +108,6 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
                 has_more_pending = True
                 pending_for_me_list = pending_for_me_list[:page_length]
 
-            # Add Sr. No.
             for idx, item in enumerate(pending_for_me_list, start=pending_start + 1):
                 item["sr_no"] = idx
 
@@ -170,6 +191,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
             "role_type": "manager" if (is_manager or is_admin) else ("member" if is_member else "stage_user"),
             "pending_for_me": pending_for_me_count,
             "responded_by_me": responded_by_me_count,
+            "not_responded_count": not_responded_count,
             "total_pending": total_pending,
             "closed_count": closed_count,
             "draft_count": draft_count,
@@ -183,6 +205,12 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Dashboard Stats Error")
         return {"success": False}
+
+@frappe.whitelist()
+def get_my_not_responded_records():
+    user = frappe.session.user
+    records = frappe.db.sql("SELECT DISTINCT parent FROM `tabAudit Items` WHERE status = 'No Response' AND (user_id = %s OR email = %s)", (user, user), as_dict=True)
+    return [r.parent for r in records]
 
 @frappe.whitelist()
 def get_my_responded_records():
