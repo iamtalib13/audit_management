@@ -60,21 +60,32 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
         pending_for_me_list = []
         has_more_pending = False
         
-        # Use records based on status filters
-        active_records = pending_records
+        # We only process this list if the user is a stage user or we need these counts
+        # Identify which parent records to fetch for the UI list
+        selected_parents = []
         if 'Responded' in status_list:
-            active_records = responded_records
+            selected_parents = [r.parent for r in responded_records]
         elif 'No Response' in status_list:
-            active_records = not_responded_records
+            selected_parents = [r.parent for r in not_responded_records]
+        elif 'Pending' in status_list:
+            selected_parents = [r.parent for r in pending_records]
+        else:
+            # Default: All unique parents across all categories
+            selected_parents = list(set(
+                [r.parent for r in pending_records] + 
+                [r.parent for r in responded_records] + 
+                [r.parent for r in not_responded_records]
+            ))
 
-        if active_records:
-            parent_names = [r.parent for r in active_records]
+        if selected_parents:
+            p_filters = {"name": ["in", selected_parents]}
             
-            # Apply filters
-            p_filters = {"name": ["in", parent_names]}
-            
+            # Dropdown filters (if any)
             if status_list:
-                actual_statuses = [s for s in status_list if s != 'Responded']
+                # Parent status can be anything, but usually Pending/Closed
+                # We only filter if the user selected a status from the dropdown
+                # that matches the parent doctype status options.
+                actual_statuses = [s for s in status_list if s in ['Draft', 'Pending', 'Closed']]
                 if actual_statuses:
                     p_filters["status"] = ["in", actual_statuses]
             
@@ -88,6 +99,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
                 "My Audits",
                 filters=p_filters,
                 fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"],
+                order_by="creation desc",
                 limit_start=pending_start,
                 limit_page_length=page_length + 1
             )
@@ -96,7 +108,6 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
                 has_more_pending = True
                 pending_for_me_list = pending_for_me_list[:page_length]
 
-            # Add Sr. No.
             for idx, item in enumerate(pending_for_me_list, start=pending_start + 1):
                 item["sr_no"] = idx
 
