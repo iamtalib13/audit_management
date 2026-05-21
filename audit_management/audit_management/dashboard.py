@@ -108,7 +108,6 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
                 filters["emp_division"] = "None"
 
         total_pending = frappe.db.count("My Audits", {**filters, "status": "Pending"})
-        closed_count = frappe.db.count("My Audits", {**filters, "status": "Close"})
         high_risk = frappe.db.count("My Audits", {**filters, "risk": "High"})
         closed_count = frappe.db.count("My Audits", {**filters, "status": "Closed"})
         draft_count = frappe.db.count("My Audits", {**filters, "status": "Draft"})
