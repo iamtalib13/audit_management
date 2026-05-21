@@ -2554,6 +2554,12 @@ function open_stages_modal(frm) {
             label: "Employee Name",
             read_only: 1,
           },
+          {
+            fieldtype: "Data",
+            fieldname: "email",
+            in_list_view: 1,
+            label: "Email",
+          },
         ],
       },
     ],
@@ -2593,6 +2599,7 @@ function open_stages_modal(frm) {
         target_row.stage_name = row.stage_name;
         target_row.employee = row.employee;
         target_row.employee_name = row.employee_name;
+        target_row.email = row.email;
         target_row.stage = idx + 1;
         target_row.idx = idx + 1; // Required by Frappe for sequence tracking
 
@@ -2617,6 +2624,49 @@ function open_stages_modal(frm) {
     },
   });
 
+  // Fetch logic for employee field in the modal
+  d.fields_dict.temp_stages.grid.get_field("employee").get_query = function () {
+    return {
+      filters: {
+        status: "Active",
+      },
+    };
+  };
+
+  // 🌟 FIX: Fetch Email and Employee Name when Employee is selected in the modal
+  d.fields_dict.temp_stages.grid.on_row_add = function (doc, cdt, cdn) {
+    let row = locals[cdt][cdn];
+  };
+
+  // We use the grid's change trigger
+  d.fields_dict.temp_stages.grid.on_row_add = function (doc, cdt, cdn) {
+    // Optional: logic on row add
+  };
+
+  // Use model events if doctype is set, or grid events
+  // Since temp_stages doesn't have a doctype, we use the grid's control events
+  let grid = d.fields_dict.temp_stages.grid;
+  grid.wrapper.on("change", 'input[data-fieldname="employee"]', function (e) {
+    let $input = $(e.currentTarget);
+    let name = $input.closest(".grid-row").attr("data-name");
+    let row = grid.get_row(name).doc;
+
+    if (row.employee) {
+      frappe.call({
+        method:
+          "audit_management.audit_management.doctype.my_audits.my_audits.fetch_employee_data",
+        args: { employee_id: row.employee },
+        callback: function (r) {
+          if (r.message) {
+            row.employee_name = r.message.employee_name;
+            row.email = r.message.company_email;
+            grid.refresh();
+          }
+        },
+      });
+    }
+  });
+
   // Populate the modal with data, binding the exact Database ID to 'stage_id'
   let existing_data = (frm.doc.audit_stages || []).map((row) => {
     return {
@@ -2624,6 +2674,7 @@ function open_stages_modal(frm) {
       stage_name: row.stage_name,
       employee: row.employee,
       employee_name: row.employee_name,
+      email: row.email,
     };
   });
 
