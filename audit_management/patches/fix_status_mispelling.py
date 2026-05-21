@@ -12,13 +12,13 @@ def execute():
         update_modified=False # Do not update modified timestamp for this data migration
     )
     
-    # Also update any occurrences in the child table 'Audit Items' if 'status' field exists there.
-    # Assuming 'status' is also a field in Audit Items for some reason.
-    # If not, this part will safely do nothing.
-    frappe.db.set_value(
-        "Audit Items",
-        {"status": "Close"},
-        "status",
-        "Closed",
-        update_modified=False
-    )
+    # # Also update any occurrences in the child table 'Audit Items' if 'status' field exists there.
+    # # Assuming 'status' is also a field in Audit Items for some reason.
+    # # If not, this part will safely do nothing.
+    # frappe.db.set_value(
+    #     "Audit Items",
+    #     {"status": "Close"},
+    #     "status",
+    #     "Closed",
+    #     update_modified=False
+    # )
