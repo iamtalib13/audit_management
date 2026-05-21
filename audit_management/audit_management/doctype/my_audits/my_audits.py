@@ -718,6 +718,16 @@ def send_daily_reminders():
 #     return doc_division in allowed_divisions
 
 
+def get_user_allowed_sol_ids(user):
+    """Fetches allowed SOL IDs from 'Report Preference' for a given user."""
+    # Get the SOL IDs from the child table 'Sol Items' of 'Report Preference'
+    # 'Report Preference' autoname is field:user, so we can fetch by name=user
+    sol_ids = frappe.db.get_all("Sol Items", 
+        filters={"parent": user, "parenttype": "Report Preference"}, 
+        pluck="sol_id"
+    )
+    return sol_ids
+
 def has_permission(doc, ptype, user=None):
     if not user:
         user = frappe.session.user
@@ -734,6 +744,14 @@ def has_permission(doc, ptype, user=None):
     if getattr(doc, "status", None) == "Draft":
         return doc.owner == user or is_audit_manager
     
+    # NEW: Sol ID Check (Report Preference)
+    allowed_sol_ids = get_user_allowed_sol_ids(user)
+    if allowed_sol_ids and doc.get("emp_branch"):
+        # Check if the doc's branch (Audit Level) links to an allowed Sahayog Branch (SOL ID)
+        branch_sol_id = frappe.db.get_value("Audit Level", doc.emp_branch, "sahayog_branch")
+        if branch_sol_id and str(branch_sol_id) in [str(s) for s in allowed_sol_ids]:
+            return True
+
     # 2. Division Check (Essential for data sovereignty)
     allowed_divisions = get_user_allowed_divisions(user)
     doc_division = doc.get("emp_division")
@@ -785,6 +803,18 @@ def get_permission_query_conditions(user=None):
     allowed_divisions = get_user_allowed_divisions(user)
     divisions_sql = ", ".join(f"{frappe.db.escape(d)}" for d in allowed_divisions) if allowed_divisions else "'None'"
 
+    # NEW: Sol ID Condition
+    allowed_sol_ids = get_user_allowed_sol_ids(user)
+    sol_id_condition = "1=0"
+    if allowed_sol_ids:
+        sol_ids_str = ", ".join([frappe.db.escape(str(s)) for s in allowed_sol_ids])
+        sol_id_condition = f"""
+            `tabMy Audits`.emp_branch IN (
+                SELECT name FROM `tabAudit Level` 
+                WHERE sahayog_branch IN ({sol_ids_str})
+            )
+        """
+
     is_audit_manager = "Audit Manager" in roles
     is_audit_team = is_audit_manager or "Audit Member" in roles
 
@@ -817,6 +847,8 @@ def get_permission_query_conditions(user=None):
             (`tabMy Audits`.status = 'Draft' AND `tabMy Audits`.owner = '{user}')
             OR
             (`tabMy Audits`.owner = '{user}' AND `tabMy Audits`.emp_division IN ({divisions_sql}))
+            OR
+            ({sol_id_condition})
             OR
             (
                 `tabMy Audits`.status != 'Draft' AND (
