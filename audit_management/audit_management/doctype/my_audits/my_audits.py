@@ -248,6 +248,7 @@ class MyAudits(Document):
                 self.set(f"{prefix}_user_status", row.status)
                 self.set(f"{prefix}_response_box", row.response)
                 self.set(f"{prefix}_attach_box", row.attachment)
+                self.set(f"{prefix}_mail", row.email)
                 if row.pending_time:
                     self.set(f"{prefix}_pending_time", row.pending_time)
 
