@@ -69,7 +69,10 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
                     p_filters["status"] = ["in", actual_statuses]
             
             if risk_list:
-                p_filters["risk"] = ["in", risk_list]
+                if "Normal" in risk_list:
+                    p_filters["risk"] = ["in", risk_list + [None, ""]]
+                else:
+                    p_filters["risk"] = ["in", risk_list]
 
             pending_for_me_list = frappe.get_all(
                 "My Audits",
@@ -114,12 +117,15 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
 
         recent_list = []
         has_more_recent = False
-        if is_manager or is_member:
+        if is_admin or is_manager or is_member:
             r_filters = filters.copy()
             if status_list:
                 r_filters["status"] = ["in", status_list]
             if risk_list:
-                r_filters["risk"] = ["in", risk_list]
+                if "Normal" in risk_list:
+                    r_filters["risk"] = ["in", risk_list + [None, ""]]
+                else:
+                    r_filters["risk"] = ["in", risk_list]
 
             recent_list = frappe.get_all(
                 "My Audits",
@@ -161,7 +167,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None)
                                 item.emp_branch = f"{b_name} ({b_sol})" if b_name and b_sol else (b_name or b_sol or s_branch_key)
 
         return {
-            "role_type": "manager" if is_manager else ("member" if is_member else "stage_user"),
+            "role_type": "manager" if (is_manager or is_admin) else ("member" if is_member else "stage_user"),
             "pending_for_me": pending_for_me_count,
             "responded_by_me": responded_by_me_count,
             "total_pending": total_pending,
