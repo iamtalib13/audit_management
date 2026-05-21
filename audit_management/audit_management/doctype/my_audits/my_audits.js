@@ -2275,14 +2275,18 @@ function render_interactive_tracker(frm, can_edit) {
   // Modern SVG Chevron instead of -->
   const arrow_svg = `<svg class="modern-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 4px;"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
 
-  // Format date helper
-  const fmt_date = (d) => (d ? frappe.datetime.str_to_user(d) : "");
+  // Format age helper
+  const fmt_age = (d) => {
+    if (!d) return "";
+    let diff = frappe.datetime.get_diff(frappe.datetime.now_datetime(), d);
+    return diff <= 0 ? "Today" : diff + " days";
+  };
 
   // 2. Build the HTML wrapper
   let html = `
         <div class="custom-interactive-tracker-wrapper modern-audit-tracker" style="display: flex; align-items: center; gap: 4px; width: 100%; flex-wrap: wrap;">
             
-            <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department | Created: ${fmt_date(frm.doc.creation)}">
+            <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department | Created: ${frappe.datetime.str_to_user(frm.doc.creation.split(' ')[0])}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                 AUDIT TEAM
             </div>
@@ -2307,12 +2311,14 @@ function render_interactive_tracker(frm, can_edit) {
     let emp_name =
       row.employee_name || row.employee || row.user_id || "Unassigned";
     
-    // Prepare time info
+    // Prepare time info (Date + Aging)
     let time_info = "";
     if (row.status === "Pending" && row.pending_time) {
-      time_info = ` | Pending Since: ${fmt_date(row.pending_time)}`;
+      let d = frappe.datetime.str_to_user(row.pending_time.split(' ')[0]);
+      time_info = ` | Pending: ${d} (${fmt_age(row.pending_time)})`;
     } else if (row.status === "Responded" && row.response_time) {
-      time_info = ` | Responded: ${fmt_date(row.response_time)}`;
+      let d = frappe.datetime.str_to_user(row.response_time.split(' ')[0]);
+      time_info = ` | Responded: ${d} (${fmt_age(row.response_time)} ago)`;
     }
 
     html += `
