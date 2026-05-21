@@ -829,6 +829,9 @@ def get_permission_query_conditions(user=None):
 
 from frappe.utils import now, time_diff_in_seconds, time_diff_in_hours, getdate, nowdate, format_datetime
 
+from frappe.utils import now, time_diff_in_seconds, time_diff_in_hours, getdate, nowdate, format_datetime
+import json
+
 @frappe.whitelist()
 def get_audit_history_summary(docname):
     doc = frappe.get_doc("My Audits", docname)
@@ -838,18 +841,18 @@ def get_audit_history_summary(docname):
         if user_id == "System/Audit Team": return "System/Audit Team"
         return frappe.db.get_value("User", user_id, "full_name") or user_id
 
-    # Formatted History List
     history = []
     
-    # Creator Info
+    # 1. Capture Creation
     history.append({
         "event": "Query Created",
         "user": doc.query_generated_by_name or get_full_name(doc.owner),
         "date": format_datetime(doc.creation, "dd-MM-yyyy hh:mm a"),
-        "status": "Created"
+        "status": "Created",
+        "timestamp": doc.creation
     })
     
-    # Stages Info
+    # 2. Capture Stage Assignments and Responses from child table
     creator_name = doc.query_generated_by_name or get_full_name(doc.owner)
     for row in doc.audit_stages:
         if row.status or row.pending_time:
@@ -857,26 +860,59 @@ def get_audit_history_summary(docname):
                 "event": f"Assigned to {row.stage_name} ({row.employee_name})",
                 "user": creator_name,
                 "date": format_datetime(row.pending_time, "dd-MM-yyyy hh:mm a") if row.pending_time else "",
-                "status": "Pending"
+                "status": "Pending",
+                "timestamp": row.pending_time if row.pending_time else doc.creation
             })
             if row.status == "Responded":
                 history.append({
                     "event": f"Response from {row.stage_name}",
                     "user": row.employee_name,
                     "date": format_datetime(row.response_time, "dd-MM-yyyy hh:mm a") if row.response_time else "",
-                    "status": "Responded"
+                    "status": "Responded",
+                    "timestamp": row.response_time if row.response_time else doc.creation
                 })
 
-    # Closure Info
-    if doc.status == "Closed":
-        # Attempt to find who closed it
-        closed_by_id = frappe.db.get_value("Version", {"ref_doctype": "My Audits", "docname": doc.name, "data": ["like", "%status%Closed%"]}, "owner")
-        history.append({
-            "event": "Query Closed",
-            "user": get_full_name(closed_by_id) or "System/Audit Team",
-            "date": format_datetime(str(doc.closing_date) + " 00:00:00", "dd-MM-yyyy hh:mm a") if doc.closing_date else "",
-            "status": "Closed"
-        })
+    # 3. Capture status transitions (Closed/Reopened) from Version history
+    versions = frappe.get_all(
+        "Version",
+        filters={"ref_doctype": "My Audits", "docname": docname},
+        fields=["data", "owner", "creation"],
+        order_by="creation asc"
+    )
+
+    for version in versions:
+        try:
+            version_data = json.loads(version.data)
+            # Some versions contain a list of changed fields in 'changed' key
+            changed_fields = version_data.get("changed", [])
+            
+            for field in changed_fields:
+                # field is usually a list: [fieldname, old_value, new_value]
+                if len(field) == 3 and field[0] == "status":
+                    old_val = field[1]
+                    new_val = field[2]
+                    
+                    if new_val == "Closed":
+                        history.append({
+                            "event": "Query Closed",
+                            "user": get_full_name(version.owner),
+                            "date": format_datetime(version.creation, "dd-MM-yyyy hh:mm a"),
+                            "status": "Closed",
+                            "timestamp": version.creation
+                        })
+                    elif old_val == "Closed" and new_val != "Closed":
+                        history.append({
+                            "event": "Query Reopened",
+                            "user": get_full_name(version.owner),
+                            "date": format_datetime(version.creation, "dd-MM-yyyy hh:mm a"),
+                            "status": "Reopened",
+                            "timestamp": version.creation
+                        })
+        except Exception:
+            pass
+
+    # Sort history by timestamp
+    history.sort(key=lambda x: x["timestamp"])
         
     return history
 
