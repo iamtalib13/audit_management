@@ -11,3 +11,4 @@ audit_management.patches.migrate_audit_level_to_my_audits_child
 audit_management.patches.migrate_production_data_v3
 audit_management.patches.migrate_production_data_v4
 audit_management.patches.migrate_hardcoded_to_child_table
+audit_management.patches.update_audit_level_branch_fields

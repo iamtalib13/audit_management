@@ -29,7 +29,7 @@ def get_dashboard_number_cards():
 	total_count = frappe.db.count("My Audits", filters)
 	draft_count = frappe.db.count("My Audits", {**filters, "status": "Draft"})
 	pending_count = frappe.db.count("My Audits", {**filters, "status": "Pending"})
-	completed_count = frappe.db.count("My Audits", {**filters, "status": "Close"})
+	completed_count = frappe.db.count("My Audits", {**filters, "status": "Closed"})
 
 	# The current model does not have a dedicated due-date field yet.
 	# For now, we surface overdue as pending audits with aging recorded.
@@ -84,7 +84,7 @@ def get_audits(start=0, limit=20, filters=None):
 	
 	# Add metadata for UI
 	for audit in audits:
-		audit.statusClass = "progress" if audit.status == "Pending" else "completed" if audit.status == "Close" else "overdue"
+		audit.statusClass = "progress" if audit.status == "Pending" else "completed" if audit.status == "Closed" else "overdue"
 		audit.riskClass = (audit.risk or "Normal").lower()
 		audit.dueDate = frappe.utils.formatdate(audit.creation)
 		audit.dueMeta = f"{audit.aging} days" if audit.aging else "Due soon"
