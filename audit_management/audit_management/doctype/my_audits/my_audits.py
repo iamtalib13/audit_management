@@ -720,13 +720,37 @@ def send_daily_reminders():
 
 def get_user_allowed_sol_ids(user):
     """Fetches allowed SOL IDs from 'Report Preference' for a given user."""
-    # Get the SOL IDs from the child table 'Sol Items' of 'Report Preference'
-    # 'Report Preference' autoname is field:user, so we can fetch by name=user
-    sol_ids = frappe.db.get_all("Sol Items", 
-        filters={"parent": user, "parenttype": "Report Preference"}, 
-        pluck="sol_id"
-    )
-    return sol_ids
+    # First, try to get the record name. Report Preference uses field:user for naming.
+    # We also check if it's enabled.
+    pref_name = frappe.db.get_value("Report Preference", {"user": user, "enabled": 1}, "name")
+    
+    if not pref_name:
+        # Fallback: check if a record exists with the user's ID as name directly
+        if frappe.db.exists("Report Preference", user):
+            pref_name = user
+            # Still check if enabled
+            if not frappe.db.get_value("Report Preference", pref_name, "enabled"):
+                return []
+        else:
+            return []
+
+    try:
+        doc = frappe.get_doc("Report Preference", pref_name)
+        sol_ids = []
+        
+        # The child table for SOL IDs is stored in the field 'sol_id'
+        if doc.get("sol_id"):
+            for row in doc.sol_id:
+                # In Table MultiSelect, the value is usually in a field named after the target DocType or parent field
+                # We check common variations: 'sol_id' (parent field) or 'sahayog_branch' (DocType name)
+                # Or 'sol_items' if it follows child doctype name convention
+                val = row.get("sol_id") or row.get("sahayog_branch") or row.get("sol_items")
+                if val:
+                    sol_ids.append(str(val))
+                    
+        return list(set(sol_ids))
+    except Exception:
+        return []
 
 def has_permission(doc, ptype, user=None):
     if not user:
