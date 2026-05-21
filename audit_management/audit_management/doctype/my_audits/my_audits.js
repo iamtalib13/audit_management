@@ -1113,14 +1113,19 @@ frappe.ui.form.on("My Audits", {
     if (frm.doc.status === "Closed") return;
 
     // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
-    if (frm.doc.status === "Draft" && is_audit_team) {
+    if ((frm.doc.status === "Draft" || frm.doc.status === "") && is_audit_team) {
       frm
         .add_custom_button(
           __("Raise Request"),
           function () {
             let stages = audit_table
-              .map((r) => r.stagename || r.stage_name)
-              .filter(Boolean);
+              .map((r) => {
+                return {
+                    name: r.stage_name,
+                    label: `${r.stage_name} (${r.employee_name || 'Unassigned'})`
+                };
+              })
+              .filter(r => r.name);
 
             if (stages.length === 0) {
               frappe.msgprint(
@@ -1129,67 +1134,83 @@ frappe.ui.form.on("My Audits", {
               return;
             }
 
-            // Add blank first option + Send to All
-            let options = ["", "Send to All", ...stages];
+            let html_content = `
+                <div style="padding: 10px;">
+                    <div style="border-bottom: 1px solid #d1d8dd; padding-bottom: 10px; margin-bottom: 10px;">
+                        <label class="checkbox-inline" style="font-weight: bold; cursor: pointer; display: flex; align-items: center;">
+                            <input type="checkbox" id="select-all-stages" style="margin-right: 10px; width: 18px; height: 18px;"> 
+                            <span style="font-size: 14px;">${__("Send to All Stages")}</span>
+                        </label>
+                    </div>
+                    <div id="stage-checkboxes-list" style="max-height: 300px; overflow-y: auto;">
+                        ${stages.map(s => `
+                            <div style="margin-bottom: 8px;">
+                                <label class="checkbox-inline" style="cursor: pointer; display: flex; align-items: center;">
+                                    <input type="checkbox" class="stage-checkbox" value="${s.name}" style="margin-right: 10px; width: 16px; height: 16px;"> 
+                                    <span style="font-size: 13px;">${s.label}</span>
+                                </label>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
 
-            frappe.prompt(
-              [
-                {
-                  label: "Select Target Stage",
-                  fieldname: "stagename",
-                  fieldtype: "Select",
-                  options: options.join("\n"),
-                  default: options[0],
-                  reqd: 1,
-                  description: "Select a stage or 'Send to All' to trigger all stages.",
-                },
-              ],
-              function (values) {
-                if (!values.stagename) {
-                    frappe.msgprint("Please select a valid option.");
-                    return;
-                }
-                
-                if (values.stagename === "Send to All") {
-                  frappe.confirm(__("Are you sure you want to send this query to all stages?"), () => {
-                    frappe.call({
-                      method: "audit_management.audit_management.doctype.my_audits.my_audits.send_to_all_stages",
-                      args: { docname: frm.doc.name },
-                      freeze: true,
-                      freeze_message: "Sending to all stages...",
-                      callback: function (r) {
-                        if (r.message) {
-                          frappe.show_alert({ message: r.message, indicator: "green" });
-                          frm.reload_doc();
-                        }
-                      }
+            let d = new frappe.ui.Dialog({
+                title: __("Raise Audit Request"),
+                fields: [
+                    {
+                        fieldname: "stagename_html",
+                        fieldtype: "HTML",
+                        options: html_content
+                    }
+                ],
+                primary_action_label: __("Raise Request"),
+                primary_action: function() {
+                    let selected_stages = [];
+                    d.$wrapper.find('.stage-checkbox:checked').each(function() {
+                        selected_stages.push($(this).val());
                     });
-                  });
-                } else {
-                  frappe.call({
-                    method:
-                      "audit_management.audit_management.doctype.my_audits.my_audits.raise_request",
-                    args: {
-                      docname: frm.doc.name,
-                      stagename: values.stagename,
-                    },
-                    freeze: true,
-                    freeze_message: "Raising Request...",
-                    callback: function (r) {
-                      if (!r.exc) {
-                        frappe.show_alert({
-                          message: __("Request Raised Successfully"),
-                          indicator: "green",
-                        });
-                        frm.reload_doc();
-                      }
-                    },
-                  });
+
+                    if (selected_stages.length === 0) {
+                        frappe.msgprint(__("Please select at least one stage."));
+                        return;
+                    }
+
+                    frappe.call({
+                        method: "audit_management.audit_management.doctype.my_audits.my_audits.raise_multi_request",
+                        args: {
+                            docname: frm.doc.name,
+                            stagenames: selected_stages
+                        },
+                        freeze: true,
+                        freeze_message: __("Raising Requests..."),
+                        callback: function(r) {
+                            if (!r.exc) {
+                                frappe.show_alert({ 
+                                    message: __("Requests Raised Successfully"), 
+                                    indicator: "green" 
+                                });
+                                frm.reload_doc();
+                                d.hide();
+                            }
+                        }
+                    });
                 }
-              },
-              __("Raise Audit Request"),
-              __("Raise Request"),
-            );
+            });
+
+            d.show();
+
+            // Select All logic
+            d.$wrapper.find('#select-all-stages').on('change', function() {
+                let checked = $(this).prop('checked');
+                d.$wrapper.find('.stage-checkbox').prop('checked', checked);
+            });
+
+            // Individual checkbox logic to uncheck "Select All" if one is unchecked
+            d.$wrapper.find('.stage-checkbox').on('change', function() {
+                let all_checked = d.$wrapper.find('.stage-checkbox:checked').length === stages.length;
+                d.$wrapper.find('#select-all-stages').prop('checked', all_checked);
+            });
           },
         )
         .css({ "background-color": "#007bff", color: "white" });

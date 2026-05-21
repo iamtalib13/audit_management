@@ -758,10 +758,16 @@ def has_permission(doc, ptype, user=None):
 
     roles = frappe.get_roles(user)
     is_audit_manager = "Audit Manager" in roles or "Administrator" in roles or "System Manager" in roles
-    is_audit_team = is_audit_manager or "Audit Member" in roles
-
+    
     # 1. Audit Manager / Admin can ALWAYS see and edit
     if is_audit_manager:
+        return True
+
+    # Handle DocType level permission check (when doc is a string)
+    if isinstance(doc, str):
+        # Allow report and read access at doctype level for Audit Members and Employees
+        if ptype in ["read", "report"]:
+            return "Audit Member" in roles or "Employee" in roles or bool(get_user_allowed_sol_ids(user))
         return True
     
     # 3. Draft Isolation: Only Creator/Manager
@@ -973,6 +979,61 @@ def get_audit_history_summary(docname):
         
     return history
 
+
+
+@frappe.whitelist()
+def raise_multi_request(docname, stagenames):
+    """Transition from Draft to Pending and assign to multiple selected stages."""
+    if isinstance(stagenames, str):
+        import json
+        stagenames = json.loads(stagenames)
+    
+    doc = frappe.get_doc("My Audits", docname)
+
+    if doc.status != "Draft":
+        frappe.throw("Only Draft requests can be raised.")
+
+    if not doc.get("audit_stages"):
+        frappe.throw(
+            "Please add stages in the operational tracking section first.")
+
+    selected_rows = []
+    found_stagenames = []
+
+    for row in doc.get("audit_stages"):
+        if row.stage_name in stagenames:
+            row.status = "Pending"
+            row.pending_time = frappe.utils.now()
+            selected_rows.append(row)
+            found_stagenames.append(row.stage_name)
+            
+            # Give access to the assigned member
+            if row.user_id:
+                frappe.share.add(doc.doctype, doc.name, row.user_id,
+                                 read=1, write=1, share=1, notify=0)
+        else:
+            # We clear others if they were previously pending? 
+            # Actually, if it was Draft, they should be empty anyway.
+            # But just in case, we keep the original logic of clearing others if not in selection.
+            if not row.status or row.status == "Pending":
+                row.status = ""
+
+    if not selected_rows:
+        frappe.throw("No valid stages selected from the selection.")
+
+    doc.status = "Pending"
+    if len(stagenames) == len(doc.audit_stages):
+        doc.query_status = "Pending From All Stages"
+    else:
+        doc.query_status = f"Pending From {', '.join(found_stagenames)}"
+        
+    doc.save(ignore_permissions=True)
+
+    # Trigger custom notifications for each selected stage
+    for row in selected_rows:
+        send_stage_notification(doc, row, action="assign")
+
+    return "Requests Raised Successfully!"
 
 
 @frappe.whitelist()
