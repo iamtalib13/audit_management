@@ -918,7 +918,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.status === \"Draft\" || frappe.session.user==\"Administrator\"",
+   "depends_on": "eval:doc.status !== \"\" || frappe.session.user==\"Administrator\"",
    "fieldname": "generated_by_section",
    "fieldtype": "Section Break"
   },
@@ -1219,12 +1219,13 @@
    "default": "0",
    "fieldname": "reopen",
    "fieldtype": "Check",
-   "label": "Reopen"
+   "label": "Reopen",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-20 13:57:17.647932",
+ "modified": "2026-05-21 11:55:14.043974",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "My Audits",
