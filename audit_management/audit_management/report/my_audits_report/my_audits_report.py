@@ -64,15 +64,10 @@ def get_data(filters):
         # Sees everything, no perm filter needed
         pass
     elif is_audit_member:
-        # Audit Member: Sees only their own created records (as requested) 
-        # OR records in their allowed divisions
-        allowed_divisions = get_user_allowed_divisions(user)
-        perm_conds = [f"owner = {frappe.db.escape(user)}"]
-        if allowed_divisions:
-            div_list = ", ".join([frappe.db.escape(d) for d in allowed_divisions])
-            perm_conds.append(f"emp_division IN ({div_list})")
-        
-        conditions.append(f"({' OR '.join(perm_conds)})")
+    # Audit Member: only own created records
+        conditions.append(
+            f"owner = {frappe.db.escape(user)}"
+        )
     else:
         # Other users: Sol ID based access (from Report Preference) 
         # OR records where they are participants
@@ -82,18 +77,29 @@ def get_data(filters):
         if allowed_sol_ids:
             sol_list = ", ".join([frappe.db.escape(str(s)) for s in allowed_sol_ids])
             perm_conds.append(f"""
-                emp_branch IN (
-                    SELECT name FROM `tabAudit Level` 
-                    WHERE sahayog_branch IN ({sol_list})
+                (
+                    status != 'Draft'
+                    AND
+                    emp_branch IN (
+                        SELECT name FROM `tabAudit Level`
+                        WHERE sahayog_branch IN ({sol_list})
+                    )
                 )
             """)
             
         # Also include where they are assigned (Audit Items)
         perm_conds.append(f"""
-            EXISTS (
-                SELECT name FROM `tabAudit Items`
-                WHERE parent = `tabMy Audits`.name
-                AND (user_id = {frappe.db.escape(user)} OR email = {frappe.db.escape(user)})
+            (
+                status != 'Draft'
+                AND EXISTS (
+                    SELECT name
+                    FROM `tabAudit Items`
+                    WHERE parent = `tabMy Audits`.name
+                    AND (
+                        user_id = {frappe.db.escape(user)}
+                        OR email = {frappe.db.escape(user)}
+                    )
+                )
             )
         """)
         
