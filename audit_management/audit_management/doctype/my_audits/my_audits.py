@@ -1059,6 +1059,42 @@ def get_audit_history_summary(docname):
 
 
 @frappe.whitelist()
+def rollback_stage(docname, stagename):
+    """Resets a stage status to empty and removes document share for that user. Only allowed for Pending stages."""
+    doc = frappe.get_doc("My Audits", docname)
+    found = False
+    
+    for row in doc.audit_stages:
+        if row.stage_name == stagename:
+            if row.status != "Pending":
+                frappe.throw(_("Only Pending stages can be rolled back. {0} is currently {1}.").format(stagename, row.status))
+            
+            # 1. Revoke access first (bypass permission checks for administrative rollback)
+            if row.user_id:
+                frappe.db.delete("DocShare", {
+                    "share_doctype": doc.doctype,
+                    "share_name": doc.name,
+                    "user": row.user_id
+                })
+            
+            # 2. Clear stage data
+            row.status = ""
+            row.pending_time = None
+            row.response = None
+            row.attachment = None
+            row.response_time = None
+            
+            found = True
+            break
+            
+    if found:
+        doc.query_status = f"Rollback: {stagename}"
+        doc.save(ignore_permissions=True)
+        return True
+    return False
+
+
+@frappe.whitelist()
 def raise_multi_request(docname, stagenames):
     """Transition from Draft to Pending and assign to multiple selected stages."""
     if isinstance(stagenames, str):
@@ -1067,8 +1103,8 @@ def raise_multi_request(docname, stagenames):
     
     doc = frappe.get_doc("My Audits", docname)
 
-    if doc.status != "Draft":
-        frappe.throw("Only Draft requests can be raised.")
+    if doc.status not in ["Draft", "Pending"]:
+        frappe.throw("Requests can only be raised for Draft or Pending audits.")
 
     if not doc.get("audit_stages"):
         frappe.throw(
@@ -1088,25 +1124,24 @@ def raise_multi_request(docname, stagenames):
             if row.user_id:
                 frappe.share.add(doc.doctype, doc.name, row.user_id,
                                  read=1, write=1, share=1, notify=0)
-        else:
-            # We clear others if they were previously pending? 
-            # Actually, if it was Draft, they should be empty anyway.
-            # But just in case, we keep the original logic of clearing others if not in selection.
-            if not row.status or row.status == "Pending":
-                row.status = ""
+    
+    # We remove the 'else' block that clears other stages to allow incremental assignment
 
     if not selected_rows:
         frappe.throw("No valid stages selected from the selection.")
 
     doc.status = "Pending"
-    if len(stagenames) == len(doc.audit_stages):
+    
+    # Update query_status to reflect current pending stages
+    all_pending = [r.stage_name for r in doc.audit_stages if r.status == "Pending"]
+    if len(all_pending) == len(doc.audit_stages):
         doc.query_status = "Pending From All Stages"
     else:
-        doc.query_status = f"Pending From {', '.join(found_stagenames)}"
+        doc.query_status = f"Pending From {', '.join(all_pending)}"
         
     doc.save(ignore_permissions=True)
 
-    # Trigger custom notifications for each selected stage
+    # Trigger custom notifications for each newly selected stage
     for row in selected_rows:
         send_stage_notification(doc, row, action="assign")
 
