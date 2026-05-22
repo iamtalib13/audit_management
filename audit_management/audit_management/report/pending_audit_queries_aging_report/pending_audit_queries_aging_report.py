@@ -6,6 +6,8 @@ from frappe import _
 from frappe.utils import getdate, nowdate
 from audit_management.audit_management.utils import get_working_days
 
+from audit_management.audit_management.doctype.my_audits.my_audits import get_user_allowed_sol_ids
+
 def execute(filters=None):
 	columns = get_columns()
 	data = get_data(filters)
@@ -63,10 +65,28 @@ def get_columns():
 def get_data(filters):
 	query_filters = {"status": "Pending"}
 	
+	user = frappe.session.user
+	roles = frappe.get_roles(user)
+	is_audit_manager = "Audit Manager" in roles or "Administrator" in roles or "System Manager" in roles
+
+	if not is_audit_manager:
+		# SOL ID based access for others
+		allowed_sol_ids = get_user_allowed_sol_ids(user)
+		if allowed_sol_ids:
+			sol_list = [str(s) for s in allowed_sol_ids]
+			# Filter by branch linking to these sol ids
+			allowed_branches = frappe.get_all("Audit Level", 
+				filters={"sahayog_branch": ["in", sol_list]}, pluck="name")
+			
+			query_filters["emp_branch"] = ["in", allowed_branches]
+		else:
+			# If no sol ids, only show owned
+			query_filters["owner"] = user
+
 	if filters.get("from_date"):
 		query_filters["creation"] = [">=", filters.get("from_date")]
 	if filters.get("to_date"):
-		if "creation" in query_filters:
+		if "creation" in query_filters and isinstance(query_filters["creation"], list) and query_filters["creation"][0] == ">=":
 			query_filters["creation"] = ["between", [filters.get("from_date"), filters.get("to_date")]]
 		else:
 			query_filters["creation"] = ["<=", filters.get("to_date")]

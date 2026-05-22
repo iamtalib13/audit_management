@@ -6,6 +6,8 @@ from frappe import _
 from frappe.utils import getdate, nowdate
 from audit_management.audit_management.utils import get_working_days
 
+from audit_management.audit_management.doctype.my_audits.my_audits import get_user_allowed_sol_ids
+
 def execute(filters=None):
 	columns = get_columns()
 	data = get_data(filters)
@@ -19,6 +21,12 @@ def get_columns():
 			"fieldtype": "Link",
 			"options": "My Audits",
 			"width": 150
+		},
+		{
+			"label": _("Closure Date"),
+			"fieldname": "closing_date",
+			"fieldtype": "Date",
+			"width": 100
 		},
 		{
 			"label": _("Recommended Action"),
@@ -59,6 +67,24 @@ def get_data(filters):
 	# Only track those with an RCA Category (Commitment)
 	query_filters["rca_category"] = ["is", "set"]
 	
+	user = frappe.session.user
+	roles = frappe.get_roles(user)
+	is_audit_manager = "Audit Manager" in roles or "Administrator" in roles or "System Manager" in roles
+
+	if not is_audit_manager:
+		# SOL ID based access for others
+		allowed_sol_ids = get_user_allowed_sol_ids(user)
+		if allowed_sol_ids:
+			sol_list = [str(s) for s in allowed_sol_ids]
+			# Filter by branch linking to these sol ids
+			allowed_branches = frappe.get_all("Audit Level", 
+				filters={"sahayog_branch": ["in", sol_list]}, pluck="name")
+			
+			query_filters["emp_branch"] = ["in", allowed_branches]
+		else:
+			# If no sol ids, only show owned
+			query_filters["owner"] = user
+
 	if filters.get("rca_category"):
 		query_filters["rca_category"] = filters.get("rca_category")
 	
@@ -67,7 +93,7 @@ def get_data(filters):
 
 	audits = frappe.get_all("My Audits", 
 		filters=query_filters, 
-		fields=["name", "recommendations", "rca_category", "action_point_with_tat", "status", "modified"]
+		fields=["name", "closing_date", "recommendations", "rca_category", "action_point_with_tat", "status", "modified"]
 	)
 
 	for audit in audits:
