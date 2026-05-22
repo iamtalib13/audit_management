@@ -43,6 +43,10 @@ def get_columns():
         {"label": "HR Response", "fieldname": "hr_response_box", "fieldtype": "Data", "width": 180},
         {"label": "COO Name", "fieldname": "coo_name", "fieldtype": "Data", "width": 120},
         {"label": "COO Response", "fieldname": "coo_response_box", "fieldtype": "Data", "width": 180},
+        {"label": "CFO Name", "fieldname": "cfo_name", "fieldtype": "Data", "width": 120},
+        {"label": "CFO Response", "fieldname": "cfo_response_box", "fieldtype": "Data", "width": 180},
+        {"label": "CHRO Name", "fieldname": "chro_name", "fieldtype": "Data", "width": 120},
+        {"label": "CHRO Response", "fieldname": "chro_response_box", "fieldtype": "Data", "width": 180},
         {"label": "CEO Name", "fieldname": "ceo_name", "fieldtype": "Data", "width": 120},
         {"label": "CEO Response", "fieldname": "ceo_response_box", "fieldtype": "Data", "width": 180},
     ]
@@ -151,6 +155,8 @@ def get_data(filters):
             gm_name, gm_response_box,
             hr_name, hr_response_box,
             coo_name, coo_response_box,
+            cfo_name, cfo_response_box,
+            chro_name, chro_response_box,
             ceo_name, ceo_response_box
         FROM `tabMy Audits`
         {where_clause}
