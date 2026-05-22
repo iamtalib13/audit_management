@@ -201,7 +201,7 @@ def get_permission_query_conditions(user=None):
     roles = frappe.get_roles(user)
 
     # System Admins see everything
-    if "Administrator" in roles or "System Manager" in roles:
+    if "Administrator" in roles or "System Manager" in roles or "Audit Manager" in roles:
         return ""
 
     # Division check
@@ -221,7 +221,7 @@ def has_permission(doc, ptype, user=None):
     roles = frappe.get_roles(user)
 
     # 1. System Admins see everything
-    if "Administrator" in roles or "System Manager" in roles:
+    if "Administrator" in roles or "System Manager" in roles or "Audit Manager" in roles:
         return True
 
     # 2. Get allowed divisions
