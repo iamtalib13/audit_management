@@ -802,9 +802,7 @@ def has_permission(doc, ptype, user=None):
     # 4. Access for Audit Members (Non-Managers)
    # Audit Member: only if NOT draft OR owner
     if "Audit Member" in roles:
-        if getattr(doc, "status", None) == "Draft":
-            return doc.owner == user
-        return True
+        return doc.owner == user
 
     # 5. Access for Others (Owner or Current Assignee)
     if doc.owner == user:
@@ -827,66 +825,129 @@ def get_permission_query_conditions(user=None):
 
     roles = frappe.get_roles(user)
 
+    # =========================================================
+    # ADMIN BYPASS
+    # =========================================================
     if "Administrator" in roles or "System Manager" in roles:
         return ""
 
+    # =========================================================
+    # DIVISION ACCESS
+    # =========================================================
     allowed_divisions = get_user_allowed_divisions(user)
-    divisions_sql = ", ".join(f"{frappe.db.escape(d)}" for d in allowed_divisions) if allowed_divisions else "'None'"
 
-    # NEW: Sol ID Condition
-    allowed_sol_ids = get_user_allowed_sol_ids(user)
-    sol_id_condition = "1=0"
-    if allowed_sol_ids:
-        sol_ids_str = ", ".join([frappe.db.escape(str(s)) for s in allowed_sol_ids])
-        sol_id_condition = f"""
-            `tabMy Audits`.emp_branch IN (
-                SELECT name FROM `tabAudit Level` 
-                WHERE sahayog_branch IN ({sol_ids_str})
-            )
+    divisions_sql = ", ".join(
+        [frappe.db.escape(d) for d in allowed_divisions]
+    ) if allowed_divisions else "'None'"
+
+    # =========================================================
+    # AUDIT MANAGER
+    # Full division access
+    # =========================================================
+    if "Audit Manager" in roles:
+        return f"""
+            `tabMy Audits`.emp_division IN ({divisions_sql})
         """
 
-    is_audit_manager = "Audit Manager" in roles
-    is_audit_team = is_audit_manager or "Audit Member" in roles
+    # =========================================================
+    # AUDIT MEMBER
+    # Only created records
+    # =========================================================
+    if "Audit Member" in roles:
+        return f"""
+            `tabMy Audits`.owner = '{user}'
+        """
 
-    # ✅ FIX: correct child table name
-    pending_condition = f"""
-        EXISTS (
-            SELECT name FROM `tabAudit Items`
-            WHERE parent = `tabMy Audits`.name
-            AND status = 'Pending'
-            AND (user_id = '{user}' OR email = '{user}')
+    # =========================================================
+    # SOL ID ACCESS
+    # =========================================================
+    allowed_sol_ids = get_user_allowed_sol_ids(user)
+
+    sol_condition = "1=0"
+
+    if allowed_sol_ids:
+        sol_ids_sql = ", ".join(
+            [frappe.db.escape(str(s)) for s in allowed_sol_ids]
         )
-    """
-    responded_condition = f"""
-    EXISTS (
-        SELECT name FROM `tabAudit Items`
-        WHERE parent = `tabMy Audits`.name
-        AND status = 'Responded'
-        AND (user_id = '{user}' OR email = '{user}')
-    )
-    """
-    if is_audit_manager:
-      return f"`tabMy Audits`.emp_division IN ({divisions_sql})"
 
-    if "Audit Member" in roles and not is_audit_manager:
-      return f"`tabMy Audits`.owner = '{user}'"
-
-    # ✅ FINAL CONTROL
-    return f"""
-        (
-            (`tabMy Audits`.status = 'Draft' AND `tabMy Audits`.owner = '{user}')
-            OR
-            (`tabMy Audits`.owner = '{user}' AND `tabMy Audits`.emp_division IN ({divisions_sql}))
-            OR
-            ({sol_id_condition})
-            OR
+        sol_condition = f"""
             (
-                `tabMy Audits`.status != 'Draft' AND (
-                    ({pending_condition})
-                    OR
-                    ({responded_condition})
+                `tabMy Audits`.status != 'Draft'
+                AND
+                `tabMy Audits`.emp_branch IN (
+                    SELECT name
+                    FROM `tabAudit Level`
+                    WHERE sahayog_branch IN ({sol_ids_sql})
                 )
             )
+        """
+    # =========================================================
+    # STAGE ACCESS
+    # =========================================================
+    pending_condition = f"""
+        EXISTS (
+            SELECT name
+            FROM `tabAudit Items`
+            WHERE parent = `tabMy Audits`.name
+            AND status = 'Pending'
+            AND (
+                user_id = '{user}'
+                OR email = '{user}'
+            )
+        )
+    """
+
+    responded_condition = f"""
+        EXISTS (
+            SELECT name
+            FROM `tabAudit Items`
+            WHERE parent = `tabMy Audits`.name
+            AND status = 'Responded'
+            AND (
+                user_id = '{user}'
+                OR email = '{user}'
+            )
+        )
+    """
+
+    # =========================================================
+    # FINAL CONDITIONS
+    # =========================================================
+    return f"""
+        (
+
+            -- Draft only owner
+            (
+                `tabMy Audits`.status = 'Draft'
+                AND `tabMy Audits`.owner = '{user}'
+            )
+
+            OR
+
+            -- SOL ID based access
+            (
+                {sol_condition}
+            )
+
+            OR
+
+            -- Pending stage access
+            (
+                `tabMy Audits`.status != 'Draft'
+                AND (
+                    {pending_condition}
+                    OR
+                    {responded_condition}
+                )
+            )
+
+            OR
+
+            -- Owner access
+            (
+                `tabMy Audits`.owner = '{user}'
+            )
+
         )
     """
 
