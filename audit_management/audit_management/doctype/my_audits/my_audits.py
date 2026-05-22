@@ -840,11 +840,12 @@ def get_permission_query_conditions(user=None):
         user = frappe.session.user
 
     roles = frappe.get_roles(user)
+    is_audit_manager = "Audit Manager" in roles or "Administrator" in roles or "System Manager" in roles
 
     # =========================================================
     # ADMIN BYPASS
     # =========================================================
-    if "Administrator" in roles or "System Manager" in roles:
+    if is_audit_manager:
         return ""
 
     # =========================================================
@@ -857,19 +858,11 @@ def get_permission_query_conditions(user=None):
     ) if allowed_divisions else "'None'"
 
     # =========================================================
-    # AUDIT MANAGER
-    # Full division access
-    # =========================================================
-    if "Audit Manager" in roles:
-        return f"""
-            `tabMy Audits`.emp_division IN ({divisions_sql})
-        """
-
     # =========================================================
     # AUDIT MEMBER
     # Only created records
     # =========================================================
-    if "Audit Member" in roles:
+    if "Audit Member" in roles and not is_audit_manager:
         return f"""
             `tabMy Audits`.owner = '{user}'
         """
