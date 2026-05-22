@@ -239,16 +239,28 @@ class MyAudits(Document):
         if not self.audit_stages:
             return
 
-        mapping = {m["label"]: m["prefix"] for m in self.get_prefix_mapping()}
+        mapping = self.get_prefix_mapping()
         max_level = 0
 
         for row in self.audit_stages:
-            prefix = mapping.get(row.stage_name)
+            prefix = None
+            for m in mapping:
+                if m["label"].lower() in (row.stage_name or "").lower():
+                    prefix = m["prefix"]
+                    break
+            
+            # Debugging log
+            frappe.log_error(
+                title="Stage Mapping Debug",
+                message=f"Stage Name: {row.stage_name} | Found Prefix: {prefix}"
+            )
+            
             if prefix:
+                self.set(f"{prefix}_name", row.employee_name)
+                self.set(f"{prefix}_mail", row.email)
                 self.set(f"{prefix}_user_status", row.status)
                 self.set(f"{prefix}_response_box", row.response)
                 self.set(f"{prefix}_attach_box", row.attachment)
-                self.set(f"{prefix}_mail", row.email)
                 if row.pending_time:
                     self.set(f"{prefix}_pending_time", row.pending_time)
 
@@ -259,6 +271,8 @@ class MyAudits(Document):
                             max_level = lvl
                     except:
                         pass
+        
+        # ... (rest of the function stays the same)
 
         # Update Operational Tracking Level
         if max_level > 0:
@@ -290,7 +304,9 @@ class MyAudits(Document):
             {"prefix": "zom", "stage": "4", "label": "ZOM"},
             {"prefix": "gm", "stage": "5", "label": "GM"},
             {"prefix": "hr", "stage": "6", "label": "HR"},
+            {"prefix": "chro", "stage": "7", "label": "CHRO"},
             {"prefix": "coo", "stage": "8", "label": "COO"},
+            {"prefix": "cfo", "stage": "9", "label": "CFO"},
             {"prefix": "ceo", "stage": "10", "label": "CEO"}
         ]
 
