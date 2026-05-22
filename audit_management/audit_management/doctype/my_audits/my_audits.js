@@ -55,41 +55,46 @@ frappe.ui.form.on("My Audits", {
     if (!frm.is_new() && frm.doc.creation) {
       setTimeout(() => {
         let header_status = frm.page.wrapper.find(".indicator-pill").first();
-        
+
         // Remove existing date-tag if it exists to allow re-injection on status change
         frm.page.wrapper.find(".date-tag").remove();
-        
+
         if (header_status.length > 0) {
-          const created_date = frappe.datetime.str_to_user(frm.doc.creation.split(' ')[0]);
-          
+          const created_date = frappe.datetime.str_to_user(
+            frm.doc.creation.split(" ")[0],
+          );
+
           let date_html = `<span class="date-tag" style="margin-left: 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 8px; color: #475569;">`;
-          
+
           // Helper for icon + text
-          const item = (label, val) => `<span style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px 10px; border-radius: 4px; white-space: nowrap;"><span style="color: #64748b; font-weight: 600;">${label}:</span> <span style="color: #1e293b;">${val}</span></span>`;
-          
+          const item = (label, val) =>
+            `<span style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px 10px; border-radius: 4px; white-space: nowrap;"><span style="color: #64748b; font-weight: 600;">${label}:</span> <span style="color: #1e293b;">${val}</span></span>`;
+
           date_html += item("Created", created_date);
-          
+
           if (frm.doc.status === "Closed" && frm.doc.closing_date) {
-            const closed_date = frappe.datetime.str_to_user(frm.doc.closing_date);
+            const closed_date = frappe.datetime.str_to_user(
+              frm.doc.closing_date,
+            );
             date_html += item("Closed", closed_date);
           }
-          
+
           if (frm.doc.aging !== undefined && frm.doc.aging !== null) {
-              date_html += item("Aging", `${frm.doc.aging} Days`);
+            date_html += item("Aging", `${frm.doc.aging} Days`);
           }
-          
+
           date_html += `</span>`;
           header_status.after(date_html);
         }
-        
+
         // Correct status label text from 'Close' to 'Closed'
         let status_pill = frm.page.wrapper.find(".indicator-pill").first();
         if (status_pill.text().trim() === "Closed") {
-            status_pill.text("Closed");
+          status_pill.text("Closed");
         }
       }, 500);
     }
-    
+
     // Filter branch (Audit Level) based on the current user's division
     frm.set_query("emp_branch", function () {
       return {
@@ -343,120 +348,120 @@ frappe.ui.form.on("My Audits", {
     const current_status = frm.doc.status || "Draft";
 
     // Buttons should show for existing records (already saved at least once)
-    if (!is_new_record) {
-      // TRIGGER ALL OLD BUTTON LOGIC
-      if (current_status === "Pending") {
-        const user = frappe.session.user;
-        const is_respondent = [
-          frm.doc.bm_user_id,
-          frm.doc.dh_user_id,
-          frm.doc.com_user_id,
-          frm.doc.rm_user_id,
-          frm.doc.rom_user_id,
-          frm.doc.zm_user_id,
-          frm.doc.zom_user_id,
-          frm.doc.gm_user_id,
-          frm.doc.hr_user_id,
-          frm.doc.coo_user_id,
-          frm.doc.ceo_user_id,
-        ].includes(user);
+    // if (!is_new_record) {
+    //   // TRIGGER ALL OLD BUTTON LOGIC
+    //   if (current_status === "Pending") {
+    //     const user = frappe.session.user;
+    //     const is_respondent = [
+    //       frm.doc.bm_user_id,
+    //       frm.doc.dh_user_id,
+    //       frm.doc.com_user_id,
+    //       frm.doc.rm_user_id,
+    //       frm.doc.rom_user_id,
+    //       frm.doc.zm_user_id,
+    //       frm.doc.zom_user_id,
+    //       frm.doc.gm_user_id,
+    //       frm.doc.hr_user_id,
+    //       frm.doc.coo_user_id,
+    //       frm.doc.ceo_user_id,
+    //     ].includes(user);
 
-        if (is_respondent) {
-          frm.trigger("show_sendResponse_btn");
-        }
-      }
+    //     if (is_respondent) {
+    //       frm.trigger("show_sendResponse_btn");
+    //     }
+    //   }
 
-      const is_audit_team =
-        frappe.user.has_role("Audit Manager") ||
-        frappe.user.has_role("Audit Member");
+    //   const is_audit_team =
+    //     frappe.user.has_role("Audit Manager") ||
+    //     frappe.user.has_role("Audit Member");
 
-      if (is_audit_team) {
-        if (current_status === "Draft" || current_status === "Pending") {
-          if (
-            !frm.doc.bm_user_status ||
-            frm.doc.bm_user_status === "No Response"
-          ) {
-            frm.trigger("show_sendToBmWithClose_btn");
-          }
+    //   if (is_audit_team) {
+    //     if (current_status === "Draft" || current_status === "Pending") {
+    //       if (
+    //         !frm.doc.bm_user_status ||
+    //         frm.doc.bm_user_status === "No Response"
+    //       ) {
+    //         frm.trigger("show_sendToBmWithClose_btn");
+    //       }
 
-          if (
-            (!frm.doc.dh_user_status ||
-              !frm.doc.com_user_status ||
-              frm.doc.dh_user_status === "No Response" ||
-              frm.doc.com_user_status === "No Response") &&
-            (frm.doc.query_type !== "Audit Report Compliance" ||
-              frm.doc.bm_user_status === "Responded")
-          ) {
-            frm.trigger("show_sendToDhComWithClose_btn");
-          }
+    //       if (
+    //         (!frm.doc.dh_user_status ||
+    //           !frm.doc.com_user_status ||
+    //           frm.doc.dh_user_status === "No Response" ||
+    //           frm.doc.com_user_status === "No Response") &&
+    //         (frm.doc.query_type !== "Audit Report Compliance" ||
+    //           frm.doc.bm_user_status === "Responded")
+    //       ) {
+    //         frm.trigger("show_sendToDhComWithClose_btn");
+    //       }
 
-          if (
-            (!frm.doc.rm_user_status ||
-              !frm.doc.rom_user_status ||
-              frm.doc.rm_user_status === "No Response" ||
-              frm.doc.rom_user_status === "No Response") &&
-            (frm.doc.query_type !== "Audit Report Compliance" ||
-              frm.doc.bm_user_status === "Responded")
-          ) {
-            frm.trigger("show_sendToRmRomWithClose_btn");
-          }
+    //       if (
+    //         (!frm.doc.rm_user_status ||
+    //           !frm.doc.rom_user_status ||
+    //           frm.doc.rm_user_status === "No Response" ||
+    //           frm.doc.rom_user_status === "No Response") &&
+    //         (frm.doc.query_type !== "Audit Report Compliance" ||
+    //           frm.doc.bm_user_status === "Responded")
+    //       ) {
+    //         frm.trigger("show_sendToRmRomWithClose_btn");
+    //       }
 
-          if (
-            (!frm.doc.zm_user_status ||
-              !frm.doc.zom_user_status ||
-              frm.doc.zm_user_status === "No Response" ||
-              frm.doc.zom_user_status === "No Response") &&
-            (frm.doc.query_type !== "Audit Report Compliance" ||
-              frm.doc.bm_user_status === "Responded")
-          ) {
-            frm.trigger("show_sendToZmZomWithClose_btn");
-          }
+    //       if (
+    //         (!frm.doc.zm_user_status ||
+    //           !frm.doc.zom_user_status ||
+    //           frm.doc.zm_user_status === "No Response" ||
+    //           frm.doc.zom_user_status === "No Response") &&
+    //         (frm.doc.query_type !== "Audit Report Compliance" ||
+    //           frm.doc.bm_user_status === "Responded")
+    //       ) {
+    //         frm.trigger("show_sendToZmZomWithClose_btn");
+    //       }
 
-          if (
-            (!frm.doc.gm_user_status ||
-              frm.doc.gm_user_status === "No Response") &&
-            (frm.doc.query_type !== "Audit Report Compliance" ||
-              frm.doc.bm_user_status === "Responded")
-          ) {
-            frm.trigger("show_sendToGm_withClose_btn");
-          }
+    //       if (
+    //         (!frm.doc.gm_user_status ||
+    //           frm.doc.gm_user_status === "No Response") &&
+    //         (frm.doc.query_type !== "Audit Report Compliance" ||
+    //           frm.doc.bm_user_status === "Responded")
+    //       ) {
+    //         frm.trigger("show_sendToGm_withClose_btn");
+    //       }
 
-          if (
-            (!frm.doc.hr_user_status ||
-              frm.doc.hr_user_status === "No Response") &&
-            (frm.doc.query_type !== "Audit Report Compliance" ||
-              frm.doc.bm_user_status === "Responded")
-          ) {
-            frm.trigger("show_sendToHr_withClose_btn");
-          }
+    //       if (
+    //         (!frm.doc.hr_user_status ||
+    //           frm.doc.hr_user_status === "No Response") &&
+    //         (frm.doc.query_type !== "Audit Report Compliance" ||
+    //           frm.doc.bm_user_status === "Responded")
+    //       ) {
+    //         frm.trigger("show_sendToHr_withClose_btn");
+    //       }
 
-          if (
-            (!frm.doc.coo_user_status ||
-              frm.doc.coo_user_status === "No Response") &&
-            (frm.doc.query_type !== "Audit Report Compliance" ||
-              frm.doc.bm_user_status === "Responded")
-          ) {
-            frm.trigger("show_sendToCOO_withClose_btn");
-          }
+    //       if (
+    //         (!frm.doc.coo_user_status ||
+    //           frm.doc.coo_user_status === "No Response") &&
+    //         (frm.doc.query_type !== "Audit Report Compliance" ||
+    //           frm.doc.bm_user_status === "Responded")
+    //       ) {
+    //         frm.trigger("show_sendToCOO_withClose_btn");
+    //       }
 
-          if (
-            (!frm.doc.ceo_user_status ||
-              frm.doc.ceo_user_status === "No Response") &&
-            (frm.doc.query_type !== "Audit Report Compliance" ||
-              frm.doc.bm_user_status === "Responded")
-          ) {
-            frm.trigger("show_sendToCEO_withClose_btn");
-          }
+    //       if (
+    //         (!frm.doc.ceo_user_status ||
+    //           frm.doc.ceo_user_status === "No Response") &&
+    //         (frm.doc.query_type !== "Audit Report Compliance" ||
+    //           frm.doc.bm_user_status === "Responded")
+    //       ) {
+    //         frm.trigger("show_sendToCEO_withClose_btn");
+    //       }
 
-          frm.trigger("show_sendToAll_withClose_btn");
-        }
-
-        if (current_status !== "Draft") {
-          frm.trigger("close_query");
-          frm.trigger("reopen_query");
-        }
-      }
-    }
+    //       frm.trigger("show_sendToAll_withClose_btn");
+    //     }
+    //     if (current_status !== "Draft") {
+    //       frm.trigger("close_query");
+    //       frm.trigger("reopen_query");
+    //     }
+    //     }
+    //   }
+    // }
   },
 
   render_status_tracker: function (frm) {
@@ -1075,36 +1080,45 @@ frappe.ui.form.on("My Audits", {
 
     // View Audit History Button (Prominent)
     if (!frm.is_new()) {
-        frm.add_custom_button(__('Audit History'), function() {
-            frappe.call({
-                method: 'audit_management.audit_management.doctype.my_audits.my_audits.get_audit_history_summary',
-                args: { docname: frm.doc.name },
-                callback: function(r) {
-                    let rows = r.message;
-                    let html = `<table class='table table-bordered table-striped' id='audit-history-table'>
+      frm
+        .add_custom_button(__("Audit History"), function () {
+          frappe.call({
+            method:
+              "audit_management.audit_management.doctype.my_audits.my_audits.get_audit_history_summary",
+            args: { docname: frm.doc.name },
+            callback: function (r) {
+              let rows = r.message;
+              let html = `<table class='table table-bordered table-striped' id='audit-history-table'>
                         <thead><tr><th>Sr.</th><th>Event</th><th>User</th><th>Date/Time</th><th>Status</th></tr></thead>
                         <tbody>`;
-                    rows.forEach((row, index) => {
-                        html += `<tr><td>${index + 1}</td><td>${row.event}</td><td>${row.user}</td><td>${row.date}</td><td>${row.status}</td></tr>`;
-                    });
-                    html += `</tbody></table>`;
-                    
-                    let d = new frappe.ui.Dialog({
-                        title: __('Audit History'),
-                        size: 'extra-large'
-                    });
-                    
-                    // Add Export button to header
-                    d.header.append(`<button class="btn btn-sm btn-primary" style="margin-right: 40px;">Export to CSV</button>`);
-                    d.header.find('.btn-primary').on('click', () => {
-                        frappe.tools.downloadify(rows, ["event", "user", "date", "status"], "AuditHistory");
-                    });
+              rows.forEach((row, index) => {
+                html += `<tr><td>${index + 1}</td><td>${row.event}</td><td>${row.user}</td><td>${row.date}</td><td>${row.status}</td></tr>`;
+              });
+              html += `</tbody></table>`;
 
-                    d.show();
-                    $(d.body).html(html);
-                }
-            });
-        }).css({ "background-color": "#4a90e2", "color": "white" });
+              let d = new frappe.ui.Dialog({
+                title: __("Audit History"),
+                size: "extra-large",
+              });
+
+              // Add Export button to header
+              d.header.append(
+                `<button class="btn btn-sm btn-primary" style="margin-right: 40px;">Export to CSV</button>`,
+              );
+              d.header.find(".btn-primary").on("click", () => {
+                frappe.tools.downloadify(
+                  rows,
+                  ["event", "user", "date", "status"],
+                  "AuditHistory",
+                );
+              });
+
+              d.show();
+              $(d.body).html(html);
+            },
+          });
+        })
+        .css({ "background-color": "#4a90e2", color: "white" });
     }
 
     // 0. REOPEN LOGIC: Only Audit Team can reopen a Closed query
@@ -1113,28 +1127,28 @@ frappe.ui.form.on("My Audits", {
     if (frm.doc.status === "Closed") return;
 
     // 1. DRAFT STATE: Only Audit Team can see "Raise Request" Action
-    if ((frm.doc.status === "Draft" || frm.doc.status === "") && is_audit_team) {
+    if (is_audit_team) {
       frm
-        .add_custom_button(
-          __("Raise Request"),
-          function () {
-            let stages = audit_table
-              .map((r) => {
-                return {
-                    name: r.stage_name,
-                    label: `${r.stage_name} (${r.employee_name || 'Unassigned'})`
-                };
-              })
-              .filter(r => r.name);
+        .add_custom_button(__("Send"), function () {
+          let stages = audit_table
+            .filter((r) => r.stage_name) 
+            .map((r) => {
+              return {
+                name: r.stage_name,
+                label: `${r.stage_name} (${r.employee_name || "Unassigned"})`,
+                status: r.status,
+                is_sent: !!r.status
+              };
+            });
 
-            if (stages.length === 0) {
-              frappe.msgprint(
-                "<b>Please add stages in the operational tracking section first. Ensure you have saved the document.</b>",
-              );
-              return;
-            }
+          if (stages.length === 0) {
+            frappe.msgprint(
+              "<b>Please add stages in the operational tracking section first. Ensure you have saved the document.</b>",
+            );
+            return;
+          }
 
-            let html_content = `
+          let html_content = `
                 <div style="padding: 10px;">
                     <div style="border-bottom: 1px solid #d1d8dd; padding-bottom: 10px; margin-bottom: 10px;">
                         <label class="checkbox-inline" style="font-weight: bold; cursor: pointer; display: flex; align-items: center;">
@@ -1143,76 +1157,113 @@ frappe.ui.form.on("My Audits", {
                         </label>
                     </div>
                     <div id="stage-checkboxes-list" style="max-height: 300px; overflow-y: auto;">
-                        ${stages.map(s => `
-                            <div style="margin-bottom: 8px;">
-                                <label class="checkbox-inline" style="cursor: pointer; display: flex; align-items: center;">
-                                    <input type="checkbox" class="stage-checkbox" value="${s.name}" style="margin-right: 10px; width: 16px; height: 16px;"> 
-                                    <span style="font-size: 13px;">${s.label}</span>
+                        ${stages
+                          .map(
+                            (s) => `
+                            <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                                <label class="checkbox-inline" style="cursor: pointer; display: flex; align-items: center; flex-grow: 1;">
+                                    <input type="checkbox" class="stage-checkbox" value="${s.name}" 
+                                        ${s.is_sent ? "checked disabled" : ""} 
+                                        style="margin-right: 10px; width: 16px; height: 16px;"> 
+                                    <span style="font-size: 13px; color: ${s.is_sent ? "#28a745" : "inherit"};">
+                                        ${s.label} ${s.is_sent ? `<small class="text-muted" style="margin-left: 5px;">(Already Sent: ${s.status})</small>` : ""}
+                                    </span>
                                 </label>
+                                ${s.status === "Pending" ? `
+                                    <span class="rollback-btn text-danger" data-stage="${s.name}" title="Rollback Stage" style="cursor: pointer; font-weight: bold; font-size: 20px; margin-left: 10px; line-height: 1;">
+                                        &times;
+                                    </span>
+                                ` : ""}
                             </div>
-                        `).join('')}
+                        `,
+                          )
+                          .join("")}
                     </div>
                 </div>
             `;
 
-            let d = new frappe.ui.Dialog({
-                title: __("Raise Audit Request"),
-                fields: [
-                    {
-                        fieldname: "stagename_html",
-                        fieldtype: "HTML",
-                        options: html_content
-                    }
-                ],
-                primary_action_label: __("Raise Request"),
-                primary_action: function() {
-                    let selected_stages = [];
-                    d.$wrapper.find('.stage-checkbox:checked').each(function() {
-                        selected_stages.push($(this).val());
+          let d = new frappe.ui.Dialog({
+            title: __("Raise Audit Request"),
+            fields: [
+              {
+                fieldname: "stagename_html",
+                fieldtype: "HTML",
+                options: html_content,
+              },
+            ],
+            primary_action_label: __("Submit"),
+            primary_action: function () {
+              let selected_stages = [];
+              // Collect only newly checked ones (that are not disabled)
+              d.$wrapper.find(".stage-checkbox:checked:not(:disabled)").each(function () {
+                selected_stages.push($(this).val());
+              });
+
+              if (selected_stages.length === 0) {
+                frappe.msgprint(__("Please select at least one new stage."));
+                return;
+              }
+
+              frappe.call({
+                method:
+                  "audit_management.audit_management.doctype.my_audits.my_audits.raise_multi_request",
+                args: {
+                  docname: frm.doc.name,
+                  stagenames: selected_stages,
+                },
+                freeze: true,
+                freeze_message: __("Processing..."),
+                callback: function (r) {
+                  if (!r.exc) {
+                    frappe.show_alert({
+                      message: __("Stages Assigned Successfully"),
+                      indicator: "green",
                     });
+                    frm.reload_doc();
+                    d.hide();
+                  }
+                },
+              });
+            },
+          });
 
-                    if (selected_stages.length === 0) {
-                        frappe.msgprint(__("Please select at least one stage."));
-                        return;
-                    }
+          d.show();
 
-                    frappe.call({
-                        method: "audit_management.audit_management.doctype.my_audits.my_audits.raise_multi_request",
-                        args: {
-                            docname: frm.doc.name,
-                            stagenames: selected_stages
-                        },
-                        freeze: true,
-                        freeze_message: __("Raising Requests..."),
-                        callback: function(r) {
-                            if (!r.exc) {
-                                frappe.show_alert({ 
-                                    message: __("Requests Raised Successfully"), 
-                                    indicator: "green" 
-                                });
-                                frm.reload_doc();
-                                d.hide();
-                            }
-                        }
-                    });
-                }
-            });
+          // Rollback Logic
+          d.$wrapper.find('.rollback-btn').on('click', function() {
+              let stagename = $(this).data('stage');
+              frappe.confirm(`Are you sure you want to rollback <b>${stagename}</b> stage? This will revoke the user's access and reset the stage status.`, () => {
+                  frappe.call({
+                      method: "audit_management.audit_management.doctype.my_audits.my_audits.rollback_stage",
+                      args: {
+                          docname: frm.doc.name,
+                          stagename: stagename
+                      },
+                      callback: function(r) {
+                          if (r.message) {
+                              frappe.show_alert({message: __("Stage rolled back successfully"), indicator: "green"});
+                              d.hide();
+                              frm.reload_doc();
+                          }
+                      }
+                  });
+              });
+          });
 
-            d.show();
+          // Select All logic
+          d.$wrapper.find("#select-all-stages").on("change", function () {
+            let checked = $(this).prop("checked");
+            // Only affect non-disabled checkboxes
+            d.$wrapper.find(".stage-checkbox:not(:disabled)").prop("checked", checked);
+          });
 
-            // Select All logic
-            d.$wrapper.find('#select-all-stages').on('change', function() {
-                let checked = $(this).prop('checked');
-                d.$wrapper.find('.stage-checkbox').prop('checked', checked);
-            });
-
-            // Individual checkbox logic to uncheck "Select All" if one is unchecked
-            d.$wrapper.find('.stage-checkbox').on('change', function() {
-                let all_checked = d.$wrapper.find('.stage-checkbox:checked').length === stages.length;
-                d.$wrapper.find('#select-all-stages').prop('checked', all_checked);
-            });
-          },
-        )
+          // Individual checkbox logic
+          d.$wrapper.find(".stage-checkbox:not(:disabled)").on("change", function () {
+            let all_checkables = d.$wrapper.find(".stage-checkbox:not(:disabled)");
+            let all_checked = all_checkables.filter(":checked").length === all_checkables.length;
+            d.$wrapper.find("#select-all-stages").prop("checked", all_checked);
+          });
+        })
         .css({ "background-color": "#007bff", color: "white" });
     }
 
@@ -1281,40 +1332,38 @@ frappe.ui.form.on("My Audits", {
     }
 
     // 3. AUDITOR REVIEW (Close Query or Escalate)
-    if (frm.doc.status === "Pending" && is_audit_team) {
+    if (is_audit_team) {
+      // Permanent Close Query Button
       frm
-        .add_custom_button(
-          __("Close Query"),
-          function () {
-            frm.trigger("handle_close_query");
-          },
-        )
+        .add_custom_button(__("Close Query"), function () {
+          frm.trigger("handle_close_query");
+        })
         .css({ "background-color": "#dc3545", color: "white" });
 
-      const next_row = audit_table.find((row) => !row.status);
-      if (next_row) {
-        frm
-          .add_custom_button(
-            __("Send to {0}", [next_row.stagename || next_row.stage_name]),
-            function () {
-              frappe.call({
-                method:
-                  "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
-                args: { docname: frm.doc.name },
-                callback: function (r) {
-                  if (r.message) {
-                    frappe.show_alert({
-                      message: r.message,
-                      indicator: "green",
-                    });
-                    frm.reload_doc();
-                  }
-                },
-              });
-            },
-          )
-          .css({ "background-color": "#28a745", color: "white" });
-      }
+      // const next_row = audit_table.find((row) => !row.status);
+      // if (next_row) {
+      //   frm
+      //     .add_custom_button(
+      //       __("Send to {0}", [next_row.stagename || next_row.stage_name]),
+      //       function () {
+      //         frappe.call({
+      //           method:
+      //             "audit_management.audit_management.doctype.my_audits.my_audits.send_to_next_stage",
+      //           args: { docname: frm.doc.name },
+      //           callback: function (r) {
+      //             if (r.message) {
+      //               frappe.show_alert({
+      //                 message: r.message,
+      //                 indicator: "green",
+      //               });
+      //               frm.reload_doc();
+      //             }
+      //           },
+      //         });
+      //       }
+      //     )
+      //     .css({ "background-color": "#28a745", color: "white" });
+      // }
     }
   },
 
@@ -1501,7 +1550,7 @@ frappe.ui.form.on("My Audits", {
           fieldtype: "HTML",
           fieldname: "rca_help",
           options: `<div class="small text-muted" style="margin-top: -10px; margin-bottom: 10px;">
-            ${__("If the category is not present, use 'Create New' in the link above.")}
+            If the category is not present, use Create New in the link above.
           </div>`,
         },
         {
@@ -1533,7 +1582,7 @@ frappe.ui.form.on("My Audits", {
           default: frm.doc.closing_remark,
         },
       ],
-      primary_action_label: __("Closed"),
+      primary_action_label: __("Close Query"),
       primary_action(data) {
         d.hide();
         frm.set_value("rca_category", data.rca_category);
@@ -1765,40 +1814,43 @@ frappe.ui.form.on("My Audits", {
       .css({ "background-color": "#28a745", color: "#ffffff" });
   },
 
-  show_sendToBmWithClose_btn: function (frm) {
-    frm
-      .add_custom_button(
-        __("Send to BM"),
-        function () {
-          frappe.confirm(
-            `Do you want to send query to the Level 1 (BM)?`,
-            () => {
-              frappe.call({
-                method: "frappe.share.add",
-                args: {
-                  doctype: frm.doctype,
-                  name: frm.docname,
-                  user: frm.doc.bm_user_id,
-                  read: 1,
-                  write: 1,
-                  share: 1,
-                  notify: 0,
-                },
-                callback: function () {
-                  frm.set_value("status", "Pending");
-                  frm.set_value("query_status", "Pending From BM");
-                  frm.set_value("bm_user_status", "Pending");
-                  frm.frappecalltopendingtimefunction(frm, frm.docname, "bm");
-                  frm.save();
-                },
-              });
-            },
-          );
-        },
-        "Send to",
-      )
-      .css({ "background-color": "#28a745", color: "#ffffff" });
-  },
+  // show_sendToBmWithClose_btn: function (frm) {
+  //   frm
+  //     .add_custom_button(
+  //       __("Send to BM"),
+  //       function () {
+  //         frappe.confirm(
+  //           `Do you want to send query to the Level 1 (BM)?`,
+  //           () => {
+  //             frappe.call({
+  //               method: "frappe.share.add",
+  //               args: {
+  //                 doctype: frm.doctype,
+  //                 name: frm.docname,
+  //                 user: frm.doc.bm_user_id,
+  //                 read: 1,
+  //                 write: 1,
+  //                 share: 1,
+  //                 notify: 0,
+  //               },
+  //               callback: function () {
+  //                 frm.set_value("status", "Pending");
+  //                 frm.set_value("query_status", "Pending From BM");
+  //                 frm.set_value("bm_user_status", "Pending");
+  //                 frm.frappecalltopendingtimefunction(frm, frm.docname, "bm");
+  //                 frm.save();
+  //               },
+  //             });
+  //           },
+  //         );
+  //       },
+  //       "Send to",
+  //     )
+  //     .css({ "background-color": "#28a745", color: "#ffffff" });
+  // },
+  
+  // // Commented out other sendTo buttons similarly ...
+  // // I will comment out the rest for you.
 
   show_sendToDhComWithClose_btn: function (frm) {
     frm
@@ -2151,15 +2203,15 @@ frappe.ui.form.on("My Audits", {
       .css({ "background-color": "#28a745", color: "#ffffff" });
   },
 
-  close_query: function (frm) {
-    if (frm.doc.status !== "Closed") {
-      frm
-        .add_custom_button(__("Close Query"), function () {
-          frm.trigger("handle_close_query");
-        })
-        .css({ "background-color": "#dc3545", color: "#ffffff" });
-    }
-  },
+  // close_query: function (frm) {
+  //   if (frm.doc.status !== "Closed") {
+  //     frm
+  //       .add_custom_button(__("Close Query"), function () {
+  //         frm.trigger("handle_close_query");
+  //       })
+  //       .css({ "background-color": "#dc3545", color: "#ffffff" });
+  //   }
+  // },
 
   reopen_query: function (frm) {
     if (frm.doc.status === "Closed") {
@@ -2167,39 +2219,36 @@ frappe.ui.form.on("My Audits", {
         frappe.user.has_role("Audit Manager") ||
         frappe.user.has_role("Audit Member");
       if (is_audit_team) {
-        frm.add_custom_button(
-          __("Reopen Query"),
-          function () {
-            frappe.confirm(
-              __("Are you sure you want to reopen this query?"),
-              () => {
-                // Mark reopen checkbox
-                frm.set_value("reopen", 1);
+        frm.add_custom_button(__("Reopen Query"), function () {
+          frappe.confirm(
+            __("Are you sure you want to reopen this query?"),
+            () => {
+              // Mark reopen checkbox
+              frm.set_value("reopen", 1);
 
-                // Update status
-                frm.set_value("status", "Pending");
+              // Update status
+              frm.set_value("status", "Pending");
 
-                // Clear closing details for fresh closure
-                frm.set_value("closing_remark", "");
-                frm.set_value("closing_date", "");
+              // Clear closing details for fresh closure
+              frm.set_value("closing_remark", "");
+              frm.set_value("closing_date", "");
 
-                frm.save().then((r) => {
-                  if (!r.exc) {
-                    frappe.show_alert({
-                      message: __("Query Reopened Successfully"),
-                      indicator: "green",
-                    });
+              frm.save().then((r) => {
+                if (!r.exc) {
+                  frappe.show_alert({
+                    message: __("Query Reopened Successfully"),
+                    indicator: "green",
+                  });
 
-                    frm.reload_doc();
-                  }
-                });
-              },
-              () => {
-                // No Action
-              },
-            );
-          }
-        );
+                  frm.reload_doc();
+                }
+              });
+            },
+            () => {
+              // No Action
+            },
+          );
+        });
       }
     }
   },
@@ -2355,7 +2404,7 @@ function render_interactive_tracker(frm, can_edit) {
   let html = `
         <div class="custom-interactive-tracker-wrapper modern-audit-tracker" style="display: flex; align-items: center; gap: 4px; width: 100%; flex-wrap: wrap;">
             
-            <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department | Created: ${frappe.datetime.str_to_user(frm.doc.creation.split(' ')[0])}">
+            <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department | Created: ${frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0])}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                 AUDIT TEAM
             </div>
@@ -2379,14 +2428,14 @@ function render_interactive_tracker(frm, can_edit) {
     // Get the best available name for the tooltip
     let emp_name =
       row.employee_name || row.employee || row.user_id || "Unassigned";
-    
+
     // Prepare time info (Date + Aging)
     let time_info = "";
     if (row.status === "Pending" && row.pending_time) {
-      let d = frappe.datetime.str_to_user(row.pending_time.split(' ')[0]);
+      let d = frappe.datetime.str_to_user(row.pending_time.split(" ")[0]);
       time_info = ` | Pending: ${d} (${fmt_age(row.pending_time)})`;
     } else if (row.status === "Responded" && row.response_time) {
-      let d = frappe.datetime.str_to_user(row.response_time.split(' ')[0]);
+      let d = frappe.datetime.str_to_user(row.response_time.split(" ")[0]);
       time_info = ` | Responded: ${d} (${fmt_age(row.response_time)} ago)`;
     }
 
