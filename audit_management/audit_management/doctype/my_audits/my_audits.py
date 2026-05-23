@@ -195,6 +195,10 @@ class MyAudits(Document):
             })
 
     def before_save(self):
+        # SKIP SYNC IF ROLLBACK IS IN PROGRESS
+        if self.query_status and "Rollback" in self.query_status:
+            return
+
         # 1. Sync Hardcoded Fields to Child Table (Priority for Legacy updates)
         self.sync_old_to_new()
 
