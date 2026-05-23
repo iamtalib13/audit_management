@@ -140,12 +140,23 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         
         responded_count_manager = 0
         not_responded_count_manager = 0
+        stage_counts = {}
         
         if manager_parents_names:
             resp_sql = "SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = 'Responded' AND parent IN %s"
             nr_sql = "SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = 'No Response' AND parent IN %s"
             responded_count_manager = frappe.db.sql(resp_sql, (tuple(manager_parents_names),))[0][0] if manager_parents_names else 0
             not_responded_count_manager = frappe.db.sql(nr_sql, (tuple(manager_parents_names),))[0][0] if manager_parents_names else 0
+
+            # Calculate Stage Counts for Drilldown
+            child_status = None
+            if 'Responded' in status_list: child_status = 'Responded'
+            elif 'No Response' in status_list: child_status = 'No Response'
+            
+            if child_status:
+                stg_sql = f"SELECT stage_name, COUNT(DISTINCT parent) as count FROM `tabAudit Items` WHERE status = %s AND parent IN %s GROUP BY stage_name"
+                stg_data = frappe.db.sql(stg_sql, (child_status, tuple(manager_parents_names)), as_dict=True)
+                stage_counts = {d.stage_name: d.count for d in stg_data}
 
         recent_list = []
         has_more_recent = False
@@ -243,13 +254,13 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
             "total_pending": total_pending,
             "closed_count": closed_count,
             "draft_count": draft_count,
+            "stage_counts": stage_counts,
             "pending_list": pending_for_me_list,
             "recent_list": recent_list,
             "has_more_pending": has_more_pending,
             "has_more_recent": has_more_recent,
             "success": True
         }
-
 
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Dashboard Stats Error")
