@@ -1078,7 +1078,7 @@ def rollback_stage(docname, stagename):
                 frappe.log_error(f"Status check failed for {stagename}: {row.status}", "Rollback Debug")
                 frappe.throw(_("Only Pending or No Response stages can be rolled back. {0} is currently {1}.").format(stagename, row.status))
             
-            # 1. Revoke access first (bypass permission checks for administrative rollback)
+            # 1. Revoke access first
             if row.user_id:
                 frappe.db.delete("DocShare", {
                     "share_doctype": doc.doctype,
@@ -1087,12 +1087,12 @@ def rollback_stage(docname, stagename):
                 })
             
             # 2. Clear stage data
-            row.db_set("status", "")
-            row.db_set("pending_time", None)
-            row.db_set("response", None)
-            row.db_set("attachment", None)
-            row.db_set("response_time", None)
-            frappe.log_error(f"Row updated and db_set: {stagename}", "Rollback Debug")
+            row.status = ""
+            row.pending_time = None
+            row.response = None
+            row.attachment = None
+            row.response_time = None
+            frappe.log_error(f"Row updated: {stagename}", "Rollback Debug")
             
             found = True
             break
@@ -1100,7 +1100,8 @@ def rollback_stage(docname, stagename):
     if found:
         doc.query_status = f"Rollback: {stagename}"
         doc.save(ignore_permissions=True)
-        frappe.log_error(f"Document saved after rollback: {stagename}", "Rollback Debug")
+        doc.reload()
+        frappe.log_error(f"Document saved and reloaded after rollback: {stagename}", "Rollback Debug")
         return True
     return False
 
