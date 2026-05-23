@@ -28,38 +28,23 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         if isinstance(risk, str): risk_list = [r.strip() for r in risk.split(',') if r.strip()]
         elif isinstance(risk, list): risk_list = risk
 
-    # Handle item stages (from child table)
+    # Handle item stages
     item_stage_list = []
     if item_stages:
         if isinstance(item_stages, str): item_stage_list = [s.strip() for s in item_stages.split(',') if s.strip()]
         elif isinstance(item_stages, list): item_stage_list = item_stages
 
-    # Handle time filter (e.g., Today, Yesterday, Last Week)
+    # Handle time filter
     time_filter_list = []
     if time_filter:
         if isinstance(time_filter, str): time_filter_list = [t.strip() for t in time_filter.split(',') if t.strip()]
         elif isinstance(time_filter, list): time_filter_list = time_filter
 
     try:
-        # 1. 🟢 FETCH PENDING FOR ME (From Child Table - Stage User Logic)
-        pending_items_query = """
-            SELECT DISTINCT parent
-            FROM `tabAudit Items`
-            WHERE status = 'Pending'
-            AND (user_id = %s OR email = %s)
-        """
-        responded_items_query = """
-            SELECT DISTINCT parent
-            FROM `tabAudit Items`
-            WHERE status = 'Responded'
-            AND (user_id = %s OR email = %s)
-        """
-        not_responded_items_query = """
-            SELECT DISTINCT parent
-            FROM `tabAudit Items`
-            WHERE status = 'No Response'
-            AND (user_id = %s OR email = %s)
-        """
+        # 🟢 FETCH PENDING FOR ME (Stage User)
+        pending_items_query = "SELECT DISTINCT parent FROM `tabAudit Items` WHERE status = 'Pending' AND (user_id = %s OR email = %s)"
+        responded_items_query = "SELECT DISTINCT parent FROM `tabAudit Items` WHERE status = 'Responded' AND (user_id = %s OR email = %s)"
+        not_responded_items_query = "SELECT DISTINCT parent FROM `tabAudit Items` WHERE status = 'No Response' AND (user_id = %s OR email = %s)"
 
         pending_records = frappe.db.sql(pending_items_query, (user, user), as_dict=True)
         responded_records = frappe.db.sql(responded_items_query, (user, user), as_dict=True)
@@ -72,88 +57,57 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         pending_for_me_list = []
         has_more_pending = False
         
-        # Identify which parent records to fetch for the stage user UI list
         selected_parents_stage_user = []
-        if 'Responded' in status_list:
-            selected_parents_stage_user = [r.parent for r in responded_records]
-        elif 'No Response' in status_list:
-            selected_parents_stage_user = [r.parent for r in not_responded_records]
-        elif 'Pending' in status_list:
-            selected_parents_stage_user = [r.parent for r in pending_records]
+        if 'Responded' in status_list: selected_parents_stage_user = [r.parent for r in responded_records]
+        elif 'No Response' in status_list: selected_parents_stage_user = [r.parent for r in not_responded_records]
+        elif 'Pending' in status_list: selected_parents_stage_user = [r.parent for r in pending_records]
         else:
-            selected_parents_stage_user = list(set(
-                [r.parent for r in pending_records] + 
-                [r.parent for r in responded_records] + 
-                [r.parent for r in not_responded_records]
-            ))
+            selected_parents_stage_user = list(set([r.parent for r in pending_records] + [r.parent for r in responded_records] + [r.parent for r in not_responded_records]))
 
         if selected_parents_stage_user:
             p_filters = {"name": ["in", selected_parents_stage_user]}
             if status_list:
                 actual_statuses = [s for s in status_list if s in ['Draft', 'Pending', 'Closed']]
                 if actual_statuses: p_filters["status"] = ["in", actual_statuses]
-            
             if risk_list:
                 if "Normal" in risk_list: p_filters["risk"] = ["in", risk_list + [None, ""]]
                 else: p_filters["risk"] = ["in", risk_list]
 
-            pending_for_me_list = frappe.get_all(
-                "My Audits",
-                filters=p_filters,
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"],
-                order_by="creation desc",
-                limit_start=pending_start,
-                limit_page_length=page_length + 1
-            )
-            
+            pending_for_me_list = frappe.get_all("My Audits", filters=p_filters, fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"], order_by="creation desc", limit_start=pending_start, limit_page_length=page_length + 1)
             if len(pending_for_me_list) > page_length:
                 has_more_pending = True
                 pending_for_me_list = pending_for_me_list[:page_length]
+            for idx, item in enumerate(pending_for_me_list, start=pending_start + 1): item["sr_no"] = idx
 
-            for idx, item in enumerate(pending_for_me_list, start=pending_start + 1):
-                item["sr_no"] = idx
-
-        # 2. 🔵 FETCH GLOBAL/ROLE STATS (Manager/Admin/Member)
+        # 🔵 FETCH GLOBAL STATS
         from audit_management.audit_management.utils import get_user_allowed_divisions
         allowed_divisions = get_user_allowed_divisions(user)
         
         filters = {}
-        if is_admin:
-            pass
-        elif is_manager:
-            if allowed_divisions: filters["emp_division"] = ["in", allowed_divisions]
-            else: filters["emp_division"] = "None"
-        elif is_member:
-            filters["owner"] = user
-        else:
-            if allowed_divisions: filters["emp_division"] = ["in", allowed_divisions]
-            else: filters["emp_division"] = "None"
+        if is_admin: pass
+        elif is_manager: filters["emp_division"] = ["in", allowed_divisions] if allowed_divisions else "None"
+        elif is_member: filters["owner"] = user
+        else: filters["emp_division"] = ["in", allowed_divisions] if allowed_divisions else "None"
 
-        # Calculate Counters for Manager/Member
         total_pending = frappe.db.count("My Audits", {**filters, "status": "Pending"})
         closed_count = frappe.db.count("My Audits", {**filters, "status": "Closed"})
         draft_count = frappe.db.count("My Audits", {**filters, "status": "Draft"})
         
-        # New: Responded and Not Responded for Managers/Members from Child Table
         manager_parents_responded = frappe.get_all("My Audits", filters={**filters}, fields=["name"], as_list=True)
         manager_parents_names = [p[0] for p in manager_parents_responded] if manager_parents_responded else []
         
         responded_count_manager = 0
         not_responded_count_manager = 0
         stage_counts = {}
-        time_counts = {"Today": 0, "Yesterday": 0, "Last Week": 0}
+        time_counts = {"Today": 0, "Yesterday": 0, "Last Week": 0, "All Time": 0}
         
         if manager_parents_names:
             resp_sql = "SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = 'Responded' AND parent IN %s"
             nr_sql = "SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = 'No Response' AND parent IN %s"
-            responded_count_manager = frappe.db.sql(resp_sql, (tuple(manager_parents_names),))[0][0] if manager_parents_names else 0
-            not_responded_count_manager = frappe.db.sql(nr_sql, (tuple(manager_parents_names),))[0][0] if manager_parents_names else 0
+            responded_count_manager = frappe.db.sql(resp_sql, (tuple(manager_parents_names),))[0][0] or 0
+            not_responded_count_manager = frappe.db.sql(nr_sql, (tuple(manager_parents_names),))[0][0] or 0
 
-            # Calculate Stage and Time Counts for Drilldown
-            child_status = None
-            if 'Responded' in status_list: child_status = 'Responded'
-            elif 'No Response' in status_list: child_status = 'No Response'
-            
+            child_status = 'Responded' if 'Responded' in status_list else ('No Response' if 'No Response' in status_list else None)
             if child_status:
                 stg_sql = f"SELECT stage_name, COUNT(DISTINCT parent) as count FROM `tabAudit Items` WHERE status = %s AND parent IN %s GROUP BY stage_name"
                 stg_data = frappe.db.sql(stg_sql, (child_status, tuple(manager_parents_names)), as_dict=True)
@@ -163,26 +117,21 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                 time_counts["Today"] = frappe.db.sql(f"SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = %s AND parent IN %s AND DATE({field}) = CURDATE()", (child_status, tuple(manager_parents_names)))[0][0] or 0
                 time_counts["Yesterday"] = frappe.db.sql(f"SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = %s AND parent IN %s AND DATE({field}) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)", (child_status, tuple(manager_parents_names)))[0][0] or 0
                 time_counts["Last Week"] = frappe.db.sql(f"SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = %s AND parent IN %s AND DATE({field}) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)", (child_status, tuple(manager_parents_names)))[0][0] or 0
+                time_counts["All Time"] = (responded_count_manager if child_status == 'Responded' else not_responded_count_manager)
 
         recent_list = []
         has_more_recent = False
         if is_admin or is_manager or is_member:
             r_filters = filters.copy()
-            
-            # If Responded or No Response is selected, we must filter parents based on child items
-            child_parent_ids = []
             if 'Responded' in status_list or 'No Response' in status_list or item_stage_list or time_filter_list:
                 child_conds = []
                 params = []
-                
                 if 'Responded' in status_list: child_conds.append("status = 'Responded'")
                 elif 'No Response' in status_list: child_conds.append("status = 'No Response'")
-                
                 if item_stage_list:
                     child_conds.append("stage_name IN %s")
                     params.append(tuple(item_stage_list))
-                
-                if time_filter_list:
+                if time_filter_list and "All Time" not in time_filter_list:
                     time_conds = []
                     for t in time_filter_list:
                         field = "response_time" if 'Responded' in status_list else "pending_time"
@@ -190,43 +139,27 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                         elif t == "Yesterday": time_conds.append(f"DATE({field}) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)")
                         elif t == "Last Week": time_conds.append(f"DATE({field}) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)")
                     if time_conds: child_conds.append("(" + " OR ".join(time_conds) + ")")
-
+                
                 if child_conds:
                     child_sql = f"SELECT DISTINCT parent FROM `tabAudit Items` WHERE {' AND '.join(child_conds)}"
                     child_records = frappe.db.sql(child_sql, tuple(params), as_dict=True)
                     child_parent_ids = [r.parent for r in child_records]
-                
-                if child_parent_ids: r_filters["name"] = ["in", child_parent_ids]
-                else:
-                    if 'Responded' in status_list or 'No Response' in status_list or item_stage_list or time_filter_list:
-                        r_filters["name"] = "None"
+                    if child_parent_ids: r_filters["name"] = ["in", child_parent_ids]
+                    else: r_filters["name"] = "None"
 
-            # Standard Parent Status Filter
             if status_list and not ('Responded' in status_list or 'No Response' in status_list):
                 actual_statuses = [s for s in status_list if s in ['Draft', 'Pending', 'Closed']]
                 if actual_statuses: r_filters["status"] = ["in", actual_statuses]
-
             if risk_list:
                 if "Normal" in risk_list: r_filters["risk"] = ["in", risk_list + [None, ""]]
                 else: r_filters["risk"] = ["in", risk_list]
 
-            recent_list = frappe.get_all(
-                "My Audits",
-                filters=r_filters,
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"],
-                order_by="creation desc",
-                limit_start=recent_start,
-                limit_page_length=page_length + 1
-            )
-            
+            recent_list = frappe.get_all("My Audits", filters=r_filters, fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"], order_by="creation desc", limit_start=recent_start, limit_page_length=page_length + 1)
             if len(recent_list) > page_length:
                 has_more_recent = True
                 recent_list = recent_list[:page_length]
+            for idx, item in enumerate(recent_list, start=recent_start + 1): item["sr_no"] = idx
 
-            for idx, item in enumerate(recent_list, start=recent_start + 1):
-                item["sr_no"] = idx
-
-        # 3. 🟣 ENHANCE BRANCH COLUMN (Existing Logic)
         all_lists = pending_for_me_list + recent_list
         if all_lists:
             audit_levels = list(set([i.emp_branch for i in all_lists if i.emp_branch]))
@@ -242,9 +175,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                         if s_branch_key:
                             details = branch_details_map.get(s_branch_key)
                             if details:
-                                b_name = details.get("name")
-                                b_sol = details.get("sol")
-                                item.emp_branch = f"{b_name} ({b_sol})" if b_name and b_sol else (b_name or b_sol or s_branch_key)
+                                item.emp_branch = f"{details.get('name')} ({details.get('sol')})" if details.get('name') and details.get('sol') else (details.get('name') or details.get('sol') or s_branch_key)
 
         return {
             "role_type": "manager" if (is_manager or is_admin) else ("member" if is_member else "stage_user"),
@@ -262,7 +193,6 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
             "has_more_recent": has_more_recent,
             "success": True
         }
-
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Dashboard Stats Error")
         return {"success": False}
