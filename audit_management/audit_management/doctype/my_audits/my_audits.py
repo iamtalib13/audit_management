@@ -1087,11 +1087,12 @@ def rollback_stage(docname, stagename):
                 })
             
             # 2. Clear stage data
-            row.status = ""
-            row.pending_time = None
-            row.response = None
-            row.attachment = None
-            row.response_time = None
+            row.db_set("status", "")
+            row.db_set("pending_time", None)
+            row.db_set("response", None)
+            row.db_set("attachment", None)
+            row.db_set("response_time", None)
+            frappe.log_error(f"Row updated and db_set: {stagename}", "Rollback Debug")
             
             found = True
             break
@@ -1099,6 +1100,7 @@ def rollback_stage(docname, stagename):
     if found:
         doc.query_status = f"Rollback: {stagename}"
         doc.save(ignore_permissions=True)
+        frappe.log_error(f"Document saved after rollback: {stagename}", "Rollback Debug")
         return True
     return False
 
