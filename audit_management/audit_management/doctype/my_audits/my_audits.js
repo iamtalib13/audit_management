@@ -1270,6 +1270,10 @@ frappe.ui.form.on("My Audits", {
                               d.hide();
                               frm.reload_doc();
                           }
+                      },
+                      error: function(err) {
+                          console.error("Rollback Stage Error:", err);
+                          frappe.msgprint(__("An error occurred while rolling back the stage. Please check your network connection or contact IT support."));
                       }
                   });
               });
@@ -1348,6 +1352,10 @@ frappe.ui.form.on("My Audits", {
                     frm.reload_doc();
                   }
                 },
+                error: function (err) {
+                  console.error("Submit Response Error:", err);
+                  frappe.msgprint(__("An error occurred while submitting your response. Please check your network connection or contact IT support."));
+                }
               });
             },
           });
