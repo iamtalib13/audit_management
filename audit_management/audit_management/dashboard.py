@@ -184,8 +184,8 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                             time_conds.append(f"DATE({field}) = CURDATE()")
                         elif t == "Yesterday":
                             time_conds.append(f"DATE({field}) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)")
-                        elif t == "One Week Before":
-                            time_conds.append(f"DATE({field}) <= DATE_SUB(CURDATE(), INTERVAL 7 DAY)")
+                        elif t == "Last Week":
+                            time_conds.append(f"DATE({field}) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)")
                     if time_conds:
                         child_conds.append("(" + " OR ".join(time_conds) + ")")
 
