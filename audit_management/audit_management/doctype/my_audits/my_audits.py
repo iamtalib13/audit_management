@@ -1059,8 +1059,8 @@ def rollback_stage(docname, stagename):
     
     for row in doc.audit_stages:
         if row.stage_name == stagename:
-            if row.status != "Pending":
-                frappe.throw(_("Only Pending stages can be rolled back. {0} is currently {1}.").format(stagename, row.status))
+            if row.status not in ["Pending", "No Response"]:
+                frappe.throw(_("Only Pending or No Response stages can be rolled back. {0} is currently {1}.").format(stagename, row.status))
             
             # 1. Revoke access first (bypass permission checks for administrative rollback)
             if row.user_id:

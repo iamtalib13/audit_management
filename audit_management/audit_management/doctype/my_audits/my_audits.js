@@ -1135,7 +1135,7 @@ frappe.ui.form.on("My Audits", {
             .map((r) => {
               return {
                 name: r.stage_name,
-                label: `${r.stage_name} (${r.employee_name || "Unassigned"})`,
+                employee_name: r.employee_name || "Unassigned",
                 status: r.status,
                 is_sent: !!r.status
               };
@@ -1150,40 +1150,55 @@ frappe.ui.form.on("My Audits", {
 
           let html_content = `
                 <div style="padding: 10px;">
-                    <div style="border-bottom: 1px solid #d1d8dd; padding-bottom: 10px; margin-bottom: 10px;">
+                    <div style="border-bottom: 1px solid #d1d8dd; padding-bottom: 10px; margin-bottom: 15px;">
                         <label class="checkbox-inline" style="font-weight: bold; cursor: pointer; display: flex; align-items: center;">
                             <input type="checkbox" id="select-all-stages" style="margin-right: 10px; width: 18px; height: 18px;"> 
-                            <span style="font-size: 14px;">${__("Send to All Stages")}</span>
+                            <span style="font-size: 14px;">${__("Select All Stages")}</span>
                         </label>
                     </div>
-                    <div id="stage-checkboxes-list" style="max-height: 300px; overflow-y: auto;">
-                        ${stages
-                          .map(
-                            (s) => `
-                            <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-                                <label class="checkbox-inline" style="cursor: pointer; display: flex; align-items: center; flex-grow: 1;">
-                                    <input type="checkbox" class="stage-checkbox" value="${s.name}" 
-                                        ${s.is_sent ? "checked disabled" : ""} 
-                                        style="margin-right: 10px; width: 16px; height: 16px;"> 
-                                    <span style="font-size: 13px; color: ${s.is_sent ? "#28a745" : "inherit"};">
-                                        ${s.label} ${s.is_sent ? `<small class="text-muted" style="margin-left: 5px;">(Already Sent: ${s.status})</small>` : ""}
-                                    </span>
-                                </label>
-                                ${s.status === "Pending" ? `
-                                    <span class="rollback-btn text-danger" data-stage="${s.name}" title="Rollback Stage" style="cursor: pointer; font-weight: bold; font-size: 20px; margin-left: 10px; line-height: 1;">
-                                        &times;
-                                    </span>
-                                ` : ""}
-                            </div>
-                        `,
-                          )
-                          .join("")}
+                    <div style="max-height: 450px; overflow-y: auto;">
+                        <table class="table table-bordered table-hover" style="font-size: 13px;">
+                            <thead style="background-color: #f8f9fa;">
+                                <tr>
+                                    <th style="width: 40px; text-align: center;">#</th>
+                                    <th style="width: 150px;">${__("Stage Name")}</th>
+                                    <th style="width: 200px;">${__("User Name")}</th>
+                                    <th style="width: 180px;">${__("Status / Action")}</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stage-table-body">
+                                ${stages.map((s) => `
+                                    <tr>
+                                        <td style="text-align: center; vertical-align: middle;">
+                                            <input type="checkbox" class="stage-checkbox" value="${s.name}" 
+                                                ${s.is_sent ? "checked disabled" : ""} 
+                                                style="width: 16px; height: 16px;">
+                                        </td>
+                                        <td style="vertical-align: middle; font-weight: 500;">${s.name}</td>
+                                        <td style="vertical-align: middle;">${s.employee_name}</td>
+                                        <td style="vertical-align: middle;">
+                                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                                <span style="color: ${s.is_sent ? "#28a745" : "#6c757d"}; font-weight: ${s.is_sent ? "bold" : "normal"};">
+                                                    ${s.is_sent ? s.status : __("Not Sent")}
+                                                </span>
+                                                ${["Pending", "No Response"].includes(s.status) ? `
+                                                    <span class="rollback-btn text-danger" data-stage="${s.name}" title="Rollback Stage" style="cursor: pointer; font-weight: bold; font-size: 22px; line-height: 1; margin-left: 10px;">
+                                                        &times;
+                                                    </span>
+                                                ` : ""}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             `;
 
           let d = new frappe.ui.Dialog({
-            title: __("Raise Audit Request"),
+            title: __("Send Audit Query"),
+            size: "extra-large",
             fields: [
               {
                 fieldname: "stagename_html",
@@ -1194,7 +1209,6 @@ frappe.ui.form.on("My Audits", {
             primary_action_label: __("Submit"),
             primary_action: function () {
               let selected_stages = [];
-              // Collect only newly checked ones (that are not disabled)
               d.$wrapper.find(".stage-checkbox:checked:not(:disabled)").each(function () {
                 selected_stages.push($(this).val());
               });
