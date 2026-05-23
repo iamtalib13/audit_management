@@ -249,11 +249,7 @@ class MyAudits(Document):
                     prefix = m["prefix"]
                     break
             
-            # Debugging log
-            frappe.log_error(
-                title="Stage Mapping Debug",
-                message=f"Stage Name: {row.stage_name} | Found Prefix: {prefix}"
-            )
+           
             
             if prefix:
                 self.set(f"{prefix}_name", row.employee_name)
@@ -348,30 +344,48 @@ def populate_audit_stages(doc):
 @frappe.whitelist()
 def get_status_tracker_html(docname):
     audit_doc = frappe.get_doc("My Audits", docname)
+    
+    from frappe.utils import getdate, nowdate
+    creation_date = getdate(audit_doc.creation)
+    today = getdate(nowdate())
+    dynamic_aging = (today - creation_date).days
 
     def create_status_box(text, color, title):
-        return f"<div style='display:inline-block; padding: 2px 6px; border-radius: 10px; border: 2px solid {color}; color: {color}; cursor: pointer;' title='{title}'>{text}</div>"
+        return f"<div style='display:inline-block; padding: 2px 6px; border-radius: 10px; border: 2px solid {color} !important; color: {color} !important; cursor: pointer;' title='{title}'>{text}</div>"
 
     html_output = create_status_box(
-        "AUDIT TEAM", '#1E6EB2', 'Stage 0 : Audit Query') + " <b>--></b> "
+        "AUDIT TEAM", '#1E6EB2', f'Stage 0 : Audit Query (Aging: {dynamic_aging} days)') + " <b>--></b> "
 
     for i, row in enumerate(audit_doc.audit_stages):
         color = "grey"
-        title = f"Stage {row.stage} : {row.stage_name} - {row.status or 'Waiting'}"
+        # Include aging in tooltip
+        title = f"Stage {row.stage} : {row.stage_name} - {row.status or 'Waiting'} (Aging: {dynamic_aging} days)"
 
         if row.status == "Pending":
             color = "red"
         elif row.status == "Responded":
             color = "green"
         elif row.status == "No Response":
-            color = "#4b0a7d"
+            color = "#4b0a7d" 
         elif row.status == "Skipped":
             color = "#ffbe0b"
+        else:
+            color = "grey"
+
+        # Constructing Title with specific check for No Response details
+        status_text = row.status or 'Waiting'
+        title = f"Stage {row.stage} : {row.stage_name} - {status_text} (Aging: {dynamic_aging} days)"
+        if row.status == "No Response" and row.pending_time:
+            from frappe.utils import format_datetime
+            title += f" | Last Attempt: {format_datetime(row.pending_time, 'dd-MM-yyyy')}"
 
         html_output += create_status_box(row.stage_name, color, title)
         if i < len(audit_doc.audit_stages) - 1:
             html_output += " <b>--></b> "
 
+    # Log for debugging
+    frappe.log_error(title="Tracker HTML Output", message=html_output)
+    
     return html_output
 
 
@@ -1251,3 +1265,57 @@ def check_pending_tat():
                 doc.query_status = "Unresolved - Escalation Exhausted"
 
             doc.save(ignore_permissions=True)
+import frappe
+from frappe.utils import getdate, nowdate, format_datetime
+import html
+
+@frappe.whitelist()
+def get_status_tracker_html(docname):
+    try:
+        audit_doc = frappe.get_doc("My Audits", docname)
+        
+        creation_date = getdate(audit_doc.creation)
+        today = getdate(nowdate())
+        dynamic_aging = (today - creation_date).days
+
+        html_output = """
+        <style>
+            .status-tracker-container { display:flex; align-items:center; flex-wrap:wrap; gap:5px; }
+            .tracker-pill { padding:2px 8px; border-radius:10px; display:inline-block; margin-left:5px; cursor:pointer; font-weight:600; border:2px solid; }
+            .tracker-red { color:#ef4444 !important; border-color:#ef4444 !important; }
+            .tracker-green { color:#22c55e !important; border-color:#22c55e !important; }
+            .tracker-purple { color:#4b0a7d !important; border-color:#4b0a7d !important; }
+            .tracker-yellow { color:#ffbe0b !important; border-color:#ffbe0b !important; }
+            .tracker-grey { color:#6b7280 !important; border-color:#6b7280 !important; }
+            .tracker-blue { color:#1E6EB2 !important; border-color:#1E6EB2 !important; }
+        </style>
+        <div class='status-tracker-container'>
+        """
+        
+        # Base Node
+        html_output += f"<span class='tracker-pill tracker-blue' data-toggle='tooltip' title='Stage 0: Audit Query (Aging: {dynamic_aging} days)'>AUDIT TEAM</span>"
+        
+        for row in audit_doc.audit_stages:
+            status = (row.status or "").strip()
+            status_class_map = {
+                "Pending": "tracker-red",
+                "Responded": "tracker-green",
+                "No Response": "tracker-purple",
+                "Skipped": "tracker-yellow",
+            }
+            css_class = status_class_map.get(status, "tracker-grey")
+            
+            # Tooltip details
+            title = f"{row.stage_name} : {status or 'Waiting'} (Aging: {dynamic_aging} days)"
+            if status == "No Response" and row.pending_time:
+                title += f" | Last Attempt: {format_datetime(row.pending_time, 'dd-MM-yyyy')}"
+            
+            safe_title = html.escape(title)
+            
+            html_output += f"<span class='tracker-pill {css_class}' data-toggle='tooltip' title='{safe_title}'>{row.stage_name}</span>"
+            
+        html_output += "</div>"
+        return html_output
+    except Exception as e:
+        frappe.log_error(f"Tracker Error: {str(e)}")
+        return f"Error: {str(e)}"

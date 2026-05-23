@@ -5,15 +5,13 @@ from audit_management.audit_management.doctype.my_audits.my_audits import (
     get_user_allowed_sol_ids
 )
 
-
 def execute(filters=None):
     columns = get_columns()
     data = get_data(filters)
     return columns, data
 
-
 def get_columns():
-    return [
+    columns = [
         {"label": "ID", "fieldname": "name", "fieldtype": "Link", "options": "My Audits", "width": 120},
         {"label": "Date", "fieldname": "date_formatted", "fieldtype": "Data", "width": 100},
         {"label": "Branch", "fieldname": "emp_branch", "fieldtype": "Link", "options": "Audit Level", "width": 100},
@@ -23,143 +21,109 @@ def get_columns():
         {"label": "Query Status", "fieldname": "status", "fieldtype": "Select", "width": 130},
         {"label": "Subject", "fieldname": "audit_query_subject_box", "fieldtype": "Data", "width": 200},
         {"label": "Description", "fieldname": "audit_query_box", "fieldtype": "Data", "width": 300},
-        {"label": "BM Name", "fieldname": "bm_name", "fieldtype": "Data", "width": 120},
-        {"label": "BM Response", "fieldname": "bm_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "DH Name", "fieldname": "dh_name", "fieldtype": "Data", "width": 120},
-        {"label": "DH Response", "fieldname": "dh_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "COM Name", "fieldname": "com_name", "fieldtype": "Data", "width": 120},
-        {"label": "COM Response", "fieldname": "com_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "RM Name", "fieldname": "rm_name", "fieldtype": "Data", "width": 120},
-        {"label": "RM Response", "fieldname": "rm_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "ROM Name", "fieldname": "rom_name", "fieldtype": "Data", "width": 120},
-        {"label": "ROM Response", "fieldname": "rom_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "ZM Name", "fieldname": "zm_name", "fieldtype": "Data", "width": 120},
-        {"label": "ZM Response", "fieldname": "zm_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "ZOM Name", "fieldname": "zom_name", "fieldtype": "Data", "width": 120},
-        {"label": "ZOM Response", "fieldname": "zom_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "GM Name", "fieldname": "gm_name", "fieldtype": "Data", "width": 120},
-        {"label": "GM Response", "fieldname": "gm_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "HR Name", "fieldname": "hr_name", "fieldtype": "Data", "width": 120},
-        {"label": "HR Response", "fieldname": "hr_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "COO Name", "fieldname": "coo_name", "fieldtype": "Data", "width": 120},
-        {"label": "COO Response", "fieldname": "coo_response_box", "fieldtype": "Data", "width": 180},
-        {"label": "CEO Name", "fieldname": "ceo_name", "fieldtype": "Data", "width": 120},
-        {"label": "CEO Response", "fieldname": "ceo_response_box", "fieldtype": "Data", "width": 180},
     ]
 
+    # Fetch all audit stages to add dynamic columns
+    stages = frappe.get_all("Audit Stage", order_by="creation asc")
+    for s in stages:
+        stage_name = s.name
+        prefix = stage_name.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
+        
+        columns.extend([
+            {"label": f"{stage_name} Name", "fieldname": f"{prefix}_name", "fieldtype": "Data", "width": 120},
+            {"label": f"{stage_name} Response", "fieldname": f"{prefix}_response", "fieldtype": "Data", "width": 180},
+            {"label": f"{stage_name} Status", "fieldname": f"{prefix}_status", "fieldtype": "Data", "width": 100}
+        ])
+
+    return columns
 
 def get_data(filters):
-    conditions = []
-    user = frappe.session.user
-    roles = frappe.get_roles(user)
-
-    # ======================
-    # ROLE-BASED PERMISSIONS
-    # ======================
+    # Base query filters
+    conditions = ["1=1"]
+    params = {}
     
-    is_audit_manager = "Audit Manager" in roles or "Administrator" in roles or "System Manager" in roles
-    is_audit_member = "Audit Member" in roles
-    
-    if is_audit_manager:
-        # Sees everything, no perm filter needed
-        pass
-    elif is_audit_member:
-    # Audit Member: only own created records
-        conditions.append(
-            f"owner = {frappe.db.escape(user)}"
-        )
-    else:
-        # Other users: Sol ID based access (from Report Preference) 
-        # OR records where they are participants
-        allowed_sol_ids = get_user_allowed_sol_ids(user)
-        perm_conds = [f"owner = {frappe.db.escape(user)}"]
+    # 1. Standard Filters
+    if filters.get("emp_branch"):
+        conditions.append("ma.emp_branch = %(emp_branch)s")
+        params["emp_branch"] = filters.emp_branch
         
+    if filters.get("query_generated_by_empid"):
+        conditions.append("ma.query_generated_by_empid = %(emp_id)s")
+        params["emp_id"] = filters.query_generated_by_empid
+        
+    if filters.get("query_type"):
+        conditions.append("ma.query_type = %(q_type)s")
+        params["q_type"] = filters.query_type
+        
+    if filters.get("status"):
+        conditions.append("ma.status = %(status)s")
+        params["status"] = filters.status
+        
+    # 2. Dynamic Child Table Filters (via JOIN)
+    stage_conditions = []
+    if filters.get("stage_name"):
+        stage_conditions.append("ai.stage_name = %(stage_name)s")
+        params["stage_name"] = filters.stage_name
+        
+    if filters.get("stage_status"):
+        stage_conditions.append("ai.status = %(stage_status)s")
+        params["stage_status"] = filters.stage_status
+        
+    if filters.get("stage_employee"):
+        stage_conditions.append("ai.employee = %(stage_employee)s")
+        params["stage_employee"] = filters.stage_employee
+
+    if stage_conditions:
+        conditions.append(f"EXISTS (SELECT 1 FROM `tabAudit Items` ai WHERE ai.parent = ma.name AND {' AND '.join(stage_conditions)})")
+
+    # 3. Permissions
+    user = frappe.session.user
+    if "Audit Manager" not in frappe.get_roles(user):
+        allowed_sol_ids = get_user_allowed_sol_ids(user)
         if allowed_sol_ids:
             sol_list = ", ".join([frappe.db.escape(str(s)) for s in allowed_sol_ids])
-            perm_conds.append(f"""
-                (
-                    status != 'Draft'
-                    AND
-                    emp_branch IN (
-                        SELECT name FROM `tabAudit Level`
-                        WHERE sahayog_branch IN ({sol_list})
-                    )
-                )
-            """)
-            
-        # Also include where they are assigned (Audit Items)
-        perm_conds.append(f"""
-            (
-                status != 'Draft'
-                AND EXISTS (
-                    SELECT name
-                    FROM `tabAudit Items`
-                    WHERE parent = `tabMy Audits`.name
-                    AND (
-                        user_id = {frappe.db.escape(user)}
-                        OR email = {frappe.db.escape(user)}
-                    )
-                )
-            )
-        """)
-        
-        conditions.append(f"({' OR '.join(perm_conds)})")
+            conditions.append(f"ma.emp_branch IN (SELECT name FROM `tabAudit Level` WHERE sahayog_branch IN ({sol_list}))")
+        else:
+            conditions.append("ma.owner = %(user)s")
+            params["user"] = user
 
-    # ======================
-    # UI FILTERS
-    # ======================
-    if filters.get("emp_branch"):
-        conditions.append(f"emp_branch = {frappe.db.escape(filters.emp_branch)}")
-
-    if filters.get("query_generated_by_empid"):
-        conditions.append(f"query_generated_by_empid = {frappe.db.escape(filters.query_generated_by_empid)}")
-
-    if filters.get("query_type"):
-        conditions.append(f"query_type = {frappe.db.escape(filters.query_type)}")
-
-    if filters.get("status"):
-        conditions.append(f"status = {frappe.db.escape(filters.status)}")
-
-    for level in ["bm", "dh", "com", "rm", "rom", "zm", "zom", "gm", "hr", "coo", "ceo"]:
-        if filters.get(f"{level}_user_status"):
-            status = filters.get(f"{level}_user_status")
-            if status == "Responded":
-                conditions.append(f"{level}_response_box IS NOT NULL AND {level}_response_box != ''")
-            elif status == "No response":
-                conditions.append(f"({level}_response_box IS NULL OR {level}_response_box = '')")
-
-    if filters.get("from_date"):
-        conditions.append(f"DATE(creation) >= {frappe.db.escape(filters.from_date)}")
-
-    if filters.get("to_date"):
-        conditions.append(f"DATE(creation) <= {frappe.db.escape(filters.to_date)}")
-
-    where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    where_clause = "WHERE " + " AND ".join(conditions)
 
     query = f"""
         SELECT
-            name, creation, status,
-            emp_branch, query_generated_by_empid, query_generated_by_name, query_type,
-            audit_query_subject_box, audit_query_box,
-            bm_name, bm_response_box,
-            dh_name, dh_response_box,
-            com_name, com_response_box,
-            rm_name, rm_response_box,
-            rom_name, rom_response_box,
-            zm_name, zm_response_box,
-            zom_name, zom_response_box,
-            gm_name, gm_response_box,
-            hr_name, hr_response_box,
-            coo_name, coo_response_box,
-            ceo_name, ceo_response_box
-        FROM `tabMy Audits`
+            ma.name, ma.creation, ma.status,
+            ma.emp_branch, ma.query_generated_by_empid, ma.query_generated_by_name, ma.query_type,
+            ma.audit_query_subject_box, ma.audit_query_box
+        FROM `tabMy Audits` ma
         {where_clause}
-        ORDER BY creation DESC
+        ORDER BY ma.creation DESC
     """
 
-    result = frappe.db.sql(query, as_dict=True)
+    result = frappe.db.sql(query, params, as_dict=True)
+    
+    if not result:
+        return []
+
+    parent_names = [r.name for r in result]
+    items = frappe.get_all(
+        "Audit Items",
+        filters={"parent": ["in", parent_names]},
+        fields=["parent", "stage_name", "employee_name", "response", "status"]
+    )
+
+    items_map = {}
+    for it in items:
+        if it.parent not in items_map:
+            items_map[it.parent] = {}
+        
+        prefix = it.stage_name.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
+        items_map[it.parent][f"{prefix}_name"] = it.employee_name
+        items_map[it.parent][f"{prefix}_response"] = it.response
+        items_map[it.parent][f"{prefix}_status"] = it.status
 
     for row in result:
         row["date_formatted"] = formatdate(row.creation, "dd-mm-yyyy")
+        if row.name in items_map:
+            row.update(items_map[row.name])
 
     return result
