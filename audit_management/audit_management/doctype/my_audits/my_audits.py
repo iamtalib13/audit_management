@@ -1066,17 +1066,21 @@ def get_audit_history_summary(docname):
 
 
 @frappe.whitelist()
-def rollback_stage(docname, stagename):
-    """Resets a stage status to empty and removes document share for that user. Only allowed for Pending stages."""
+def rollback_stage(docname, stagename, row_name=None):
+    """Resets a stage status to empty and removes document share for that user. Matches by row_name or stagename."""
     doc = frappe.get_doc("My Audits", docname)
     found = False
     
     for row in doc.audit_stages:
-        frappe.log_error(f"Checking row: {row.stage_name} against {stagename}", "Rollback Debug")
-        if row.stage_name == stagename:
+        # Match by row_name if provided, otherwise fallback to stage_name
+        is_match = (row.name == row_name) if row_name else (row.stage_name == stagename)
+        
+        if is_match:
+            frappe.log_error(title="Rollback Debug", message=f"Rollback Stage: {stagename}\nRow Name: {row.name}\nRow Stage Name: '{row.stage_name}'\nRow Status Before: '{row.status}'")
+            
             if row.status not in ["Pending", "No Response"]:
-                frappe.log_error(f"Status check failed for {stagename}: {row.status}", "Rollback Debug")
-                frappe.throw(_("Only Pending or No Response stages can be rolled back. {0} is currently {1}.").format(stagename, row.status))
+                frappe.log_error(title="Rollback Debug", message=f"Status check failed for {row.name}: {row.status}")
+                frappe.throw(_("Only Pending or No Response stages can be rolled back. {0} is currently {1}.").format(row.stage_name, row.status))
             
             # 1. Revoke access first
             if row.user_id:
@@ -1092,7 +1096,8 @@ def rollback_stage(docname, stagename):
             row.response = None
             row.attachment = None
             row.response_time = None
-            frappe.log_error(f"Row updated: {stagename}", "Rollback Debug")
+            
+            frappe.log_error(title="Rollback Debug After", message=f"Row Name: {row.name}\nRow Status After: '{row.status}'")
             
             found = True
             break
@@ -1101,7 +1106,10 @@ def rollback_stage(docname, stagename):
         doc.query_status = f"Rollback: {stagename}"
         doc.save(ignore_permissions=True)
         doc.reload()
-        frappe.log_error(f"Document saved and reloaded after rollback: {stagename}", "Rollback Debug")
+        
+        for row in doc.audit_stages:
+            if row.name == row_name or row.stage_name == stagename:
+                frappe.log_error(title="Rollback Final DB Check", message=f"Final DB Status: '{row.status}'")
         return True
     return False
 

@@ -1257,12 +1257,17 @@ frappe.ui.form.on("My Audits", {
           // Rollback Logic
           d.$wrapper.find('.rollback-btn').on('click', function() {
               let stagename = $(this).data('stage');
-              frappe.confirm(`Are you sure you want to rollback <b>${stagename}</b> stage? This will revoke the user's access and reset the stage status.`, () => {
+              // Find the row object corresponding to the stage to get its unique name
+              let row = audit_table.find(r => (r.stage_name || r.stagename) === stagename);
+              let row_name = row ? row.name : null;
+              
+              frappe.confirm(`Are you sure you want to rollback <b>${stagename}</b> stage?`, () => {
                   frappe.call({
                       method: "audit_management.audit_management.doctype.my_audits.my_audits.rollback_stage",
                       args: {
                           docname: frm.doc.name,
-                          stagename: stagename
+                          stagename: stagename,
+                          row_name: row_name
                       },
                       callback: function(r) {
                           if (r.message) {
@@ -1273,7 +1278,7 @@ frappe.ui.form.on("My Audits", {
                       },
                       error: function(err) {
                           console.error("Rollback Stage Error:", err);
-                          frappe.msgprint(__("An error occurred while rolling back the stage. Please check your network connection or contact IT support."));
+                          frappe.msgprint(__("An error occurred while rolling back the stage."));
                       }
                   });
               });
