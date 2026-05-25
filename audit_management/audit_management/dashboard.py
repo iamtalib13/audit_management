@@ -123,11 +123,15 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         has_more_recent = False
         if is_admin or is_manager or is_member:
             r_filters = filters.copy()
-            if 'Responded' in status_list or 'No Response' in status_list or item_stage_list or time_filter_list:
+            # Only use child-item based filtering if status is Responded/NR OR if specific stages/times are selected
+            has_child_filter = 'Responded' in status_list or 'No Response' in status_list or item_stage_list or (time_filter_list and "All Time" not in time_filter_list)
+
+            if has_child_filter:
                 child_conds = []
                 params = []
                 if 'Responded' in status_list: child_conds.append("status = 'Responded'")
                 elif 'No Response' in status_list: child_conds.append("status = 'No Response'")
+                elif 'Pending' in status_list: child_conds.append("status = 'Pending'")
                 if item_stage_list:
                     child_conds.append("stage_name IN %s")
                     params.append(tuple(item_stage_list))
@@ -139,7 +143,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                         elif t == "Yesterday": time_conds.append(f"DATE({field}) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)")
                         elif t == "Last Week": time_conds.append(f"DATE({field}) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)")
                     if time_conds: child_conds.append("(" + " OR ".join(time_conds) + ")")
-                
+
                 if child_conds:
                     child_sql = f"SELECT DISTINCT parent FROM `tabAudit Items` WHERE {' AND '.join(child_conds)}"
                     child_records = frappe.db.sql(child_sql, tuple(params), as_dict=True)
@@ -148,6 +152,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                     else: r_filters["name"] = "None"
 
             if status_list and not ('Responded' in status_list or 'No Response' in status_list):
+
                 actual_statuses = [s for s in status_list if s in ['Draft', 'Pending', 'Closed']]
                 if actual_statuses: r_filters["status"] = ["in", actual_statuses]
             if risk_list:
