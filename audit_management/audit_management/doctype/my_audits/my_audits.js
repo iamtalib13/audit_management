@@ -2312,9 +2312,33 @@ frappe.ui.form.on("My Audits", {
       },
     });
   },
+
+  query_type: function (frm) {
+    frm.tat_config_loaded = false;
+    let can_edit =
+      frappe.user_roles.includes("Audit Manager") ||
+      frappe.user_roles.includes("Audit Member");
+    render_interactive_tracker(frm, can_edit);
+  },
 });
 
 function render_interactive_tracker(frm, can_edit) {
+  // 0. Fetch TAT Config if not already loaded
+  if (frm.doc.query_type && !frm.tat_config_loaded) {
+    frappe.db.get_doc("Audit Query Type", frm.doc.query_type).then((qt) => {
+      frm.tat_config = {};
+      frm.default_tat = qt.default_tat_days || 0;
+      if (qt.tat_config) {
+        qt.tat_config.forEach((row) => {
+          frm.tat_config[row.stage] = row.tat_days;
+        });
+      }
+      frm.tat_config_loaded = true;
+      render_interactive_tracker(frm, can_edit);
+    });
+    return;
+  }
+
   // 1. Inject the CSS globally into the document head (only once)
   if (!document.getElementById("custom-audit-tracker-style")) {
     let style = document.createElement("style");
@@ -2325,10 +2349,19 @@ function render_interactive_tracker(frm, can_edit) {
                 font-family: inherit;
                 padding: 4px 0;
             }
+
+            /* Base style for the container holding the pill and its arrow */
+            .stage-pill-container {
+                display: inline-flex !important;
+                align-items: center !important; /* This ensures elements are perfectly aligned on the center line */
+                justify-content: center;
+            }
+
             .modern-pill {
                 position: relative; /* Required for absolute tooltip positioning */
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
                 padding: 4px 14px;
                 border-radius: 20px;
                 font-size: 12px;
@@ -2337,14 +2370,39 @@ function render_interactive_tracker(frm, can_edit) {
                 box-shadow: 0 1px 2px rgba(0,0,0,0.05);
                 transition: all 0.2s ease;
                 white-space: nowrap;
+                height: 26px; /* Explicit uniform height to prevent jumpy layout */
                 // z-index: 999;
 
             }
+            
+            /* Explicit Arrow Fix to ensure it centers nicely */
+            .modern-arrow {
+                display: inline-block;
+                vertical-align: middle;
+                margin: 0 6px;
+                align-self: center; /* Forces flex child to center perfectly regardless of context */
+            }
+
             .sortable-item:hover .modern-pill {
                 transform: translateY(-1px);
                 box-shadow: 0 4px 6px rgba(0,0,0,0.08);
                 z-index: 999;
 
+            }
+
+            /* TAT Label Styling - Absolute Position to not break Flex alignment */
+            .tat-label {
+                position: absolute;
+                top: -14px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 10px;
+                color: #777777;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                line-height: 1;
+                white-space: nowrap;
             }
             
             /* Status Colors (Modern Banking Palette) */
@@ -2430,7 +2488,7 @@ function render_interactive_tracker(frm, can_edit) {
   }
 
   // Modern SVG Chevron instead of -->
-  const arrow_svg = `<svg class="modern-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 4px;"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+  const arrow_svg = `<svg class="modern-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
 
   // Format age helper
   const fmt_age = (d) => {
@@ -2441,16 +2499,17 @@ function render_interactive_tracker(frm, can_edit) {
 
   // 2. Build the HTML wrapper
   let html = `
-        <div class="custom-interactive-tracker-wrapper modern-audit-tracker" style="display: flex; align-items: center; gap: 4px; width: 100%; flex-wrap: wrap;">
+        <div class="custom-interactive-tracker-wrapper modern-audit-tracker" style="display: flex; align-items: center; gap: 4px; width: 100%; flex-wrap: wrap; min-height: 60px;">
             
-            <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department | Created: ${frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0])}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                AUDIT TEAM
+            <div class="stage-pill-container">
+                <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department | Created: ${frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0])}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    AUDIT TEAM
+                </div>
+                ${arrow_svg}
             </div>
             
-            ${arrow_svg}
-            
-            <div id="draggable-stages" style="display: flex; align-items: center; flex-wrap: wrap; flex: 1; row-gap: 8px;">
+            <div id="draggable-stages" style="display: flex; align-items: center; flex-wrap: wrap; flex: 1; row-gap: 16px;">
     `;
 
   // Generate pills from the actual child table
@@ -2486,10 +2545,19 @@ function render_interactive_tracker(frm, can_edit) {
       time_info = ` | Responded: ${d} (${fmt_age(row.response_time)} ago)`;
     }
 
+    // Determine TAT for this stage
+    let stage_tat = frm.default_tat || 0;
+    if (frm.tat_config && frm.tat_config[row.stage_name]) {
+      stage_tat = frm.tat_config[row.stage_name];
+    }
+
     html += `
-            <div class="stage-pill-container sortable-item" style="display: flex; align-items: center; cursor: ${can_edit ? "grab" : "not-allowed"};">
-                <div class="modern-pill ${pill_class}" data-tooltip="${emp_name}${time_info}">
-                    ${row.stage_name}
+            <div class="stage-pill-container sortable-item" style="cursor: ${can_edit ? "grab" : "not-allowed"};">
+                <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+                    <div class="tat-label">TAT: ${stage_tat}d</div>
+                    <div class="modern-pill ${pill_class}" data-tooltip="${emp_name}${time_info}">
+                        ${row.stage_name}
+                    </div>
                 </div>
                 ${arrow_svg}
             </div>
