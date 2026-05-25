@@ -80,14 +80,18 @@ frappe.ui.form.on("My Audits", {
           }
 
           if (frm.doc.creation) {
-            const created_date = frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0]);
-            
+            const created_date = frappe.datetime.str_to_user(
+              frm.doc.creation.split(" ")[0],
+            );
+
             // Calculate dynamic aging: today - creation date
-            const creation_date_obj = frappe.datetime.str_to_obj(frm.doc.creation);
+            const creation_date_obj = frappe.datetime.str_to_obj(
+              frm.doc.creation,
+            );
             const today = new Date();
             const time_diff = today - creation_date_obj;
             const dynamic_aging = Math.floor(time_diff / (1000 * 60 * 60 * 24));
-            
+
             date_html += item("Aging", `${dynamic_aging} Days`);
           }
 
@@ -1142,13 +1146,13 @@ frappe.ui.form.on("My Audits", {
       frm
         .add_custom_button(__("Send"), function () {
           let stages = audit_table
-            .filter((r) => r.stage_name) 
+            .filter((r) => r.stage_name)
             .map((r) => {
               return {
                 name: r.stage_name,
                 employee_name: r.employee_name || "Unassigned",
                 status: r.status,
-                is_sent: !!r.status
+                is_sent: !!r.status,
               };
             });
 
@@ -1178,7 +1182,9 @@ frappe.ui.form.on("My Audits", {
                                 </tr>
                             </thead>
                             <tbody id="stage-table-body">
-                                ${stages.map((s) => `
+                                ${stages
+                                  .map(
+                                    (s) => `
                                     <tr>
                                         <td style="text-align: center; vertical-align: middle;">
                                             <input type="checkbox" class="stage-checkbox" value="${s.name}" 
@@ -1192,15 +1198,24 @@ frappe.ui.form.on("My Audits", {
                                                 <span style="color: ${s.is_sent ? "#28a745" : "#6c757d"}; font-weight: ${s.is_sent ? "bold" : "normal"};">
                                                     ${s.is_sent ? s.status : __("Not Sent")}
                                                 </span>
-                                                ${["Pending", "No Response"].includes(s.status) ? `
+                                                ${
+                                                  [
+                                                    "Pending",
+                                                    "No Response",
+                                                  ].includes(s.status)
+                                                    ? `
                                                     <span class="rollback-btn text-danger" data-stage="${s.name}" title="Rollback Stage" style="cursor: pointer; font-weight: bold; font-size: 22px; line-height: 1; margin-left: 10px;">
                                                         &times;
                                                     </span>
-                                                ` : ""}
+                                                `
+                                                    : ""
+                                                }
                                             </div>
                                         </td>
                                     </tr>
-                                `).join("")}
+                                `,
+                                  )
+                                  .join("")}
                             </tbody>
                         </table>
                     </div>
@@ -1220,9 +1235,11 @@ frappe.ui.form.on("My Audits", {
             primary_action_label: __("Submit"),
             primary_action: function () {
               let selected_stages = [];
-              d.$wrapper.find(".stage-checkbox:checked:not(:disabled)").each(function () {
-                selected_stages.push($(this).val());
-              });
+              d.$wrapper
+                .find(".stage-checkbox:checked:not(:disabled)")
+                .each(function () {
+                  selected_stages.push($(this).val());
+                });
 
               if (selected_stages.length === 0) {
                 frappe.msgprint(__("Please select at least one new stage."));
@@ -1255,48 +1272,69 @@ frappe.ui.form.on("My Audits", {
           d.show();
 
           // Rollback Logic
-          d.$wrapper.find('.rollback-btn').on('click', function() {
-              let stagename = $(this).data('stage');
-              // Find the row object corresponding to the stage to get its unique name
-              let row = audit_table.find(r => (r.stage_name || r.stagename) === stagename);
-              let row_name = row ? row.name : null;
-              
-              frappe.confirm(`Are you sure you want to rollback <b>${stagename}</b> stage?`, () => {
-                  frappe.call({
-                      method: "audit_management.audit_management.doctype.my_audits.my_audits.rollback_stage",
-                      args: {
-                          docname: frm.doc.name,
-                          stagename: stagename,
-                          row_name: row_name
-                      },
-                      callback: function(r) {
-                          if (r.message) {
-                              frappe.show_alert({message: __("Stage rolled back successfully"), indicator: "green"});
-                              d.hide();
-                              frm.reload_doc();
-                          }
-                      },
-                      error: function(err) {
-                          console.error("Rollback Stage Error:", err);
-                          frappe.msgprint(__("An error occurred while rolling back the stage."));
-                      }
-                  });
-              });
+          d.$wrapper.find(".rollback-btn").on("click", function () {
+            let stagename = $(this).data("stage");
+            // Find the row object corresponding to the stage to get its unique name
+            let row = audit_table.find(
+              (r) => (r.stage_name || r.stagename) === stagename,
+            );
+            let row_name = row ? row.name : null;
+
+            frappe.confirm(
+              `Are you sure you want to rollback <b>${stagename}</b> stage?`,
+              () => {
+                frappe.call({
+                  method:
+                    "audit_management.audit_management.doctype.my_audits.my_audits.rollback_stage",
+                  args: {
+                    docname: frm.doc.name,
+                    stagename: stagename,
+                    row_name: row_name,
+                  },
+                  callback: function (r) {
+                    if (r.message) {
+                      frappe.show_alert({
+                        message: __("Stage rolled back successfully"),
+                        indicator: "green",
+                      });
+                      d.hide();
+                      frm.reload_doc();
+                    }
+                  },
+                  error: function (err) {
+                    console.error("Rollback Stage Error:", err);
+                    frappe.msgprint(
+                      __("An error occurred while rolling back the stage."),
+                    );
+                  },
+                });
+              },
+            );
           });
 
           // Select All logic
           d.$wrapper.find("#select-all-stages").on("change", function () {
             let checked = $(this).prop("checked");
             // Only affect non-disabled checkboxes
-            d.$wrapper.find(".stage-checkbox:not(:disabled)").prop("checked", checked);
+            d.$wrapper
+              .find(".stage-checkbox:not(:disabled)")
+              .prop("checked", checked);
           });
 
           // Individual checkbox logic
-          d.$wrapper.find(".stage-checkbox:not(:disabled)").on("change", function () {
-            let all_checkables = d.$wrapper.find(".stage-checkbox:not(:disabled)");
-            let all_checked = all_checkables.filter(":checked").length === all_checkables.length;
-            d.$wrapper.find("#select-all-stages").prop("checked", all_checked);
-          });
+          d.$wrapper
+            .find(".stage-checkbox:not(:disabled)")
+            .on("change", function () {
+              let all_checkables = d.$wrapper.find(
+                ".stage-checkbox:not(:disabled)",
+              );
+              let all_checked =
+                all_checkables.filter(":checked").length ===
+                all_checkables.length;
+              d.$wrapper
+                .find("#select-all-stages")
+                .prop("checked", all_checked);
+            });
         })
         .css({ "background-color": "#007bff", color: "white" });
     }
@@ -1359,8 +1397,12 @@ frappe.ui.form.on("My Audits", {
                 },
                 error: function (err) {
                   console.error("Submit Response Error:", err);
-                  frappe.msgprint(__("An error occurred while submitting your response. Please check your network connection or contact IT support."));
-                }
+                  frappe.msgprint(
+                    __(
+                      "An error occurred while submitting your response. Please check your network connection or contact IT support.",
+                    ),
+                  );
+                },
               });
             },
           });
@@ -1886,7 +1928,7 @@ frappe.ui.form.on("My Audits", {
   //     )
   //     .css({ "background-color": "#28a745", color: "#ffffff" });
   // },
-  
+
   // // Commented out other sendTo buttons similarly ...
   // // I will comment out the rest for you.
 
@@ -2321,7 +2363,6 @@ frappe.ui.form.on("My Audits", {
     render_interactive_tracker(frm, can_edit);
   },
 });
-
 function render_interactive_tracker(frm, can_edit) {
   // 0. Fetch TAT Config if not already loaded
   if (frm.doc.query_type && !frm.tat_config_loaded) {
@@ -2339,251 +2380,342 @@ function render_interactive_tracker(frm, can_edit) {
     return;
   }
 
-  // 1. Inject the CSS globally into the document head (only once)
+  // 1. Inject Compact & Spacing Optimized CSS Structure (With Flex-Shrink Fixed)
   if (!document.getElementById("custom-audit-tracker-style")) {
     let style = document.createElement("style");
     style.id = "custom-audit-tracker-style";
     style.innerHTML = `
-            /* Modern tracker styling */
             .modern-audit-tracker {
-                font-family: inherit;
-                padding: 4px 0;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                padding: 12px 14px;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+                width: 100%;
             }
 
-            /* Base style for the container holding the pill and its arrow */
-            .stage-pill-container {
-                display: inline-flex !important;
-                align-items: center !important; /* This ensures elements are perfectly aligned on the center line */
-                justify-content: center;
+            .tracker-flow-container {
+                display: flex;
+                align-items: flex-start;
+                gap: 0px;
+                width: 100%;
+                overflow-x: auto !important; /* Forces scrollbar container visibility */
+                white-space: nowrap;
+                padding-top: 6px;
+                padding-bottom: 8px;
             }
+
+            /* FIXED: Added flex-shrink: 0 to enforce independent scrolling without compression */
+            .workflow-node {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100px; 
+                min-width: 100px;
+                flex-shrink: 0 !important; /* Stays fixed, forces layout to overflow cleanly */
+                position: relative;
+            }
+
+            .node-status-top {
+                font-size: 10px;
+                font-weight: 700;
+                margin-bottom: 5px;
+                height: 14px;
+                text-transform: capitalize;
+                white-space: nowrap;
+            }
+            .top-completed { color: #22c55e; }
+            .top-progress { color: #2563eb; }
+            .top-no-response { color: #f97316; }
+            .top-overdue { color: #ef4444; }
+            .top-pending { color: #64748b; }
+            .top-blank { color: transparent; }
 
             .modern-pill {
-                position: relative; /* Required for absolute tooltip positioning */
                 display: inline-flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                padding: 4px 14px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 600;
-                letter-spacing: 0.3px;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-                transition: all 0.2s ease;
-                white-space: nowrap;
-                height: 26px; /* Explicit uniform height to prevent jumpy layout */
-                // z-index: 999;
-
-            }
-            
-            /* Explicit Arrow Fix to ensure it centers nicely */
-            .modern-arrow {
-                display: inline-block;
-                vertical-align: middle;
-                margin: 0 6px;
-                align-self: center; /* Forces flex child to center perfectly regardless of context */
-            }
-
-            .sortable-item:hover .modern-pill {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 6px rgba(0,0,0,0.08);
-                z-index: 999;
-
-            }
-
-            /* TAT Label Styling - Absolute Position to not break Flex alignment */
-            .tat-label {
-                position: absolute;
-                top: -14px;
-                left: 50%;
-                transform: translateX(-50%);
-                font-size: 10px;
-                color: #777777;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.3px;
-                line-height: 1;
-                white-space: nowrap;
-            }
-            
-            /* Status Colors (Modern Banking Palette) */
-            .pill-pending { background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
-            .pill-responded { background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
-            .pill-skipped { background-color: #faf5ff; border: 1px solid #e9d5ff; color: #6b21a8; }
-            .pill-no-response { background-color: #fff7ed; border: 1px solid #fdba74; color: #c2410c; }
-            .pill-default { background-color: #f3f4f6; border: 1px solid #e5e7eb; color: #374151; }
-            .pill-audit-team { background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
-            
-            /* Hide the arrow on the very last stage pill dynamically */
-            .stage-pill-container:last-child .modern-arrow {
-                display: none !important;
-            }
-            /* Hide any empty message boxes Frappe creates */
-            .form-message.blue:empty {
-                display: none !important;
-            }
-            /* Hide default frappe close icon specifically for our tracker via modern CSS */
-            .form-message:has(.modern-audit-tracker) .close-message {
-                display: none !important;
-            }
-
-                        /* --- GORGEOUS CUSTOM CSS TOOLTIP --- */
-            .modern-pill[data-tooltip]::after {
-                content: attr(data-tooltip);
-                position: absolute;
-                top: calc(100% + 8px); /* Position below the pill */
-                left: 50%;
-                transform: translateX(-50%) translateY(-4px); /* Animate downwards */
-                background: #1e293b; /* Sleek dark slate */
-                color: #f8fafc;
-                padding: 6px 12px;
-                border-radius: 6px;
+                width: 100px;
+                height: 32px;
+                border-radius: 16px;
                 font-size: 11px;
-                font-weight: 500;
-                letter-spacing: 0.2px;
-                white-space: nowrap;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.2s ease-in-out;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-                z-index: 999;
-                pointer-events: none;
+                font-weight: 700;
+                letter-spacing: 0.3px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+                transition: all 0.2s ease;
+                background: #ffffff;
+                border: 1px solid #cbd5e1;
+                color: #334155;
             }
-            /* Tooltip Pointer Triangle (Flipped to point up) */
-            .modern-pill[data-tooltip]::before {
-                content: '';
-                position: absolute;
-                top: calc(100% + 3px); /* Position right below the pill border */
-                left: 50%;
-                transform: translateX(-50%);
-                border-width: 5px;
-                border-style: solid;
-                border-color: transparent transparent #1e293b transparent; /* Points upward */
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.2s ease-in-out;
-                z-index: 999;
-                pointer-events: none;
-                
-            }
-            /* Show Tooltip on Hover */
-            .modern-pill[data-tooltip]:hover::after {
-                opacity: 1;
-                visibility: visible;
-                transform: translateX(-50%) translateY(0); /* Float down into place */
-                z-index: 999;
 
+            .pill-audit-team {
+                background-color: #eff6ff !important;
+                border: 1.5px solid #bfdbfe !important;
+                color: #1d4ed8 !important;
             }
-            .modern-pill[data-tooltip]:hover::before {
-                opacity: 1;
-                visibility: visible;
-                z-index: 999;
+            .pill-responded {
+                background-color: #f0fdf4 !important;
+                border: 1.5px solid #22c55e !important;
+                color: #166534 !important;
             }
+            .pill-progress {
+                background-color: #2563eb !important;
+                border: 1.5px solid #1e40af !important;
+                color: #ffffff !important;
+                box-shadow: 0 3px 8px rgba(37, 99, 235, 0.2);
+            }
+            .pill-no-response {
+                background-color: #ffedd5 !important;
+                border: 1.5px solid #fed7aa !important;
+                color: #ea580c !important;
+            }
+            .pill-overdue {
+                background-color: #fef2f2 !important;
+                border: 1.5px solid #ef4444 !important;
+                color: #991b1b !important;
+                box-shadow: 0 3px 8px rgba(239, 68, 68, 0.15);
+            }
+            .pill-future {
+                background-color: #f8fafc !important;
+                border: 1px solid #e2e8f0 !important;
+                color: #64748b !important;
+            }
+
+            /* FIXED: Connector line shrinks cleanly, but node boxes don't */
+            .node-connector {
+                flex-grow: 1;
+                margin-top: 35px; 
+                min-width: 24px; 
+                height: 2px;
+                border-top: 2px dashed #cbd5e1;
+                position: relative;
+                flex-shrink: 1;
+            }
+            .connector-solid {
+                border-top-style: solid !important;
+                border-top-color: #22c55e !important;
+            }
+            .connector-blue-dashed {
+                border-top-color: #2563eb !important;
+            }
+            .connector-red-dashed {
+                border-top-color: #ef4444 !important;
+            }
+
+            .node-meta-bottom {
+                margin-top: 6px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1px;
+                text-align: center;
+                min-height: 40px;
+            }
+            .meta-tat {
+                font-size: 10px;
+                font-weight: 600;
+                color: #64748b;
+                white-space: nowrap;
+            }
+            .meta-highlight {
+                font-size: 10px;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+            .text-blue-highlight { color: #2563eb; }
+            .text-orange-highlight { color: #ea580c; }
+            .meta-date {
+                font-size: 9.5px;
+                color: #94a3b8;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+
+            .form-message.blue:empty { display: none !important; }
+            .form-message:has(.modern-audit-tracker) .close-message { display: none !important; }
         `;
     document.head.appendChild(style);
   }
 
   if (!frm.doc.audit_stages || frm.doc.audit_stages.length === 0) {
-    frm.set_intro(""); // Clear if no stages
+    frm.set_intro("");
     return;
   }
 
-  // Modern SVG Chevron instead of -->
-  const arrow_svg = `<svg class="modern-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
-
-  // Format age helper
-  const fmt_age = (d) => {
-    if (!d) return "";
-    let diff = frappe.datetime.get_diff(frappe.datetime.now_datetime(), d);
-    return diff <= 0 ? "Today" : diff + " days";
+  const get_aging_days = (timestamp) => {
+    if (!timestamp) return 0;
+    return frappe.datetime.get_diff(frappe.datetime.now_datetime(), timestamp);
   };
 
-  // 2. Build the HTML wrapper
+  // 2. Build HTML Structure
   let html = `
-        <div class="custom-interactive-tracker-wrapper modern-audit-tracker" style="display: flex; align-items: center; gap: 4px; width: 100%; flex-wrap: wrap; min-height: 60px;">
+        <div class="custom-interactive-tracker-wrapper modern-audit-tracker" style="display: flex; align-items: center; width: 100%;">
+            <div class="tracker-flow-container" id="draggable-stages">
             
-            <div class="stage-pill-container">
-                <div class="modern-pill pill-audit-team" data-tooltip="Internal Audit Department | Created: ${frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0])}">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <div class="workflow-node">
+                <div class="node-status-top top-completed">Raised</div>
+                <div class="modern-pill pill-audit-team" title="Internal Audit Department&#10;Created: ${frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0])}">
                     AUDIT TEAM
                 </div>
-                ${arrow_svg}
+                <div class="node-meta-bottom">
+                    <div class="meta-tat">Initial Stage</div>
+                    <div class="meta-date">${frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0])}</div>
+                </div>
             </div>
-            
-            <div id="draggable-stages" style="display: flex; align-items: center; flex-wrap: wrap; flex: 1; row-gap: 16px;">
+            <div class="node-connector connector-solid"></div>
     `;
 
-  // Generate pills from the actual child table
-  frm.doc.audit_stages.forEach((row, index) => {
-    let pill_class =
-      row.status === "Pending"
-        ? "pill-pending"
-        : row.status === "Responded"
-          ? "pill-responded"
-          : row.status === "Skipped"
-            ? "pill-skipped"
-            : row.status === "No Response"
-              ? "pill-no-response"
-              : "pill-default";
-
-    // Get the best available name for the tooltip
-    let emp_name =
-      row.employee_name || row.employee || row.user_id || "Unassigned";
-
-    // Prepare time info (Date + Aging)
-    let time_info = "";
+  let live_running_index = -1;
+  for (let i = 0; i < frm.doc.audit_stages.length; i++) {
     if (
-      (row.status === "Pending" || row.status === "No Response") &&
-      row.pending_time
+      frm.doc.audit_stages[i].status === "Pending" &&
+      frm.doc.audit_stages[i].pending_time
     ) {
-      let d = frappe.datetime.str_to_user(row.pending_time.split(" ")[0]);
-      time_info =
-        row.status === "No Response"
-          ? ` | No Response Since: ${d} (${fmt_age(row.pending_time)})`
-          : ` | Pending: ${d} (${fmt_age(row.pending_time)})`;
-    } else if (row.status === "Responded" && row.response_time) {
-      let d = frappe.datetime.str_to_user(row.response_time.split(" ")[0]);
-      time_info = ` | Responded: ${d} (${fmt_age(row.response_time)} ago)`;
+      live_running_index = i;
+      break;
     }
+  }
 
-    // Determine TAT for this stage
+  frm.doc.audit_stages.forEach((row, index) => {
+    let top_status = "";
+    let pill_class = "pill-future";
+    let top_label_class = "top-blank";
+    let bottom_highlight = "";
+    let calculated_date_view = "";
+
     let stage_tat = frm.default_tat || 0;
     if (frm.tat_config && frm.tat_config[row.stage_name]) {
       stage_tat = frm.tat_config[row.stage_name];
     }
 
+    let base_tat_label = stage_tat === 1 ? "1 Day" : `${stage_tat} Days`;
+
+    if (row.status === "Responded") {
+      top_status = "Responded";
+      pill_class = "pill-responded";
+      top_label_class = "top-completed";
+    } else if (row.status === "No Response") {
+      top_status = "No Response";
+      pill_class = "pill-no-response";
+      top_label_class = "top-no-response";
+    } else if (row.status === "Pending") {
+      if (index === live_running_index) {
+        let current_elapsed = get_aging_days(row.pending_time);
+        let days_left = stage_tat - current_elapsed;
+
+        if (days_left < 0) {
+          top_status = "Overdue";
+          pill_class = "pill-overdue";
+          top_label_class = "top-overdue";
+        } else {
+          top_status = "In Progress";
+          pill_class = "pill-progress";
+          top_label_class = "top-progress";
+        }
+      } else {
+        top_status = "Pending";
+        pill_class = "pill-future";
+        top_label_class = "top-pending";
+      }
+    }
+
+    if (row.status === "Responded" && row.response_time) {
+      let days_taken =
+        get_aging_days(row.pending_time) - get_aging_days(row.response_time);
+      bottom_highlight = `<div class="meta-tat">${days_taken <= 1 ? "1 Day" : days_taken + " Days"}</div>`;
+      calculated_date_view = frappe.datetime.str_to_user(
+        row.response_time.split(" ")[0],
+      );
+    } else if (
+      (index === live_running_index || row.status === "No Response") &&
+      row.pending_time
+    ) {
+      let current_elapsed = get_aging_days(row.pending_time);
+      let days_left = stage_tat - current_elapsed;
+
+      bottom_highlight = `<div class="meta-tat">${base_tat_label}</div>`;
+      if (days_left >= 0) {
+        let color_class =
+          row.status === "No Response"
+            ? "text-orange-highlight"
+            : "text-blue-highlight";
+        let left_label =
+          days_left === 1 ? "1 Day Left" : `${days_left} Days Left`;
+        bottom_highlight += `<div class="meta-highlight ${color_class}">${left_label}</div>`;
+      } else {
+        let overdue_days_abs = Math.abs(days_left);
+        let overdue_label =
+          overdue_days_abs === 1
+            ? "1 Day Overdue"
+            : `${overdue_days_abs} Days Overdue`;
+        bottom_highlight += `<div class="meta-highlight" style="color: #ef4444;">${overdue_label}</div>`;
+      }
+      let target_due = frappe.datetime.add_days(
+        row.pending_time.split(" ")[0],
+        stage_tat,
+      );
+      calculated_date_view = `Due ${frappe.datetime.str_to_user(target_due)}`;
+    } else {
+      bottom_highlight = `<div class="meta-tat">${base_tat_label}</div>`;
+      if (row.pending_time && row.status === "Pending") {
+        let target_due = frappe.datetime.add_days(
+          row.pending_time.split(" ")[0],
+          stage_tat,
+        );
+        calculated_date_view = `Due ${frappe.datetime.str_to_user(target_due)}`;
+      } else {
+        calculated_date_view = "";
+      }
+    }
+
+    let emp_name =
+      row.employee_name || row.employee || row.user_id || "Unassigned";
+
+    let tooltip_str = `Assignee: ${emp_name}&#10;Status: ${row.status || "Not Started"}`;
+    if (row.pending_time)
+      tooltip_str += `&#10;Started: ${frappe.datetime.str_to_user(row.pending_time.split(" ")[0])}`;
+
     html += `
-            <div class="stage-pill-container sortable-item" style="cursor: ${can_edit ? "grab" : "not-allowed"};">
-                <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-                    <div class="tat-label">TAT: ${stage_tat}d</div>
-                    <div class="modern-pill ${pill_class}" data-tooltip="${emp_name}${time_info}">
-                        ${row.stage_name}
-                    </div>
+            <div class="workflow-node sortable-item" style="cursor: ${can_edit ? "grab" : "not-allowed"};">
+                <div class="node-status-top ${top_label_class}">${top_status || "&nbsp;"}</div>
+                <div class="modern-pill ${pill_class}" title="${tooltip_str}">
+                    ${row.stage_name}
                 </div>
-                ${arrow_svg}
+                <div class="node-meta-bottom">
+                    ${bottom_highlight}
+                    <div class="meta-date">${calculated_date_view}</div>
+                </div>
             </div>
         `;
+
+    if (index !== frm.doc.audit_stages.length - 1) {
+      let line_class = "connector-grey-dashed";
+      if (row.status === "Responded") {
+        line_class = "connector-solid";
+      } else if (index === live_running_index || row.status === "No Response") {
+        line_class = "connector-blue-dashed";
+      } else if (top_status === "Overdue") {
+        line_class = "connector-red-dashed";
+      }
+      html += `<div class="node-connector ${line_class}"></div>`;
+    }
   });
 
-  html += `</div>`; // End draggable-stages
-
-  // Add Settings Icon if user has permission
   if (can_edit) {
     html += `
-            <div style="margin-left: auto; padding: 6px; border-radius: 50%; background: #eff6ff; cursor: pointer; color: #1d4ed8; transition: background 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" id="edit-tracker-settings" data-tooltip="Tracker Settings" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <div style="margin-top: 26px; margin-left: 6px; padding: 6px; border-radius: 50%; background: #eff6ff; cursor: pointer; color: #1d4ed8; flex-shrink: 0;" id="edit-tracker-settings" title="Edit Workflow Stages">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </div>
         `;
   }
 
-  html += `</div>`; // End wrapper
+  html += `</div></div>`;
 
-  // 3. Clear ALL existing intro messages before setting the new one
   frm.page.wrapper.find(".form-message-container").empty();
-
-  // Set the intro natively via Frappe
   frm.set_intro(html, "blue");
 
-  // FORCE REMOVE the Close Button via Javascript as a secondary bulletproof measure
   setTimeout(() => {
     let wrapper = frm.page.wrapper.find(".custom-interactive-tracker-wrapper");
     if (wrapper.length > 0) {
@@ -2591,43 +2723,38 @@ function render_interactive_tracker(frm, can_edit) {
     }
   }, 50);
 
-  // 4. Make it Draggable (if permitted)
-  if (can_edit) {
+  // 4. Sortable Engine
+  if (can_edit && typeof Sortable !== "undefined") {
     let el = document.getElementById("draggable-stages");
+    new Sortable(el, {
+      animation: 150,
+      draggable: ".sortable-item",
+      ghostClass: "sortable-ghost",
+      onEnd: function (evt) {
+        let old_index = evt.oldIndex - 1;
+        let new_index = evt.newIndex - 1;
 
-    if (typeof Sortable !== "undefined") {
-      new Sortable(el, {
-        animation: 150,
-        draggable: ".sortable-item",
-        ghostClass: "sortable-ghost",
-        onEnd: function (evt) {
-          let old_index = evt.oldIndex;
-          let new_index = evt.newIndex;
+        if (old_index < 0 || new_index < 0 || old_index === new_index) return;
 
-          if (old_index === new_index) return;
+        let moved_item = frm.doc.audit_stages.splice(old_index, 1)[0];
+        frm.doc.audit_stages.splice(new_index, 0, moved_item);
 
-          let moved_item = frm.doc.audit_stages.splice(old_index, 1)[0];
-          frm.doc.audit_stages.splice(new_index, 0, moved_item);
+        frm.doc.audit_stages.forEach((row, i) => {
+          row.stage = i + 1;
+          row.idx = i + 1;
+        });
 
-          frm.doc.audit_stages.forEach((row, i) => {
-            row.stage = i + 1;
-            row.idx = i + 1;
+        frm.dirty();
+        frm.refresh_field("audit_stages");
+        frm.save().then(() => {
+          frappe.show_alert({
+            message: "Stage sequence updated",
+            indicator: "green",
           });
+        });
+      },
+    });
 
-          frm.dirty();
-          frm.refresh_field("audit_stages");
-
-          frm.save().then(() => {
-            frappe.show_alert({
-              message: "Stage order saved successfully",
-              indicator: "green",
-            });
-          });
-        },
-      });
-    }
-
-    // Attach Settings Modal Click Event
     setTimeout(() => {
       let settings_icon = document.getElementById("edit-tracker-settings");
       if (settings_icon) {
