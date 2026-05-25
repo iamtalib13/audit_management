@@ -79,8 +79,16 @@ frappe.ui.form.on("My Audits", {
             date_html += item("Closed", closed_date);
           }
 
-          if (frm.doc.aging !== undefined && frm.doc.aging !== null) {
-            date_html += item("Aging", `${frm.doc.aging} Days`);
+          if (frm.doc.creation) {
+            const created_date = frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0]);
+            
+            // Calculate dynamic aging: today - creation date
+            const creation_date_obj = frappe.datetime.str_to_obj(frm.doc.creation);
+            const today = new Date();
+            const time_diff = today - creation_date_obj;
+            const dynamic_aging = Math.floor(time_diff / (1000 * 60 * 60 * 24));
+            
+            date_html += item("Aging", `${dynamic_aging} Days`);
           }
 
           date_html += `</span>`;
@@ -483,11 +491,14 @@ frappe.ui.form.on("My Audits", {
         args: { docname: frm.doc.name },
         callback: function (r) {
           if (r.message) {
-            // Check again if it's already there to be absolutely sure
             if (frm.page.wrapper.find(".custom-status-tracker").length === 0) {
               frm.set_intro(
                 `<div class="custom-status-tracker">${r.message}</div>`,
               );
+              // Initialize Bootstrap tooltips
+              setTimeout(() => {
+                frm.page.wrapper.find('[data-toggle="tooltip"]').tooltip();
+              }, 300);
             }
           } else {
             frm.is_intro_set = false;
@@ -2327,6 +2338,7 @@ function render_interactive_tracker(frm, can_edit) {
             .pill-pending { background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
             .pill-responded { background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
             .pill-skipped { background-color: #faf5ff; border: 1px solid #e9d5ff; color: #6b21a8; }
+            .pill-no-response { background-color: #fff7ed; border: 1px solid #fdba74; color: #c2410c; }
             .pill-default { background-color: #f3f4f6; border: 1px solid #e5e7eb; color: #374151; }
             .pill-audit-team { background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
             
@@ -2437,7 +2449,9 @@ function render_interactive_tracker(frm, can_edit) {
           ? "pill-responded"
           : row.status === "Skipped"
             ? "pill-skipped"
-            : "pill-default";
+            : row.status === "No Response"
+              ? "pill-no-response"
+              : "pill-default";
 
     // Get the best available name for the tooltip
     let emp_name =
@@ -2445,9 +2459,15 @@ function render_interactive_tracker(frm, can_edit) {
 
     // Prepare time info (Date + Aging)
     let time_info = "";
-    if (row.status === "Pending" && row.pending_time) {
+    if (
+      (row.status === "Pending" || row.status === "No Response") &&
+      row.pending_time
+    ) {
       let d = frappe.datetime.str_to_user(row.pending_time.split(" ")[0]);
-      time_info = ` | Pending: ${d} (${fmt_age(row.pending_time)})`;
+      time_info =
+        row.status === "No Response"
+          ? ` | No Response Since: ${d} (${fmt_age(row.pending_time)})`
+          : ` | Pending: ${d} (${fmt_age(row.pending_time)})`;
     } else if (row.status === "Responded" && row.response_time) {
       let d = frappe.datetime.str_to_user(row.response_time.split(" ")[0]);
       time_info = ` | Responded: ${d} (${fmt_age(row.response_time)} ago)`;
