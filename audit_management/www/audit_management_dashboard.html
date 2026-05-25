@@ -1,0 +1,568 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Audit Management Dashboard{% endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block style %}
+<style>
+	:root { 
+		--sidebar-bg: #f6f8fc; 
+		--main-bg: #ffffff; 
+		--primary-blue: #0b57d0; 
+		--primary-blue-light: #d3e3fd; 
+		--text-gray: #444746; 
+		--border-color: #e2e8f0; 
+	}
+	
+	#page-audit-management-dashboard { background-color: var(--sidebar-bg) !important; }
+	.page-content { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+	
+	.audit-dashboard-gmail { 
+		display: flex; 
+		gap: 0; 
+		background: var(--sidebar-bg); 
+		height: calc(100vh - 60px); 
+		width: 100%; 
+		transition: all 0.3s ease; 
+	}
+	
+	.db-sidebar { 
+		width: 260px; 
+		display: flex; 
+		flex-direction: column; 
+		gap: 4px; 
+		flex-shrink: 0; 
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+		overflow: hidden; 
+		background: var(--sidebar-bg); 
+		padding: 10px 0; 
+	}
+	
+	.db-sidebar.collapsed { 
+		width: 0 !important; 
+		padding: 10px 0 !important; 
+		opacity: 0; 
+		pointer-events: none; 
+	}
+	
+	.sidebar-header { 
+		display: flex; 
+		align-items: center; 
+		gap: 12px; 
+		padding: 8px 16px 16px 16px; 
+	}
+	
+	.btn-toggle-sidebar { 
+		background: transparent; 
+		border: none; 
+		padding: 10px; 
+		border-radius: 50%; 
+		cursor: pointer; 
+		color: var(--text-gray); 
+		display: flex; 
+		align-items: center; 
+		justify-content: center; 
+		transition: 0.2s; 
+		outline: none; 
+	}
+	
+	.btn-toggle-sidebar:hover { background-color: #eaebef; }
+	.btn-toggle-sidebar i { font-size: 18px; }
+
+	.btn-create-audit { 
+		background: #c2e7ff; 
+		color: #001d35; 
+		padding: 12px 20px; 
+		border-radius: 16px; 
+		display: flex; 
+		align-items: center; 
+		gap: 12px; 
+		font-weight: 600; 
+		cursor: pointer; 
+		border: none; 
+		transition: 0.2s; 
+		font-size: 14px; 
+		white-space: nowrap; 
+		box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+	}
+	
+	.btn-create-audit:hover { 
+		box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15); 
+		background: #d3e3fd; 
+	}
+	
+	.nav-item { 
+		display: flex; 
+		align-items: center; 
+		padding: 0 16px 0 24px; 
+		height: 36px; 
+		border-radius: 0 20px 20px 0; 
+		cursor: pointer; 
+		color: var(--text-gray); 
+		font-size: 14px; 
+		transition: 0.1s; 
+		position: relative; 
+		margin-right: 12px; 
+		white-space: nowrap; 
+	}
+	
+	.nav-item:hover { background-color: #eaebef; }
+	.nav-item.active { background-color: var(--primary-blue-light); color: #001d35; font-weight: 700; }
+	.nav-item i { width: 20px; margin-right: 18px; font-size: 16px; text-align: center; opacity: 0.8; flex-shrink: 0; }
+	.nav-count { margin-left: auto; font-size: 12px; opacity: 0.8; }
+
+	.db-main-content { 
+		flex-grow: 1; 
+		background: var(--main-bg); 
+		border-radius: 16px; 
+		display: flex; 
+		flex-direction: column; 
+		overflow: hidden; 
+		border: 1px solid var(--border-color); 
+		margin: 10px; 
+		box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
+		transition: all 0.3s ease; 
+	}
+	
+	.db-inner-header { 
+		padding: 12px 16px; 
+		border-bottom: 1px solid #f1f3f4; 
+		display: flex; 
+		align-items: center; 
+		justify-content: space-between; 
+		background: #fff; 
+		position: sticky; 
+		top: 0; 
+		z-index: 10; 
+	}
+	
+	#header-toggle-btn { display: none; margin-right: 12px; }
+	.sidebar-collapsed-active #header-toggle-btn { display: flex; }
+
+	.filter-section { display: flex; gap: 8px; align-items: center; }
+	
+	.master-capsule { 
+		background: #ffffff; 
+		padding: 4px 12px; 
+		border-radius: 50px; 
+		border: 1px solid var(--border-color); 
+		display: flex; 
+		align-items: center; 
+		gap: 6px; 
+		cursor: pointer; 
+		transition: 0.2s; 
+		height: 32px; 
+		box-sizing: border-box; 
+		font-size: 12px; 
+		font-weight: 600; 
+		color: var(--text-gray); 
+	}
+	
+	.master-capsule:hover { border-color: var(--primary-blue); background: #f8f9fa; }
+	
+	.multiselect-list { 
+		position: absolute; 
+		top: 110%; 
+		left: 0; 
+		background: white; 
+		border: 1px solid var(--border-color); 
+		border-radius: 12px; 
+		box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+		z-index: 1000; 
+		min-width: 180px; 
+		padding: 8px 0; 
+		display: none; 
+	}
+	
+	.multiselect-item { 
+		padding: 8px 16px; 
+		display: flex; 
+		align-items: center; 
+		gap: 10px; 
+		cursor: pointer; 
+		transition: 0.2s; 
+		font-size: 13px; 
+		color: var(--text-gray); 
+	}
+	
+	.multiselect-item:hover { background: #f1f5f9; }
+
+	.list-container { padding: 0; overflow-y: auto; flex-grow: 1; }
+	.list-header-text { padding: 16px 20px; font-size: 15px; font-weight: 700; color: #1f1f1f; border-bottom: 1px solid #f1f3f4; }
+	
+	.mini-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+	.mini-table th { text-align: left; padding: 12px 16px; border-bottom: 1px solid #f1f3f4; color: var(--text-gray); font-weight: 600; background: #fafafa; }
+	.mini-table td { padding: 12px 16px; border-bottom: 1px solid #f1f3f4; color: #1f1f1f; }
+	.mini-table tr:hover { background: #f2f6fc; box-shadow: inset 1px 0 0 var(--primary-blue); cursor: pointer; }
+	
+	.t-id { font-weight: 700; color: var(--primary-blue); }
+	.t-status { padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+	.t-status.pending { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+	.t-status.closed { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+	
+	.load-more-btn { 
+		background: #fff; 
+		border: 1px solid #dadce0; 
+		color: var(--primary-blue); 
+		padding: 10px 24px; 
+		border-radius: 20px; 
+		cursor: pointer; 
+		font-size: 13px; 
+		font-weight: 600; 
+		margin: 24px auto; 
+		display: block; 
+		transition: 0.2s; 
+	}
+	
+	.drilldown-bar { background: #f8f9fa; padding: 16px 24px; border-bottom: 1px solid #f1f3f4; }
+	.filter-group-label { font-size: 11px; font-weight: 700; color: #5f6368; text-transform: uppercase; margin-bottom: 10px; }
+	.checkbox-row { display: flex; flex-wrap: wrap; gap: 16px; }
+	.check-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #3c4043; cursor: pointer; font-weight: 500; }
+
+	.blue-txt { color: var(--primary-blue); } 
+	.purple-txt { color: #7c3aed; } 
+	.orange-txt { color: #ea580c; } 
+	.green-txt { color: #16a34a; } 
+	.red-txt { color: #d93025; }
+
+	@media (max-width: 992px) {
+		.audit-dashboard-gmail { flex-direction: column; height: auto; }
+		.db-sidebar { width: 100%; height: auto; }
+		.db-main-content { margin: 0; border-radius: 0; }
+		.nav-item { border-radius: 20px; margin-right: 0; }
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Safely loading Font Awesome inside content block -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<div class="audit-dashboard-gmail" id="dashboard-wrapper">
+	<!-- Left Sidebar -->
+	<div class="db-sidebar" id="sidebar">
+		<div class="sidebar-header">
+			<button class="btn-toggle-sidebar toggle-btn" title="Toggle Menu">
+				<i class="fa fa-bars"></i>
+			</button>
+			<button class="btn-create-audit" id="btn-create-audit">
+				<i class="fa fa-plus"></i>
+				<span>Create Audit</span>
+			</button>
+		</div>
+
+		<div class="nav-item active" id="nav-total">
+			<i class="fa fa-inbox blue-txt"></i>
+			<span>All Records</span>
+			<span class="nav-count" id="val-total">0</span>
+		</div>
+		<div class="nav-item" id="nav-draft">
+			<i class="fa fa-file-text-o purple-txt"></i>
+			<span>Draft</span>
+			<span class="nav-count" id="val-draft">0</span>
+		</div>
+		<div class="nav-item" id="nav-pending">
+			<i class="fa fa-clock-o red-txt"></i>
+			<span>Pending</span>
+			<span class="nav-count" id="val-pending">0</span>
+		</div>
+		<div class="nav-item" id="nav-closed">
+			<i class="fa fa-check-square-o green-txt"></i>
+			<span>Closed</span>
+			<span class="nav-count" id="val-closed">0</span>
+		</div>
+		<div class="nav-item" id="nav-responded">
+			<i class="fa fa-reply green-txt"></i>
+			<span>Responded</span>
+			<span class="nav-count" id="val-resp">0</span>
+		</div>
+		<div class="nav-item" id="nav-nr">
+			<i class="fa fa-exclamation-circle orange-txt"></i>
+			<span>Not Responded</span>
+			<span class="nav-count" id="val-nr">0</span>
+		</div>
+
+		<div style="margin-top: 24px; padding: 0 24px; font-size: 11px; font-weight: 700; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px;">Actions</div>
+		<div class="nav-item" id="btn-audit-levels"><i class="fa fa-sitemap blue-txt"></i> <span>Audit Levels</span></div>
+		<div class="nav-item" id="btn-query-types"><i class="fa fa-list-ul purple-txt"></i> <span>Query Types</span></div>
+		<div class="nav-item" id="btn-settings"><i class="fa fa-cog orange-txt"></i> <span>Settings</span></div>
+		<div class="nav-item" id="btn-show-reports"><i class="fa fa-bar-chart green-txt"></i> <span>Reports</span></div>
+	</div>
+
+	<!-- Main Content Area -->
+	<div class="db-main-content">
+		<div class="db-inner-header">
+			<div class="filter-section">
+				<button class="btn-toggle-sidebar toggle-btn" id="header-toggle-btn">
+					<i class="fa fa-bars"></i>
+				</button>
+				<div class="multiselect-container" style="position:relative;">
+					<div class="master-capsule" id="status-filter-btn">
+						<i class="fa fa-filter blue-txt"></i>
+						<span id="selected-status-label">Status</span>
+						<i class="fa fa-chevron-down" style="font-size: 8px; margin-left: 5px;"></i>
+					</div>
+					<div id="filter-dropdown-status" class="multiselect-list"></div>
+				</div>
+				<div class="multiselect-container" style="position:relative;">
+					<div class="master-capsule" id="risk-filter-btn">
+						<i class="fa fa-shield purple-txt"></i>
+						<span id="selected-risk-label">Risk</span>
+						<i class="fa fa-chevron-down" style="font-size: 8px; margin-left: 5px;"></i>
+					</div>
+					<div id="filter-dropdown-risk" class="multiselect-list"></div>
+				</div>
+				<div id="clear-filter-btn" class="master-capsule" style="display:none; border-color: #fecaca; background: #fee2e2; color: #dc2626;">
+					<i class="fa fa-times-circle"></i> <span>Clear</span>
+				</div>
+			</div>
+			
+			<div style="display: flex; align-items: center; gap: 12px;">
+				<!-- Properly set Report Button in Header -->
+				<div id="stage-report-btn" class="master-capsule" style="border-color: #16a34a; color: #16a34a;">
+					<i class="fa fa-bar-chart green-txt"></i> <span>Reports</span>
+				</div>
+				<div class="live-dot" style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);"></div>
+			</div>
+		</div>
+
+		<div id="drilldown-section" class="drilldown-bar" style="display:none;">
+			<div class="filter-group-label">Filter by Stage</div>
+			<div id="stage-checkbox-list" class="checkbox-row"></div>
+			<div class="filter-group-label" style="margin-top:12px;">Filter by Time</div>
+			<div class="checkbox-row" id="time-filters">
+				<label class="check-item"><input type="checkbox" class="time-checkbox" value="Today"> Today <span id="count-today"></span></label>
+				<label class="check-item"><input type="checkbox" class="time-checkbox" value="Yesterday"> Yesterday <span id="count-yest"></span></label>
+				<label class="check-item"><input type="checkbox" class="time-checkbox" value="Last Week"> Last Week <span id="count-week"></span></label>
+				<label class="check-item"><input type="checkbox" class="time-checkbox" value="All Time"> All Time <span id="count-all"></span></label>
+			</div>
+		</div>
+
+		<div class="list-container">
+			<div id="stage-view" style="display:none;">
+				<div class="list-header-text">Attention Required</div>
+				<table class="mini-table">
+					<thead>
+						<tr><th>Sr. No.</th><th>ID</th><th>Branch</th><th>Subject</th><th>Division</th><th>Status</th><th>Risk</th><th>Days</th><th>Ago</th></tr>
+					</thead>
+					<tbody id="stage-items"></tbody>
+				</table>
+				<button class="load-more-btn" id="load-more-p-btn" style="display:none;">Load More</button>
+			</div>
+
+			<div id="manager-view" style="display:none;">
+				<div class="list-header-text">Latest Activity</div>
+				<table class="mini-table">
+					<thead>
+						<tr><th>Sr. No.</th><th>ID</th><th>Branch</th><th>Subject</th><th>Division</th><th>Status</th><th>Risk</th><th>Days</th><th>Ago</th></tr>
+					</thead>
+					<tbody id="activity-body"></tbody>
+				</table>
+				<button class="load-more-btn" id="load-more-r-btn" style="display:none;">Load More</button>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+	frappe.ready(function() {
+		setup_dashboard_logic_complete();
+	});
+
+	function setup_dashboard_logic_complete() {
+		const $w = $('#dashboard-wrapper');
+		let userRole = '', 
+			currentStatusFilter = [], 
+			currentRiskFilter = [], 
+			pendingStart = 0, 
+			recentStart = 0, 
+			currentItemStages = [], 
+			currentTimeFilter = [];
+
+		const updateCount = (id, val) => { 
+			const $el = $('#' + id); 
+			if ($el.length) $el.text(val ?? 0); 
+		};
+
+		const renderRows = (list) => { 
+			return list.map(i => `
+				<tr onclick="window.open('/app/my-audits/${i.name}', '_blank')">
+					<td>${i.sr_no}</td>
+					<td><span class='t-id'>${i.name.split('-').pop()}</span></td>
+					<td>${i.emp_branch || '---'}</td>
+					<td>${i.audit_query_subject_box || '---'}</td>
+					<td>${i.emp_division || '---'}</td>
+					<td><span class='t-status ${i.status === 'Pending' ? 'pending' : (i.status === 'Closed' ? 'closed' : '')}'>${i.status || '---'}</span></td>
+					<td>${i.risk || 'Normal'}</td>
+					<td>${i.aging || 0}</td>
+					<td>${frappe.datetime.comment_when(i.creation)}</td>
+				</tr>`).join(''); 
+		};
+
+		const resetFilters = () => { 
+			currentItemStages = []; 
+			currentTimeFilter = []; 
+			$('.stage-item-checkbox, .time-checkbox').prop('checked', false); 
+		};
+
+		const refresh = () => {
+			pendingStart = 0; 
+			recentStart = 0;
+			frappe.call({
+				method: 'audit_management.audit_management.dashboard.get_dashboard_stats',
+				args: { 
+					pending_start: 0, 
+					recent_start: 0, 
+					status: currentStatusFilter.join(','), 
+					risk: currentRiskFilter.join(','), 
+					item_stages: currentItemStages.join(','), 
+					time_filter: currentTimeFilter.join(',') 
+				},
+				callback: function (r) {
+					if (!r.message || !r.message.success) return;
+					const d = r.message; 
+					userRole = d.role_type;
+					
+					// Setup Dropdown Filters
+					const $statusDD = $('#filter-dropdown-status'), $riskDD = $('#filter-dropdown-risk');
+					if ($statusDD.children().length === 0) {
+						const sOps = userRole === 'stage_user' ? ['Pending', 'Responded', 'No Response'] : ['Draft', 'Pending', 'Closed'];
+						$statusDD.html(sOps.map(o => `<div class='multiselect-item' onclick='event.stopPropagation()'><input type='checkbox' class='status-checkbox' value='${o}'><span>${o}</span></div>`).join(''));
+						$riskDD.html(['High', 'Medium', 'Normal'].map(o => `<div class='multiselect-item' onclick='event.stopPropagation()'><input type='checkbox' class='risk-checkbox' value='${o}'><span>${o}</span></div>`).join(''));
+					}
+
+					const isStage = userRole === 'stage_user';
+					$('#nav-draft, #nav-total').toggle(!isStage);
+					
+					if (isStage) {
+						updateCount('val-pending', d.pending_for_me); 
+						$('#nav-pending span:nth-child(2)').text('Pending Me');
+						updateCount('val-nr', d.not_responded_count); updateCount('val-resp', d.responded_by_me);
+						updateCount('val-closed', d.responded_by_me); 
+						$('#nav-closed span:nth-child(2)').text('Responded');
+					} else {
+						updateCount('val-draft', d.draft_count); updateCount('val-total', d.total_count);
+						updateCount('val-pending', d.total_pending); 
+						$('#nav-pending span:nth-child(2)').text('Pending');
+						updateCount('val-closed', d.closed_count); 
+						$('#nav-closed span:nth-child(2)').text('Closed');
+						updateCount('val-nr', d.not_responded_count); updateCount('val-resp', d.responded_by_me);
+					}
+
+					$('.nav-item').removeClass('active');
+					if (currentStatusFilter.length > 0) {
+						const s = currentStatusFilter[0];
+						if (s === 'Draft') $('#nav-draft').addClass('active');
+						else if (s === 'Pending') $('#nav-pending').addClass('active');
+						else if (s === 'Closed') $('#nav-closed').addClass('active');
+						else if (s === 'Responded') $('#nav-responded').addClass('active');
+						else if (s === 'No Response') $('#nav-nr').addClass('active');
+					} else if (currentRiskFilter.length === 0) { $('#nav-total').addClass('active'); }
+
+					// DRILLDOWN LOGIC: Only show for Responded or No Response
+					const isSpecific = (currentStatusFilter.includes('Responded') || currentStatusFilter.includes('No Response'));
+					$('#drilldown-section').toggle(isSpecific);
+					if (isSpecific) {
+						const $sL = $('#stage-checkbox-list');
+						frappe.call({ 
+							method: 'frappe.client.get_list', 
+							args: { doctype: 'Audit Stage', fields: ['name'], order_by: 'name asc' }, 
+							callback: (res) => {
+								if (res.message) {
+									const counts = d.stage_counts || {};
+									$sL.html(res.message.map(s => `<label class='check-item'><input type='checkbox' class='stage-item-checkbox' value='${s.name}' ${currentItemStages.includes(s.name) ? 'checked' : ''}> ${s.name} (${counts[s.name] || 0})</label>`).join(''));
+								}
+							}
+						});
+					}
+
+					$('#stage-view').toggle(isStage); $('#manager-view').toggle(!isStage);
+					const items = isStage ? d.pending_list : d.recent_list;
+					const $body = isStage ? $('#stage-items') : $('#activity-body');
+					const $btn = isStage ? $('#load-more-p-btn') : $('#load-more-r-btn');
+					const hasMore = isStage ? d.has_more_pending : d.has_more_recent;
+					if (items && items.length > 0) { 
+						$body.html(renderRows(items)); 
+						$btn.toggle(!!hasMore); 
+					} else { 
+						$body.html('<tr><td colspan="10" style="text-align:center; padding: 40px; color: #5f6368;">No records found</td></tr>'); 
+						$btn.hide(); 
+					}
+				}
+			});
+		};
+
+		const loadMoreData = (type) => {
+			const isP = type === 'pending';
+			frappe.call({
+				method: 'audit_management.audit_management.dashboard.get_dashboard_stats',
+				args: { pending_start: isP ? pendingStart + 10 : pendingStart, recent_start: !isP ? recentStart + 10 : recentStart, status: currentStatusFilter.join(','), risk: currentRiskFilter.join(','), item_stages: currentItemStages.join(','), time_filter: currentTimeFilter.join(',') },
+				callback: function (r) {
+					if (!r.message || !r.message.success) return;
+					const data = r.message;
+					if (isP) { pendingStart += 10; $('#stage-items').append(renderRows(data.pending_list)); $('#load-more-p-btn').toggle(!!data.has_more_pending); }
+					else { recentStart += 10; $('#activity-body').append(renderRows(data.recent_list)); $('#load-more-r-btn').toggle(!!data.has_more_recent); }
+				}
+			});
+		};
+
+		// --- Core Bindings ---
+		$(document).on('click', '.toggle-btn', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			$('#sidebar').toggleClass('collapsed');
+			$('#dashboard-wrapper').toggleClass('sidebar-collapsed-active');
+		});
+
+		$(document).on('click', '#status-filter-btn', (e) => { e.stopPropagation(); $('.multiselect-list').not('#filter-dropdown-status').hide(); $('#filter-dropdown-status').toggle(); });
+		$(document).on('click', '#risk-filter-btn', (e) => { e.stopPropagation(); $('.multiselect-list').not('#filter-dropdown-risk').hide(); $('#filter-dropdown-risk').toggle(); });
+		$(document).on('click', '#clear-filter-btn', () => { $('input[type=checkbox]').prop('checked', false); currentStatusFilter = []; currentRiskFilter = []; resetFilters(); $('#selected-status-label').text('Status'); $('#selected-risk-label').text('Risk'); $('#clear-filter-btn').hide(); refresh(); });
+		
+		$(document).on('change', '.status-checkbox', function() {
+			currentStatusFilter = $('.status-checkbox:checked').map((i, el) => $(el).val()).get();
+			$('#selected-status-label').text(currentStatusFilter.length === 0 ? 'Status' : (currentStatusFilter.length === 1 ? currentStatusFilter[0] : currentStatusFilter.length + ' Selected'));
+			$('#clear-filter-btn').toggle(currentStatusFilter.length > 0); resetFilters(); refresh();
+		});
+		$(document).on('change', '.risk-checkbox', function() {
+			currentRiskFilter = $('.risk-checkbox:checked').map((i, el) => $(el).val()).get();
+			$('#selected-risk-label').text(currentRiskFilter.length === 0 ? 'Risk' : (currentRiskFilter.length === 1 ? currentRiskFilter[0] : currentRiskFilter.length + ' Selected'));
+			$('#clear-filter-btn').toggle(currentStatusFilter.length > 0 || currentRiskFilter.length > 0); refresh();
+		});
+		$(document).on('change', '.time-checkbox', () => { currentTimeFilter = $('.time-checkbox:checked').map((i, el) => $(el).val()).get(); refresh(); });
+		$(document).on('change', '.stage-item-checkbox', () => { currentItemStages = $('.stage-item-checkbox:checked').map((i, el) => $(el).val()).get(); refresh(); });
+
+		$(document).on('click', '#nav-total', () => { currentStatusFilter = []; currentRiskFilter = []; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-draft', () => { currentStatusFilter = ['Draft']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-pending', () => { currentStatusFilter = ['Pending']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-closed', () => { currentStatusFilter = ['Closed']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-responded', () => { currentStatusFilter = ['Responded']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-nr', () => { currentStatusFilter = ['No Response']; resetFilters(); refresh(); });
+
+		$(document).on('click', '#load-more-p-btn', () => loadMoreData('pending'));
+		$(document).on('click', '#load-more-r-btn', () => loadMoreData('recent'));
+
+		$(document).on('click', '#btn-audit-levels', () => { window.location.href = '/app/audit-level'; });
+		$(document).on('click', '#btn-query-types', () => { window.location.href = '/app/audit-query-type'; });
+		$(document).on('click', '#btn-settings', () => { window.location.href = '/app/audit-management-settings'; });
+		$(document).on('click', '#btn-create-audit', () => { window.open('/app/my-audits/new-my-audits-1', '_blank'); });
+		
+		// Function for report dialog
+		const showReportDialog = () => {
+			const reports = ['My Audits Report', 'Pending Audit Queries Aging Report', 'Process Technical Improvement Commitment Report', 'Recurring Operational Reports'];
+			let html = `<div style="display: flex; flex-direction: column; gap: 10px; padding: 10px;">${reports.map(r => `<button class="btn btn-default btn-sm text-left" onclick="window.open('/app/query-report/${r.replace(/ /g, '%20')}', '_blank');" style="text-align: left; padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #475569; background: white;"><i class="fa fa-file-text-o" style="margin-right: 10px; color: #16a34a;"></i> ${r}</button>`).join('')}</div>`;
+			new frappe.ui.Dialog({ title: 'Select Report', fields: [{ fieldtype: 'HTML', fieldname: 'reports_html', options: html }] }).show();
+		};
+		
+		$(document).on('click', '#btn-show-reports', showReportDialog);
+		$(document).on('click', '#stage-report-btn', showReportDialog);
+
+		$(document).on('click', function(e) { if (!$(e.target).closest('.multiselect-container').length) { $('.multiselect-list').hide(); } });
+
+		refresh();
+	}
+</script>
+{% endblock %}
