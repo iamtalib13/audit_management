@@ -2827,6 +2827,18 @@ function render_interactive_tracker(frm, can_edit) {
 
       // Initialize tooltips
       frm.page.wrapper.find('[data-toggle="tooltip"]').tooltip();
+
+      // Ensure settings button click works
+      let settings_icon = document.getElementById("edit-tracker-settings");
+      if (settings_icon) {
+        settings_icon.onclick = function () {
+          if (typeof open_stages_modal === "function") {
+            open_stages_modal(frm);
+          } else {
+            frm.trigger("open_stages_modal");
+          }
+        };
+      }
     }
   }, 600);
 
@@ -2861,15 +2873,6 @@ function render_interactive_tracker(frm, can_edit) {
         });
       },
     });
-
-    setTimeout(() => {
-      let settings_icon = document.getElementById("edit-tracker-settings");
-      if (settings_icon) {
-        settings_icon.onclick = function () {
-          open_stages_modal(frm);
-        };
-      }
-    }, 100);
   }
 }
 
