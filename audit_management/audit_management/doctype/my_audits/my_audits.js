@@ -360,28 +360,28 @@ frappe.ui.form.on("My Audits", {
     const current_status = frm.doc.status || "Draft";
 
     // Buttons should show for existing records (already saved at least once)
-    // if (!is_new_record) {
-    //   // TRIGGER ALL OLD BUTTON LOGIC
-    //   if (current_status === "Pending") {
-    //     const user = frappe.session.user;
-    //     const is_respondent = [
-    //       frm.doc.bm_user_id,
-    //       frm.doc.dh_user_id,
-    //       frm.doc.com_user_id,
-    //       frm.doc.rm_user_id,
-    //       frm.doc.rom_user_id,
-    //       frm.doc.zm_user_id,
-    //       frm.doc.zom_user_id,
-    //       frm.doc.gm_user_id,
-    //       frm.doc.hr_user_id,
-    //       frm.doc.coo_user_id,
-    //       frm.doc.ceo_user_id,
-    //     ].includes(user);
+    if (!is_new_record) {
+      // TRIGGER ALL OLD BUTTON LOGIC
+      if (current_status === "Pending" || current_status === "No Response") {
+        const user = frappe.session.user;
+        const is_respondent = [
+          frm.doc.bm_user_id,
+          frm.doc.dh_user_id,
+          frm.doc.com_user_id,
+          frm.doc.rm_user_id,
+          frm.doc.rom_user_id,
+          frm.doc.zm_user_id,
+          frm.doc.zom_user_id,
+          frm.doc.gm_user_id,
+          frm.doc.hr_user_id,
+          frm.doc.coo_user_id,
+          frm.doc.ceo_user_id,
+        ].includes(user);
 
-    //     if (is_respondent) {
-    //       frm.trigger("show_sendResponse_btn");
-    //     }
-    //   }
+        if (is_respondent) {
+          frm.trigger("show_sendResponse_btn");
+        }
+      }
 
     //   const is_audit_team =
     //     frappe.user.has_role("Audit Manager") ||
