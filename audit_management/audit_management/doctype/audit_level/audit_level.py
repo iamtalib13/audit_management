@@ -84,8 +84,11 @@ class AuditLevel(Document):
 
             # Find which prefix matches this stage name (e.g., DH vs COM)
             for p in prefixes:
-                # If name matches or it's a single prefix stage
-                if len(prefixes) == 1 or p.split("_")[-1].upper() in row.stage_name.upper():
+                prefix_label = p.split("_")[-1].upper()
+                row_label = (row.stage_name or "").strip().upper()
+                
+                # If name matches exactly or it's a single prefix stage
+                if len(prefixes) == 1 or prefix_label == row_label:
                     self.set(f"{p}_emp_id", row.employee)
                     self.set(f"{p}_name", row.employee_name)
                     self.set(f"{p}_user_id", row.user_id)
