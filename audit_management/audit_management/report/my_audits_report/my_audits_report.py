@@ -43,6 +43,14 @@ def get_data(filters):
     params = {}
     
     # 1. Standard Filters
+    if filters.get("from_date"):
+        conditions.append("ma.creation >= %(from_date)s")
+        params["from_date"] = filters.from_date
+        
+    if filters.get("to_date"):
+        conditions.append("ma.creation <= %(to_date)s")
+        params["to_date"] = filters.to_date
+
     if filters.get("emp_branch"):
         conditions.append("ma.emp_branch = %(emp_branch)s")
         params["emp_branch"] = filters.emp_branch

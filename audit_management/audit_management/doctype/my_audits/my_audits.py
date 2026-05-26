@@ -227,11 +227,28 @@ class MyAudits(Document):
                 user_id, m["stage"], m["label"], prefix)
             if row:
                 old_status = self.get(f"{prefix}_user_status")
-                if self.status != "Draft" and old_status and row.status != old_status:
-                    row.status = old_status
-
                 old_resp = self.get(f"{prefix}_response_box")
-                if old_resp and row.response != old_resp:
+
+                # DEBUG LOGGING
+                frappe.log_error(
+                    title="SYNC DEBUG",
+                    message=f"Prefix: {prefix}\nOld Status: {old_status}\nOld Response: {old_resp}\nRow Status Before: {row.status}"
+                )
+
+                if self.status != "Draft" and old_status and row.status != old_status:
+                    # Prevent fake Responded sync
+                    if old_status == "Responded":
+                        if old_resp and str(old_resp).strip():
+                            row.status = old_status
+                    else:
+                        row.status = old_status
+
+                # Ensure we only sync response if it doesn't already exist in child table
+                if (
+                    old_resp
+                    and str(old_resp).strip()
+                    and not row.response
+                ):
                     row.response = old_resp
 
                 old_pend = self.get(f"{prefix}_pending_time")
@@ -248,17 +265,22 @@ class MyAudits(Document):
 
         for row in self.audit_stages:
             prefix = None
+            stage_name_clean = (row.stage_name or "").strip().lower()
+            
             for m in mapping:
-                if m["label"].lower() in (row.stage_name or "").lower():
+                # Use strict exact matching to prevent overlaps (e.g., HR in CHRO)
+                if m["label"].lower() == stage_name_clean:
                     prefix = m["prefix"]
                     break
-            
-           
             
             if prefix:
                 self.set(f"{prefix}_name", row.employee_name)
                 self.set(f"{prefix}_mail", row.email)
-                self.set(f"{prefix}_user_status", row.status)
+                
+                # Update status only if it's currently empty in legacy fields
+                if not self.get(f"{prefix}_user_status"):
+                    self.set(f"{prefix}_user_status", row.status)
+                    
                 self.set(f"{prefix}_response_box", row.response)
                 self.set(f"{prefix}_attach_box", row.attachment)
                 if row.pending_time:
@@ -272,8 +294,6 @@ class MyAudits(Document):
                     except:
                         pass
         
-        # ... (rest of the function stays the same)
-
         # Update Operational Tracking Level
         if max_level > 0:
             if max_level <= 1:
@@ -284,12 +304,29 @@ class MyAudits(Document):
                 self.current_escalation_level = "Level 3"
 
     def find_matching_row(self, user_id, stage_num, stage_label, prefix):
-        """Helper to find a row in audit_stages."""
+        """Helper to find a row in audit_stages. Prioritizes stage identification over user_id."""
+        # 1. First attempt: Match by Stage Number AND Label (Safest)
         for row in self.audit_stages:
-            if row.user_id == user_id:
+            if str(row.stage) == str(stage_num) and (row.stage_name or "").strip().lower() == stage_label.lower():
                 return row
-            if str(row.stage) == str(stage_num) and row.stage_name in [stage_label, self.get(f"{prefix}_name")]:
+
+        # 2. Second attempt: Match by user_id AND Label (Good for shared users)
+        if user_id:
+            for row in self.audit_stages:
+                if row.user_id == user_id and (row.stage_name or "").strip().lower() == stage_label.lower():
+                    return row
+
+        # 3. Third attempt: Match by stage_name only
+        for row in self.audit_stages:
+            if (row.stage_name or "").strip().lower() == stage_label.lower():
                 return row
+
+        # 4. Fallback: User ID match (Least preferred as it causes overlaps for shared users)
+        if user_id:
+            for row in self.audit_stages:
+                if row.user_id == user_id:
+                    return row
+                    
         return None
 
     def get_prefix_mapping(self):
