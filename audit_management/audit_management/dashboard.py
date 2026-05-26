@@ -133,6 +133,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         total_pending = frappe.db.count("My Audits", {**filters, "status": "Pending"})
         closed_count = frappe.db.count("My Audits", {**filters, "status": "Closed"})
         draft_count = frappe.db.count("My Audits", {**filters, "status": "Draft"})
+        total_count = frappe.db.count("My Audits", filters)
         
         # New: Responded and Not Responded for Managers/Members from Child Table
         manager_parents_responded = frappe.get_all("My Audits", filters={**filters}, fields=["name"], as_list=True)
@@ -251,6 +252,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
             "pending_for_me": pending_for_me_count,
             "responded_by_me": responded_by_me_count if (is_member or is_manager or is_admin) == False else responded_count_manager,
             "not_responded_count": not_responded_count_me if (is_member or is_manager or is_admin) == False else not_responded_count_manager,
+            "total_count": (pending_for_me_count + responded_by_me_count + not_responded_count_me) if (is_member or is_manager or is_admin) == False else total_count,
             "total_pending": total_pending,
             "closed_count": closed_count,
             "draft_count": draft_count,
