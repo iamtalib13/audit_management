@@ -361,119 +361,101 @@ frappe.ui.form.on("My Audits", {
 
     // Buttons should show for existing records (already saved at least once)
     if (!is_new_record) {
-      // TRIGGER ALL OLD BUTTON LOGIC
-      if (current_status === "Pending" || current_status === "No Response") {
-        const user = frappe.session.user;
-        const is_respondent = [
-          frm.doc.bm_user_id,
-          frm.doc.dh_user_id,
-          frm.doc.com_user_id,
-          frm.doc.rm_user_id,
-          frm.doc.rom_user_id,
-          frm.doc.zm_user_id,
-          frm.doc.zom_user_id,
-          frm.doc.gm_user_id,
-          frm.doc.hr_user_id,
-          frm.doc.coo_user_id,
-          frm.doc.ceo_user_id,
-        ].includes(user);
+      // 1. Show dynamic guidance banner for active respondent
+      frm.trigger("show_action_banner");
 
-        if (is_respondent) {
+      // TRIGGER ALL OLD BUTTON LOGIC
+      if (current_status === "Pending") {
+        const user = frappe.session.user;
+        
+        // CHECK CHILD TABLE FOR RESPONDENT (Modern way)
+        let is_active_respondent = (frm.doc.audit_stages || []).some(row => 
+            row.user_id === user && 
+            (row.status === "Pending" || row.status === "No Response")
+        );
+
+        if (is_active_respondent) {
           frm.trigger("show_sendResponse_btn");
         }
       }
 
-    //   const is_audit_team =
-    //     frappe.user.has_role("Audit Manager") ||
-    //     frappe.user.has_role("Audit Member");
+      const is_audit_team =
+        frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member");
 
-    //   if (is_audit_team) {
-    //     if (current_status === "Draft" || current_status === "Pending") {
-    //       if (
-    //         !frm.doc.bm_user_status ||
-    //         frm.doc.bm_user_status === "No Response"
-    //       ) {
-    //         frm.trigger("show_sendToBmWithClose_btn");
-    //       }
+      if (is_audit_team) {
+        if (current_status === "Draft" || current_status === "Pending") {
+          if (
+            !frm.doc.bm_user_status ||
+            frm.doc.bm_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToBmWithClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.dh_user_status ||
-    //           !frm.doc.com_user_status ||
-    //           frm.doc.dh_user_status === "No Response" ||
-    //           frm.doc.com_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToDhComWithClose_btn");
-    //       }
+          if (
+            !frm.doc.dh_user_status ||
+            !frm.doc.com_user_status ||
+            frm.doc.dh_user_status === "No Response" ||
+            frm.doc.com_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToDhComWithClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.rm_user_status ||
-    //           !frm.doc.rom_user_status ||
-    //           frm.doc.rm_user_status === "No Response" ||
-    //           frm.doc.rom_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToRmRomWithClose_btn");
-    //       }
+          if (
+            !frm.doc.rm_user_status ||
+            !frm.doc.rom_user_status ||
+            frm.doc.rm_user_status === "No Response" ||
+            frm.doc.rom_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToRmRomWithClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.zm_user_status ||
-    //           !frm.doc.zom_user_status ||
-    //           frm.doc.zm_user_status === "No Response" ||
-    //           frm.doc.zom_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToZmZomWithClose_btn");
-    //       }
+          if (
+            !frm.doc.zm_user_status ||
+            !frm.doc.zom_user_status ||
+            frm.doc.zm_user_status === "No Response" ||
+            frm.doc.zom_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToZmZomWithClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.gm_user_status ||
-    //           frm.doc.gm_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToGm_withClose_btn");
-    //       }
+          if (
+            !frm.doc.gm_user_status ||
+            frm.doc.gm_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToGm_withClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.hr_user_status ||
-    //           frm.doc.hr_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToHr_withClose_btn");
-    //       }
+          if (
+            !frm.doc.hr_user_status ||
+            frm.doc.hr_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToHr_withClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.coo_user_status ||
-    //           frm.doc.coo_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToCOO_withClose_btn");
-    //       }
+          if (
+            !frm.doc.coo_user_status ||
+            frm.doc.coo_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToCOO_withClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.ceo_user_status ||
-    //           frm.doc.ceo_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToCEO_withClose_btn");
-    //       }
+          if (
+            !frm.doc.ceo_user_status ||
+            frm.doc.ceo_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToCEO_withClose_btn");
+          }
 
-    //       frm.trigger("show_sendToAll_withClose_btn");
-    //     }
-    //     if (current_status !== "Draft") {
-    //       frm.trigger("close_query");
-    //       frm.trigger("reopen_query");
-    //     }
-    //     }
-    //   }
-    // }
+
+          frm.trigger("show_sendToAll_withClose_btn");
+        }
+        if (current_status !== "Draft") {
+          frm.trigger("close_query");
+          frm.trigger("reopen_query");
+        }
+      }
+    }
   },
 
   render_status_tracker: function (frm) {
@@ -509,6 +491,53 @@ frappe.ui.form.on("My Audits", {
           }
         },
       });
+    }
+  },
+
+  show_action_banner: function (frm) {
+    const user = frappe.session.user;
+    const audit_table = frm.doc.audit_stages || [];
+
+    // Find if the current user has any active task
+    const my_row = audit_table.find(
+      (row) =>
+        row.user_id === user &&
+        (row.status === "Pending" || row.status === "No Response"),
+    );
+
+    if (my_row) {
+      let title = "";
+      let message = "";
+      let color = "";
+
+      if (my_row.status === "Pending") {
+        title = "👋 Action Required";
+        message = `Your response is pending for the <b>${my_row.stage_name}</b> stage. Please click on the <b>'Submit Response'</b> button to provide your input.`;
+        color = "blue";
+      } else if (my_row.status === "No Response") {
+        title = "⚠️ TAT Breached";
+        message = `The time for your response has passed for the <b>${my_row.stage_name}</b> stage. However, you can <b>still submit</b> your response by clicking the <b>'Submit Response'</b> button.`;
+        color = "orange";
+      }
+
+      // Add a highlighted banner using Frappe's set_intro
+      // Note: This adds to the existing intro (tracker)
+      const banner_html = `
+        <div class="alert alert-${color}" style="margin-top: 10px; margin-bottom: 10px; border-left: 5px solid ${color === "blue" ? "#2490ef" : "#ffa00a"};">
+          <h4 class="alert-heading" style="font-size: 1.1em; margin-bottom: 5px;">${title}</h4>
+          <p style="margin-bottom: 0;">${message}</p>
+        </div>
+      `;
+
+      // Prepend to the form message area so it's most visible
+      if (frm.page.wrapper.find(".action-guidance-banner").length === 0) {
+        $(`<div class="action-guidance-banner">${banner_html}</div>`).prependTo(
+          frm.page.wrapper.find(".form-message-container"),
+        );
+      }
+    } else {
+      // Clear banner if user no longer has active task
+      frm.page.wrapper.find(".action-guidance-banner").remove();
     }
   },
 
@@ -1345,10 +1374,10 @@ frappe.ui.form.on("My Audits", {
       let r_user = (row.user_id || row.userid || "").toLowerCase();
       let status = row.status;
 
-      let is_match = status === "Pending" && r_user === current_user;
+      let is_match = (status === "Pending" || status === "No Response") && r_user === current_user;
 
       console.log(
-        `-> Row Stage: ${row.stagename || row.stage_name} | Status: ${status} | Row UserID: ${r_user} | Matches Current User? ${is_match}`,
+        `-> Current User: ${current_user} | Row Stage: ${row.stagename || row.stage_name} | Status: ${status} | Row UserID: ${r_user} | Matches? ${is_match}`,
       );
 
       return is_match;
