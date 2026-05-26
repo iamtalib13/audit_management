@@ -611,6 +611,7 @@
 					
 					// Update Settings Dropdown visibility: Strictly only Reports for Stage User
 					$('#menu-audit-levels, #menu-query-types, #menu-settings').toggle(!isStage);
+					$('#menu-reports').show(); // Ensure reports is always visible
 					
 					// Set User Avatar
 					if (frappe.session.user && frappe.session.user !== 'Guest') {
@@ -725,23 +726,37 @@
 		$(document).on('click', '#nav-responded-stage', () => { currentStatusFilter = ['Responded']; resetFilters(); refresh(); });
 		$(document).on('click', '#nav-nr-stage', () => { currentStatusFilter = ['No Response']; resetFilters(); refresh(); });
 
+		// Sidebar Nav Clicks for Admin, Manager, Member
+		$(document).on('click', '#nav-total', () => { currentStatusFilter = []; currentRiskFilter = []; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-draft', () => { currentStatusFilter = ['Draft']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-pending', () => { currentStatusFilter = ['Pending']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-closed', () => { currentStatusFilter = ['Closed']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-responded', () => { currentStatusFilter = ['Responded']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-nr', () => { currentStatusFilter = ['No Response']; resetFilters(); refresh(); });
+
 		$(document).on('click', '#load-more-p-btn', () => loadMoreData('pending'));
 		$(document).on('click', '#load-more-r-btn', () => loadMoreData('recent'));
 
 		// Header Settings Dropdown Toggle
 		$(document).on('click', '#btn-header-settings', (e) => {
+			e.preventDefault();
 			e.stopPropagation();
 			$('#settings-dropdown').toggle();
 		});
 
 		// Menu Actions
-		$(document).on('click', '#menu-audit-levels', () => { window.location.href = '/app/audit-level'; });
-		$(document).on('click', '#menu-query-types', () => { window.location.href = '/app/audit-query-type'; });
-		$(document).on('click', '#menu-settings', () => { window.location.href = '/app/audit-management-settings'; });
-		$(document).on('click', '#menu-reports', (e) => { 
+		$(document).on('click', '#menu-audit-levels', (e) => { e.stopPropagation(); $('#settings-dropdown').hide(); window.open('/app/audit-level', '_blank'); });
+		$(document).on('click', '#menu-query-types', (e) => { e.stopPropagation(); $('#settings-dropdown').hide(); window.open('/app/audit-query-type', '_blank'); });
+		$(document).on('click', '#menu-settings', (e) => { e.stopPropagation(); $('#settings-dropdown').hide(); window.open('/app/audit-management-settings', '_blank'); });
+		
+		$(document).on('click', '#menu-reports', function(e) { 
+			e.preventDefault();
 			e.stopPropagation(); 
 			$('#settings-dropdown').hide(); 
-			if (userRole === 'stage_user') {
+			
+			const activeRole = userRole || (frappe.session.user === 'Administrator' ? 'manager' : 'stage_user');
+			
+			if (activeRole === 'stage_user') {
 				window.open('/app/query-report/My%20Audits%20Report', '_blank');
 			} else {
 				showReportDialog(); 
@@ -753,31 +768,30 @@
 		// Function for report dialog
 		const showReportDialog = () => {
 			let reports = [];
-			const currentRole = userRole || 'stage_user';
+			const currentRole = userRole || (frappe.session.user === 'Administrator' ? 'manager' : 'stage_user');
 			
-			if (currentRole === 'manager') {
+			if (currentRole === 'manager' || currentRole === 'member') {
+				// Admin, Manager, and Member get all 4 reports
 				reports = [
 					'My Audits Report', 
+					'Process Technical Improvement Commitment Report',
 					'Pending Audit Queries Aging Report', 
-					'Process Technical Improvement Commitment Report', 
 					'Recurring Operational Reports'
 				];
-			} else if (currentRole === 'member') {
-				reports = [
-					'My Audits Report', 
-					'Pending Audit Queries Aging Report'
-				];
 			} else {
-				// stage_user
+				// stage_user only gets their primary report
 				reports = ['My Audits Report'];
 			}
 
 			let html = `<div style="display: flex; flex-direction: column; gap: 10px; padding: 10px;">${reports.map(r => `<button class="btn btn-default btn-sm text-left" onclick="window.open('/app/query-report/${r.replace(/ /g, '%20')}', '_blank');" style="text-align: left; padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #475569; background: white;"><i class="fa fa-file-text-o" style="margin-right: 10px; color: #16a34a;"></i> ${r}</button>`).join('')}</div>`;
-			new frappe.ui.Dialog({ title: 'Select Report', fields: [{ fieldtype: 'HTML', fieldname: 'reports_html', options: html }] }).show();
+			
+			const d = new frappe.ui.Dialog({ 
+				title: 'Select Report', 
+				fields: [{ fieldtype: 'HTML', fieldname: 'reports_html', options: html }] 
+			});
+			d.show();
 		};
 		
-		$(document).on('click', '#btn-show-reports', showReportDialog);
-
 		// Search functionality
 		$(document).on('keyup', '#audit-search-input', function() {
 			const val = $(this).val().toLowerCase();
