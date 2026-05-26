@@ -66,20 +66,15 @@
    "write": 1
   },
   {
+   "create": 1,
    "read": 1,
-   "role": "Audit Manager"
+   "role": "Audit Manager",
+   "write": 1
   },
   {
    "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Audit Member",
-   "select": 1,
-   "share": 1,
    "write": 1
   }
  ],
