@@ -13,3 +13,4 @@ audit_management.patches.migrate_production_data_v4
 audit_management.patches.migrate_hardcoded_to_child_table
 audit_management.patches.update_audit_level_branch_fields
 audit_management.patches.fix_status_mispelling
+audit_management.patches.fix_fake_responded_status
