@@ -576,7 +576,7 @@ def submit_response(docname, response_text, attachment=None):
         row_email = (row.email or "").lower()
 
         # Match by user_id or email
-        if row.status == "Pending" and (row_user == current_user or row_email == current_user):
+        if row.status in ["Pending", "No Response"] and (row_user == current_user or row_email == current_user):
             row.status = "Responded"
             row.response = response_text
             row.attachment = attachment

@@ -223,6 +223,7 @@ frappe.ui.form.on("My Audits", {
   //   },
 
   new_system_refresh: function (frm) {
+    console.log("-> new_system_refresh triggered");
     // frm.trigger("render_status_tracker");
     frm.trigger("setup_dynamic_buttons");
     frm.trigger("handle_read_only_new");
@@ -231,6 +232,8 @@ frappe.ui.form.on("My Audits", {
     let can_edit =
       frappe.user_roles.includes("Audit Manager") ||
       frappe.user_roles.includes("Audit Member");
+    
+    console.log("-> Calling render_interactive_tracker. can_edit:", can_edit);
     render_interactive_tracker(frm, can_edit);
 
     // Ensure audit_stages is visible and well-formatted
@@ -360,120 +363,99 @@ frappe.ui.form.on("My Audits", {
     const current_status = frm.doc.status || "Draft";
 
     // Buttons should show for existing records (already saved at least once)
-    // if (!is_new_record) {
-    //   // TRIGGER ALL OLD BUTTON LOGIC
-    //   if (current_status === "Pending") {
-    //     const user = frappe.session.user;
-    //     const is_respondent = [
-    //       frm.doc.bm_user_id,
-    //       frm.doc.dh_user_id,
-    //       frm.doc.com_user_id,
-    //       frm.doc.rm_user_id,
-    //       frm.doc.rom_user_id,
-    //       frm.doc.zm_user_id,
-    //       frm.doc.zom_user_id,
-    //       frm.doc.gm_user_id,
-    //       frm.doc.hr_user_id,
-    //       frm.doc.coo_user_id,
-    //       frm.doc.ceo_user_id,
-    //     ].includes(user);
+    if (!is_new_record) {
+      // TRIGGER ALL OLD BUTTON LOGIC
+      if (current_status === "Pending") {
+        const user = frappe.session.user;
 
-    //     if (is_respondent) {
-    //       frm.trigger("show_sendResponse_btn");
-    //     }
-    //   }
+        // CHECK CHILD TABLE FOR RESPONDENT (Modern way)
+        let is_active_respondent = (frm.doc.audit_stages || []).some(
+          (row) =>
+            row.user_id === user &&
+            (row.status === "Pending" || row.status === "No Response"),
+        );
 
-    //   const is_audit_team =
-    //     frappe.user.has_role("Audit Manager") ||
-    //     frappe.user.has_role("Audit Member");
+        if (is_active_respondent) {
+          frm.trigger("show_sendResponse_btn");
+        }
+      }
 
-    //   if (is_audit_team) {
-    //     if (current_status === "Draft" || current_status === "Pending") {
-    //       if (
-    //         !frm.doc.bm_user_status ||
-    //         frm.doc.bm_user_status === "No Response"
-    //       ) {
-    //         frm.trigger("show_sendToBmWithClose_btn");
-    //       }
+      const is_audit_team =
+        frappe.user.has_role("Audit Manager") ||
+        frappe.user.has_role("Audit Member");
 
-    //       if (
-    //         (!frm.doc.dh_user_status ||
-    //           !frm.doc.com_user_status ||
-    //           frm.doc.dh_user_status === "No Response" ||
-    //           frm.doc.com_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToDhComWithClose_btn");
-    //       }
+      if (is_audit_team) {
+        if (current_status === "Draft" || current_status === "Pending") {
+          if (
+            !frm.doc.bm_user_status ||
+            frm.doc.bm_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToBmWithClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.rm_user_status ||
-    //           !frm.doc.rom_user_status ||
-    //           frm.doc.rm_user_status === "No Response" ||
-    //           frm.doc.rom_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToRmRomWithClose_btn");
-    //       }
+          if (
+            !frm.doc.dh_user_status ||
+            !frm.doc.com_user_status ||
+            frm.doc.dh_user_status === "No Response" ||
+            frm.doc.com_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToDhComWithClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.zm_user_status ||
-    //           !frm.doc.zom_user_status ||
-    //           frm.doc.zm_user_status === "No Response" ||
-    //           frm.doc.zom_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToZmZomWithClose_btn");
-    //       }
+          if (
+            !frm.doc.rm_user_status ||
+            !frm.doc.rom_user_status ||
+            frm.doc.rm_user_status === "No Response" ||
+            frm.doc.rom_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToRmRomWithClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.gm_user_status ||
-    //           frm.doc.gm_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToGm_withClose_btn");
-    //       }
+          if (
+            !frm.doc.zm_user_status ||
+            !frm.doc.zom_user_status ||
+            frm.doc.zm_user_status === "No Response" ||
+            frm.doc.zom_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToZmZomWithClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.hr_user_status ||
-    //           frm.doc.hr_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToHr_withClose_btn");
-    //       }
+          if (
+            !frm.doc.gm_user_status ||
+            frm.doc.gm_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToGm_withClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.coo_user_status ||
-    //           frm.doc.coo_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToCOO_withClose_btn");
-    //       }
+          if (
+            !frm.doc.hr_user_status ||
+            frm.doc.hr_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToHr_withClose_btn");
+          }
 
-    //       if (
-    //         (!frm.doc.ceo_user_status ||
-    //           frm.doc.ceo_user_status === "No Response") &&
-    //         (frm.doc.query_type !== "Audit Report Compliance" ||
-    //           frm.doc.bm_user_status === "Responded")
-    //       ) {
-    //         frm.trigger("show_sendToCEO_withClose_btn");
-    //       }
+          if (
+            !frm.doc.coo_user_status ||
+            frm.doc.coo_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToCOO_withClose_btn");
+          }
 
-    //       frm.trigger("show_sendToAll_withClose_btn");
-    //     }
-    //     if (current_status !== "Draft") {
-    //       frm.trigger("close_query");
-    //       frm.trigger("reopen_query");
-    //     }
-    //     }
-    //   }
-    // }
+          if (
+            !frm.doc.ceo_user_status ||
+            frm.doc.ceo_user_status === "No Response"
+          ) {
+            frm.trigger("show_sendToCEO_withClose_btn");
+          }
+
+          frm.trigger("show_sendToAll_withClose_btn");
+        }
+        if (current_status !== "Draft") {
+          frm.trigger("close_query");
+          frm.trigger("reopen_query");
+        }
+      }
+    }
   },
 
   render_status_tracker: function (frm) {
@@ -509,6 +491,101 @@ frappe.ui.form.on("My Audits", {
           }
         },
       });
+    }
+  },
+  show_action_banner: function (frm, args) {
+    const my_row = args ? args.row : null;
+
+    if (my_row) {
+      setTimeout(() => {
+        let title = "";
+        let message = "";
+        let color = "";
+        let bg_color = "";
+        let fa_icon = "";
+        let show_btn = false;
+
+        if (my_row.status === "Pending") {
+          title = "Action Required";
+          message =
+            "The response is pending from you. Please submit your response.";
+          color = "#4f46e5"; // Indigo
+          bg_color = "#f5f3ff"; // Indigo 50
+          fa_icon = "fa fa-exclamation-circle";
+          show_btn = true;
+        } else if (my_row.status === "No Response") {
+          title = "TAT Breached";
+          message = `Time has passed for <b>${my_row.stage_name}</b>. You can still submit your response.`;
+          color = "#d97706"; // Amber
+          bg_color = "#fffbeb"; // Amber 50
+          fa_icon = "fa fa-exclamation-triangle";
+          show_btn = true;
+        }
+
+        // Button styled to stick close to text
+        const btn_html = show_btn
+          ? `<button class="btn btn-xs btn-primary btn-banner-action" 
+                     style="background-color: ${color}; border: none; margin-left: 15px; font-weight: 500; padding: 4px 12px; font-size: 11px; border-radius: 4px; cursor: pointer; white-space: nowrap; height: 24px; display: inline-flex; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+               Submit Now
+             </button>`
+          : "";
+
+        const banner_html = `
+          <div class="action-guidance-banner" style="
+            background-color: ${bg_color};
+            border: 1px solid ${color}40;
+            border-left: 4px solid ${color};
+            padding: 10px 16px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            display: flex; /* Dobara full width karne ke liye width expand hogi */
+            align-items: center;
+            justify-content: flex-start;
+            font-size: 13px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            width: 100%; /* Pure screen width lega */
+          ">
+            <i class="${fa_icon}" style="color: ${color}; font-size: 15px; margin-right: 12px; display: flex; align-items: center;"></i>
+            
+            <div style="color: #24292f; display: flex; align-items: center; flex-wrap: wrap;">
+              <strong style="color: ${color}; margin-right: 6px; white-space: nowrap;">${title}:</strong>
+              <span style="color: #3b424a;">${message}</span>
+              ${btn_html} </div>
+          </div>
+        `;
+
+        // Clear existing banner
+        frm.page.wrapper.find(".action-guidance-banner").remove();
+
+        // Inject above introduction area
+        const $form_message_area = frm.page.wrapper.find(".form-message-area");
+        const $page_form = frm.page.wrapper.find(".page-form");
+
+        if ($form_message_area.length > 0) {
+          $(banner_html).insertBefore($form_message_area);
+        } else if ($page_form.length > 0) {
+          $(banner_html).insertBefore($page_form);
+        } else {
+          const $target = frm.page.wrapper.find(".page-body");
+          if ($target.length > 0) $(banner_html).prependTo($target);
+        }
+
+        // Click Event Handler
+        frm.page.wrapper
+          .find(".btn-banner-action")
+          .off("click")
+          .on("click", function () {
+            const $main_btn = frm.page.wrapper.find(
+              '.page-actions button:contains("Submit Response")',
+            );
+            if ($main_btn.length > 0) {
+              $main_btn.click();
+            }
+          });
+      }, 1000);
+    } else {
+      frm.page.wrapper.find(".action-guidance-banner").remove();
     }
   },
 
@@ -1345,14 +1422,33 @@ frappe.ui.form.on("My Audits", {
       let r_user = (row.user_id || row.userid || "").toLowerCase();
       let status = row.status;
 
-      let is_match = status === "Pending" && r_user === current_user;
+      let is_match =
+        (status === "Pending" || status === "No Response") &&
+        r_user === current_user;
 
       console.log(
-        `-> Row Stage: ${row.stagename || row.stage_name} | Status: ${status} | Row UserID: ${r_user} | Matches Current User? ${is_match}`,
+        `-> Current User: ${current_user} | Row Stage: ${row.stagename || row.stage_name} | Status: ${status} | Row UserID: ${r_user} | Matches? ${is_match}`,
       );
 
       return is_match;
     });
+
+    // 🌟 DYNAMIC GUIDANCE BANNER 🌟
+    if (pending_row) {
+      console.log(
+        "-> [DEBUG] pending_row found. Calling show_action_banner via frm.events...",
+      );
+      if (frm.events && frm.events.show_action_banner) {
+        frm.events.show_action_banner(frm, { row: pending_row });
+      } else {
+        console.error("-> [DEBUG] show_action_banner not found in frm.events!");
+        // Direct call fallback if trigger is also weird
+        frm.trigger("show_action_banner", { row: pending_row });
+      }
+    } else {
+      console.log("-> [DEBUG] No pending_row found. Removing banner.");
+      if (frm.dashboard) frm.dashboard.clear_headline();
+    }
 
     // Show Submit Response ONLY if the document is pending, and the logged-in user is the current active assignee
     if (pending_row && frm.doc.status === "Pending") {
@@ -2364,8 +2460,10 @@ frappe.ui.form.on("My Audits", {
   },
 });
 function render_interactive_tracker(frm, can_edit) {
+  console.log("-> render_interactive_tracker entered. query_type:", frm.doc.query_type, "tat_config_loaded:", frm.tat_config_loaded);
   // 0. Fetch TAT Config if not already loaded
   if (frm.doc.query_type && !frm.tat_config_loaded) {
+    console.log("-> Fetching TAT config for:", frm.doc.query_type);
     frappe.db.get_doc("Audit Query Type", frm.doc.query_type).then((qt) => {
       frm.tat_config = {};
       frm.default_tat = qt.default_tat_days || 0;
@@ -2375,6 +2473,7 @@ function render_interactive_tracker(frm, can_edit) {
         });
       }
       frm.tat_config_loaded = true;
+      console.log("-> TAT config loaded. Re-calling render_interactive_tracker.");
       render_interactive_tracker(frm, can_edit);
     });
     return;
@@ -2382,6 +2481,7 @@ function render_interactive_tracker(frm, can_edit) {
 
   // 1. Inject Compact & Spacing Optimized CSS Structure (With Flex-Shrink Fixed)
   if (!document.getElementById("custom-audit-tracker-style")) {
+    console.log("-> Injecting tracker styles.");
     let style = document.createElement("style");
     style.id = "custom-audit-tracker-style";
     style.innerHTML = `
@@ -2714,15 +2814,21 @@ function render_interactive_tracker(frm, can_edit) {
 
   html += `</div></div>`;
 
-  frm.page.wrapper.find(".form-message-container").empty();
-  frm.set_intro(html, "blue");
-
   setTimeout(() => {
-    let wrapper = frm.page.wrapper.find(".custom-interactive-tracker-wrapper");
-    if (wrapper.length > 0) {
-      wrapper.closest(".form-message").find(".close-message").remove();
+    if (frm.page.wrapper.find(".custom-interactive-tracker-wrapper").length === 0) {
+      frm.page.wrapper.find(".form-message-container").empty();
+      frm.set_intro(html, "blue");
+
+      // Remove the close button from the message box to make it persistent
+      let wrapper = frm.page.wrapper.find(".custom-interactive-tracker-wrapper");
+      if (wrapper.length > 0) {
+        wrapper.closest(".form-message").find(".close-message").remove();
+      }
+
+      // Initialize tooltips
+      frm.page.wrapper.find('[data-toggle="tooltip"]').tooltip();
     }
-  }, 50);
+  }, 600);
 
   // 4. Sortable Engine
   if (can_edit && typeof Sortable !== "undefined") {

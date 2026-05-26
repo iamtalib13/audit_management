@@ -56,8 +56,10 @@ def execute():
                 )
         
         if updated:
-            # Save without triggering unnecessary validations
-            doc.save(ignore_permissions=True)
+            doc.flags.ignore_validate = True
+            doc.flags.ignore_mandatory = True
+            doc.flags.ignore_version = True
+            doc.db_update()
             count += 1
             
     frappe.db.commit()
