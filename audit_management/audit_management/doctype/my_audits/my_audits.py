@@ -236,10 +236,16 @@ class MyAudits(Document):
                 )
 
                 if self.status != "Draft" and old_status and row.status != old_status:
-                    # Prevent fake Responded sync
-                    if old_status == "Responded":
+                    # Never downgrade responded rows if legacy field is lagging
+                    if row.status == "Responded" and old_status in ["Pending", "No Response"]:
+                        pass
+
+                    # Only sync Responded from legacy if a valid response exists
+                    elif old_status == "Responded":
                         if old_resp and str(old_resp).strip():
                             row.status = old_status
+
+                    # Normal sync for other cases (e.g., Pending -> No Response)
                     else:
                         row.status = old_status
 
@@ -247,7 +253,10 @@ class MyAudits(Document):
                 if (
                     old_resp
                     and str(old_resp).strip()
-                    and not row.response
+                    and (
+                        not row.response
+                        or not str(row.response).strip()
+                    )
                 ):
                     row.response = old_resp
 
@@ -277,8 +286,8 @@ class MyAudits(Document):
                 self.set(f"{prefix}_name", row.employee_name)
                 self.set(f"{prefix}_mail", row.email)
                 
-                # Update status only if it's currently empty in legacy fields
-                if not self.get(f"{prefix}_user_status"):
+                # Update status if different
+                if self.get(f"{prefix}_user_status") != row.status:
                     self.set(f"{prefix}_user_status", row.status)
                     
                 self.set(f"{prefix}_response_box", row.response)
