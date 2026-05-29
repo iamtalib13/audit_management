@@ -5,6 +5,9 @@
 {% block header %}
 {% endblock %}
 
+{% block footer %}
+{% endblock %}
+
 {% block style %}
 <style>
 	:root { 
@@ -16,6 +19,105 @@
 		--border-color: #e2e8f0; 
 	}
 	
+	footer, .web-footer, .footer-links { display: none !important; }
+	.navbar, header, .web-header { display: none !important; }
+	body { padding-top: 0 !important; overflow: hidden; }
+	
+	/* Custom Header Styles */
+	.custom-db-header {
+		height: 64px;
+		background: var(--sidebar-bg);
+		display: flex;
+		align-items: center;
+		padding: 0 16px;
+		border-bottom: 1px solid var(--border-color);
+		justify-content: space-between;
+		position: sticky;
+		top: 0;
+		z-index: 1001;
+	}
+	
+	.header-left { display: flex; align-items: center; gap: 12px; min-width: 244px; }
+	.header-logo { font-size: 20px; font-weight: 500; color: #5f6368; display: flex; align-items: center; gap: 8px; }
+	.header-logo i { color: var(--primary-blue); }
+	
+	.header-center { flex-grow: 1; max-width: 720px; margin: 0 20px; }
+	.search-container {
+		background: #eaf1fb;
+		border-radius: 8px;
+		padding: 8px 16px;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		transition: background 0.2s, box-shadow 0.2s;
+	}
+	.search-container:focus-within {
+		background: #fff;
+		box-shadow: 0 1px 1px 0 rgba(65,69,73,0.3), 0 1px 3px 1px rgba(65,69,73,0.15);
+	}
+	.search-container input {
+		border: none;
+		background: transparent;
+		width: 100%;
+		font-size: 16px;
+		outline: none;
+		color: #1f1f1f;
+	}
+	
+	.header-right { display: flex; align-items: center; gap: 8px; }
+	.header-icon-btn {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #5f6368;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+	.header-icon-btn:hover { background: rgba(60,64,67,0.08); }
+	
+	.user-profile {
+		width: 32px;
+		height: 32px;
+		background: var(--primary-blue);
+		color: white;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 500;
+		margin-left: 12px;
+		cursor: pointer;
+	}
+
+	.header-dropdown {
+		position: absolute;
+		top: 56px;
+		right: 16px;
+		background: #fff;
+		border: 1px solid var(--border-color);
+		border-radius: 8px;
+		box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+		z-index: 1002;
+		min-width: 200px;
+		display: none;
+		padding: 8px 0;
+	}
+	.header-dropdown-item {
+		padding: 10px 16px;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		cursor: pointer;
+		font-size: 14px;
+		color: var(--text-gray);
+		transition: background 0.2s;
+	}
+	.header-dropdown-item:hover { background: #f1f5f9; }
+	.header-dropdown-item i { width: 16px; text-align: center; }
+
 	#page-audit-management-dashboard { background-color: var(--sidebar-bg) !important; }
 	.page-content { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
 	
@@ -23,7 +125,7 @@
 		display: flex; 
 		gap: 0; 
 		background: var(--sidebar-bg); 
-		height: calc(100vh - 60px); 
+		height: calc(100vh - 64px); 
 		width: 100%; 
 		transition: all 0.3s ease; 
 	}
@@ -34,17 +136,24 @@
 		flex-direction: column; 
 		gap: 4px; 
 		flex-shrink: 0; 
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-		overflow: hidden; 
+		transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+		overflow-x: hidden; 
+		overflow-y: auto;
 		background: var(--sidebar-bg); 
 		padding: 10px 0; 
+		position: relative;
+		z-index: 1000;
 	}
 	
+	/* Mini Sidebar (Collapsed) State */
 	.db-sidebar.collapsed { 
-		width: 0 !important; 
-		padding: 10px 0 !important; 
-		opacity: 0; 
-		pointer-events: none; 
+		width: 72px !important; 
+	}
+	
+	/* Expand on Hover when Collapsed */
+	.db-sidebar.collapsed:hover {
+		width: 260px !important;
+		box-shadow: 5px 0 15px rgba(0,0,0,0.1);
 	}
 	
 	.sidebar-header { 
@@ -52,6 +161,7 @@
 		align-items: center; 
 		gap: 12px; 
 		padding: 8px 16px 16px 16px; 
+		min-width: 260px;
 	}
 	
 	.btn-toggle-sidebar { 
@@ -74,19 +184,30 @@
 	.btn-create-audit { 
 		background: #c2e7ff; 
 		color: #001d35; 
-		padding: 12px 20px; 
+		padding: 12px; 
+		min-width: 48px;
+		height: 48px;
 		border-radius: 16px; 
 		display: flex; 
 		align-items: center; 
+		justify-content: center;
 		gap: 12px; 
 		font-weight: 600; 
 		cursor: pointer; 
 		border: none; 
-		transition: 0.2s; 
+		transition: all 0.2s; 
 		font-size: 14px; 
 		white-space: nowrap; 
 		box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+		margin: 0 12px;
+		overflow: hidden;
 	}
+	
+	.db-sidebar.collapsed:not(:hover) .btn-create-audit {
+		width: 48px;
+		padding: 12px;
+	}
+	.db-sidebar.collapsed:not(:hover) .btn-create-audit span { display: none; }
 	
 	.btn-create-audit:hover { 
 		box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15); 
@@ -96,7 +217,7 @@
 	.nav-item { 
 		display: flex; 
 		align-items: center; 
-		padding: 0 16px 0 24px; 
+		padding: 0 24px; 
 		height: 36px; 
 		border-radius: 0 20px 20px 0; 
 		cursor: pointer; 
@@ -106,6 +227,12 @@
 		position: relative; 
 		margin-right: 12px; 
 		white-space: nowrap; 
+		min-width: 260px;
+	}
+	
+	.db-sidebar.collapsed:not(:hover) .nav-item span,
+	.db-sidebar.collapsed:not(:hover) .nav-item .nav-count {
+		opacity: 0;
 	}
 	
 	.nav-item:hover { background-color: #eaebef; }
@@ -240,15 +367,47 @@
 <!-- Safely loading Font Awesome inside content block -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
+<!-- Custom Dashboard Header -->
+<div class="custom-db-header">
+	<div class="header-left">
+		<button class="btn-toggle-sidebar toggle-btn" title="Main Menu">
+			<i class="fa fa-bars"></i>
+		</button>
+		<div class="header-logo">
+			<i class="fa fa-shield"></i>
+			<span>Audit Management</span>
+		</div>
+	</div>
+	
+	<div class="header-center">
+		<div class="search-container">
+			<i class="fa fa-search" style="color: #5f6368;"></i>
+			<input type="text" placeholder="Search audits..." id="audit-search-input">
+		</div>
+	</div>
+	
+	<div class="header-right">
+		<div style="position: relative;">
+			<div class="header-icon-btn" id="btn-header-settings" title="Actions">
+				<i class="fa fa-cog fa-lg"></i>
+			</div>
+			<div class="header-dropdown" id="settings-dropdown">
+				<div class="header-dropdown-item" id="menu-audit-levels" style="display:none;"><i class="fa fa-sitemap blue-txt"></i> <span>Audit Levels</span></div>
+				<div class="header-dropdown-item" id="menu-query-types" style="display:none;"><i class="fa fa-list-ul purple-txt"></i> <span>Query Types</span></div>
+				<div class="header-dropdown-item" id="menu-settings" style="display:none;"><i class="fa fa-cog orange-txt"></i> <span>Settings</span></div>
+				<div class="header-dropdown-item" id="menu-reports"><i class="fa fa-bar-chart green-txt"></i> <span>Reports</span></div>
+			</div>
+		</div>
+		<div class="user-profile" id="user-avatar">?</div>
+	</div>
+</div>
+
 <div class="audit-dashboard-gmail" id="dashboard-wrapper">
 	<!-- Left Sidebar -->
 	<div class="db-sidebar" id="sidebar">
-		<div class="sidebar-header">
-			<button class="btn-toggle-sidebar toggle-btn" title="Toggle Menu">
-				<i class="fa fa-bars"></i>
-			</button>
+		<div style="padding: 8px 0 16px 0;">
 			<button class="btn-create-audit" id="btn-create-audit">
-				<i class="fa fa-plus"></i>
+				<i class="fa fa-plus fa-lg"></i>
 				<span>Create Audit</span>
 			</button>
 		</div>
@@ -284,20 +443,28 @@
 			<span class="nav-count" id="val-nr">0</span>
 		</div>
 
-		<div style="margin-top: 24px; padding: 0 24px; font-size: 11px; font-weight: 700; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px;">Actions</div>
-		<div class="nav-item" id="btn-audit-levels"><i class="fa fa-sitemap blue-txt"></i> <span>Audit Levels</span></div>
-		<div class="nav-item" id="btn-query-types"><i class="fa fa-list-ul purple-txt"></i> <span>Query Types</span></div>
-		<div class="nav-item" id="btn-settings"><i class="fa fa-cog orange-txt"></i> <span>Settings</span></div>
-		<div class="nav-item" id="btn-show-reports"><i class="fa fa-bar-chart green-txt"></i> <span>Reports</span></div>
+		<!-- Navigation for Stage User -->
+		<div class="nav-item" id="nav-pending-stage" style="display:none;">
+			<i class="fa fa-clock-o red-txt"></i>
+			<span>Pending Me</span>
+			<span class="nav-count" id="val-pending-stage">0</span>
+		</div>
+		<div class="nav-item" id="nav-responded-stage" style="display:none;">
+			<i class="fa fa-reply green-txt"></i>
+			<span>Responded</span>
+			<span class="nav-count" id="val-resp-stage">0</span>
+		</div>
+		<div class="nav-item" id="nav-nr-stage" style="display:none;">
+			<i class="fa fa-exclamation-circle orange-txt"></i>
+			<span>Not Responded</span>
+			<span class="nav-count" id="val-nr-stage">0</span>
+		</div>
 	</div>
 
 	<!-- Main Content Area -->
 	<div class="db-main-content">
 		<div class="db-inner-header">
 			<div class="filter-section">
-				<button class="btn-toggle-sidebar toggle-btn" id="header-toggle-btn">
-					<i class="fa fa-bars"></i>
-				</button>
 				<div class="multiselect-container" style="position:relative;">
 					<div class="master-capsule" id="status-filter-btn">
 						<i class="fa fa-filter blue-txt"></i>
@@ -320,10 +487,6 @@
 			</div>
 			
 			<div style="display: flex; align-items: center; gap: 12px;">
-				<!-- Properly set Report Button in Header -->
-				<div id="stage-report-btn" class="master-capsule" style="border-color: #16a34a; color: #16a34a;">
-					<i class="fa fa-bar-chart green-txt"></i> <span>Reports</span>
-				</div>
 				<div class="live-dot" style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);"></div>
 			</div>
 		</div>
@@ -436,14 +599,29 @@
 					}
 
 					const isStage = userRole === 'stage_user';
-					$('#nav-draft, #nav-total').toggle(!isStage);
+					// Hide manager elements for stage users
+					$('#nav-total, #nav-draft, #nav-pending, #nav-closed, #nav-responded, #nav-nr').toggle(!isStage);
+					$('#actions-section, #btn-create-audit').toggle(!isStage);
+					
+					// Ensure Inner Header is always visible for toggle button and filters
+					$('.db-inner-header').show();
+					
+					// Show stage user elements
+					$('#nav-pending-stage, #nav-responded-stage, #nav-nr-stage').toggle(isStage);
+					
+					// Update Settings Dropdown visibility: Strictly only Reports for Stage User
+					$('#menu-audit-levels, #menu-query-types, #menu-settings').toggle(!isStage);
+					$('#menu-reports').show(); // Ensure reports is always visible
+					
+					// Set User Avatar
+					if (frappe.session.user && frappe.session.user !== 'Guest') {
+						$('#user-avatar').text(frappe.session.user.charAt(0).toUpperCase());
+					}
 					
 					if (isStage) {
-						updateCount('val-pending', d.pending_for_me); 
-						$('#nav-pending span:nth-child(2)').text('Pending Me');
-						updateCount('val-nr', d.not_responded_count); updateCount('val-resp', d.responded_by_me);
-						updateCount('val-closed', d.responded_by_me); 
-						$('#nav-closed span:nth-child(2)').text('Responded');
+						updateCount('val-pending-stage', d.pending_for_me); 
+						updateCount('val-resp-stage', d.responded_by_me);
+						updateCount('val-nr-stage', d.not_responded_count);
 					} else {
 						updateCount('val-draft', d.draft_count); updateCount('val-total', d.total_count);
 						updateCount('val-pending', d.total_pending); 
@@ -456,17 +634,26 @@
 					$('.nav-item').removeClass('active');
 					if (currentStatusFilter.length > 0) {
 						const s = currentStatusFilter[0];
-						if (s === 'Draft') $('#nav-draft').addClass('active');
-						else if (s === 'Pending') $('#nav-pending').addClass('active');
-						else if (s === 'Closed') $('#nav-closed').addClass('active');
-						else if (s === 'Responded') $('#nav-responded').addClass('active');
-						else if (s === 'No Response') $('#nav-nr').addClass('active');
-					} else if (currentRiskFilter.length === 0) { $('#nav-total').addClass('active'); }
+						if (isStage) {
+							if (s === 'Pending') $('#nav-pending-stage').addClass('active');
+							else if (s === 'Responded') $('#nav-responded-stage').addClass('active');
+							else if (s === 'No Response') $('#nav-nr-stage').addClass('active');
+						} else {
+							if (s === 'Draft') $('#nav-draft').addClass('active');
+							else if (s === 'Pending') $('#nav-pending').addClass('active');
+							else if (s === 'Closed') $('#nav-closed').addClass('active');
+							else if (s === 'Responded') $('#nav-responded').addClass('active');
+							else if (s === 'No Response') $('#nav-nr').addClass('active');
+						}
+					} else if (currentRiskFilter.length === 0) { 
+						if (isStage) $('#nav-pending-stage').addClass('active');
+						else $('#nav-total').addClass('active'); 
+					}
 
-					// DRILLDOWN LOGIC: Only show for Responded or No Response
+					// DRILLDOWN LOGIC: Only show for Responded or No Response, but hide for stage_user
 					const isSpecific = (currentStatusFilter.includes('Responded') || currentStatusFilter.includes('No Response'));
-					$('#drilldown-section').toggle(isSpecific);
-					if (isSpecific) {
+					$('#drilldown-section').toggle(!isStage && isSpecific);
+					if (!isStage && isSpecific) {
 						const $sL = $('#stage-checkbox-list');
 						frappe.call({ 
 							method: 'frappe.client.get_list', 
@@ -535,6 +722,11 @@
 		$(document).on('change', '.time-checkbox', () => { currentTimeFilter = $('.time-checkbox:checked').map((i, el) => $(el).val()).get(); refresh(); });
 		$(document).on('change', '.stage-item-checkbox', () => { currentItemStages = $('.stage-item-checkbox:checked').map((i, el) => $(el).val()).get(); refresh(); });
 
+		$(document).on('click', '#nav-pending-stage', () => { currentStatusFilter = ['Pending']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-responded-stage', () => { currentStatusFilter = ['Responded']; resetFilters(); refresh(); });
+		$(document).on('click', '#nav-nr-stage', () => { currentStatusFilter = ['No Response']; resetFilters(); refresh(); });
+
+		// Sidebar Nav Clicks for Admin, Manager, Member
 		$(document).on('click', '#nav-total', () => { currentStatusFilter = []; currentRiskFilter = []; resetFilters(); refresh(); });
 		$(document).on('click', '#nav-draft', () => { currentStatusFilter = ['Draft']; resetFilters(); refresh(); });
 		$(document).on('click', '#nav-pending', () => { currentStatusFilter = ['Pending']; resetFilters(); refresh(); });
@@ -545,22 +737,73 @@
 		$(document).on('click', '#load-more-p-btn', () => loadMoreData('pending'));
 		$(document).on('click', '#load-more-r-btn', () => loadMoreData('recent'));
 
-		$(document).on('click', '#btn-audit-levels', () => { window.location.href = '/app/audit-level'; });
-		$(document).on('click', '#btn-query-types', () => { window.location.href = '/app/audit-query-type'; });
-		$(document).on('click', '#btn-settings', () => { window.location.href = '/app/audit-management-settings'; });
+		// Header Settings Dropdown Toggle
+		$(document).on('click', '#btn-header-settings', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			$('#settings-dropdown').toggle();
+		});
+
+		// Menu Actions
+		$(document).on('click', '#menu-audit-levels', (e) => { e.stopPropagation(); $('#settings-dropdown').hide(); window.open('/app/audit-level', '_blank'); });
+		$(document).on('click', '#menu-query-types', (e) => { e.stopPropagation(); $('#settings-dropdown').hide(); window.open('/app/audit-query-type', '_blank'); });
+		$(document).on('click', '#menu-settings', (e) => { e.stopPropagation(); $('#settings-dropdown').hide(); window.open('/app/audit-management-settings', '_blank'); });
+		
+		$(document).on('click', '#menu-reports', function(e) { 
+			e.preventDefault();
+			e.stopPropagation(); 
+			$('#settings-dropdown').hide(); 
+			
+			const activeRole = userRole || (frappe.session.user === 'Administrator' ? 'manager' : 'stage_user');
+			
+			if (activeRole === 'stage_user') {
+				window.open('/app/query-report/My%20Audits%20Report', '_blank');
+			} else {
+				showReportDialog(); 
+			}
+		});
+		
 		$(document).on('click', '#btn-create-audit', () => { window.open('/app/my-audits/new-my-audits-1', '_blank'); });
 		
 		// Function for report dialog
 		const showReportDialog = () => {
-			const reports = ['My Audits Report', 'Pending Audit Queries Aging Report', 'Process Technical Improvement Commitment Report', 'Recurring Operational Reports'];
+			let reports = [];
+			const currentRole = userRole || (frappe.session.user === 'Administrator' ? 'manager' : 'stage_user');
+			
+			if (currentRole === 'manager' || currentRole === 'member') {
+				// Admin, Manager, and Member get all 4 reports
+				reports = [
+					'My Audits Report', 
+					'Process Technical Improvement Commitment Report',
+					'Pending Audit Queries Aging Report', 
+					'Recurring Operational Reports'
+				];
+			} else {
+				// stage_user only gets their primary report
+				reports = ['My Audits Report'];
+			}
+
 			let html = `<div style="display: flex; flex-direction: column; gap: 10px; padding: 10px;">${reports.map(r => `<button class="btn btn-default btn-sm text-left" onclick="window.open('/app/query-report/${r.replace(/ /g, '%20')}', '_blank');" style="text-align: left; padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; color: #475569; background: white;"><i class="fa fa-file-text-o" style="margin-right: 10px; color: #16a34a;"></i> ${r}</button>`).join('')}</div>`;
-			new frappe.ui.Dialog({ title: 'Select Report', fields: [{ fieldtype: 'HTML', fieldname: 'reports_html', options: html }] }).show();
+			
+			const d = new frappe.ui.Dialog({ 
+				title: 'Select Report', 
+				fields: [{ fieldtype: 'HTML', fieldname: 'reports_html', options: html }] 
+			});
+			d.show();
 		};
 		
-		$(document).on('click', '#btn-show-reports', showReportDialog);
-		$(document).on('click', '#stage-report-btn', showReportDialog);
+		// Search functionality
+		$(document).on('keyup', '#audit-search-input', function() {
+			const val = $(this).val().toLowerCase();
+			$('.mini-table tbody tr').filter(function() {
+				$(this).toggle($(this).text().toLowerCase().indexOf(val) > -1);
+			});
+		});
 
-		$(document).on('click', function(e) { if (!$(e.target).closest('.multiselect-container').length) { $('.multiselect-list').hide(); } });
+		$(document).on('click', function(e) { 
+			if (!$(e.target).closest('.multiselect-container').length) { $('.multiselect-list').hide(); } 
+			if (!$(e.target).closest('.header-right').length) { $('#settings-dropdown').hide(); }
+		});
 
 		refresh();
 	}
