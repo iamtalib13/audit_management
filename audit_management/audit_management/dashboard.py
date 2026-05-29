@@ -3,7 +3,7 @@ import json
 from frappe import _
 
 @frappe.whitelist()
-def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None, item_stages=None, time_filter=None):
+def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None, item_stages=None, time_filter=None, query_type=None):
     user = frappe.session.user
     roles = frappe.get_roles(user)
     
@@ -27,6 +27,12 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
     if risk:
         if isinstance(risk, str): risk_list = [r.strip() for r in risk.split(',') if r.strip()]
         elif isinstance(risk, list): risk_list = risk
+
+    # Handle multiple query types
+    query_type_list = []
+    if query_type:
+        if isinstance(query_type, str): query_type_list = [q.strip() for q in query_type.split(',') if q.strip()]
+        elif isinstance(query_type, list): query_type_list = query_type
 
     # Handle item stages (from child table)
     item_stage_list = []
@@ -96,6 +102,9 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
             if risk_list:
                 if "Normal" in risk_list: p_filters["risk"] = ["in", risk_list + [None, ""]]
                 else: p_filters["risk"] = ["in", risk_list]
+            
+            if query_type_list:
+                p_filters["query_type"] = ["in", query_type_list]
 
             pending_for_me_list = frappe.get_all(
                 "My Audits",
@@ -128,6 +137,10 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         else:
             if allowed_divisions: filters["emp_division"] = ["in", allowed_divisions]
             else: filters["emp_division"] = "None"
+
+        # Apply Global query_type filter
+        if query_type_list:
+            filters["query_type"] = ["in", query_type_list]
 
         # Calculate Counters for Manager/Member
         total_pending = frappe.db.count("My Audits", {**filters, "status": "Pending"})
