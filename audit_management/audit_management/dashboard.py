@@ -155,7 +155,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         responded_count_manager = 0
         not_responded_count_manager = 0
         stage_counts = {}
-        time_counts = {"Today": 0, "Yesterday": 0, "Last Week": 0}
+        time_counts = {"Today": 0, "Yesterday": 0, "Last Week": 0, "All Time": 0}
         
         if manager_parents_names:
             resp_sql = "SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = 'Responded' AND parent IN %s"
@@ -177,6 +177,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                 time_counts["Today"] = frappe.db.sql(f"SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = %s AND parent IN %s AND DATE({field}) = CURDATE()", (child_status, tuple(manager_parents_names)))[0][0] or 0
                 time_counts["Yesterday"] = frappe.db.sql(f"SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = %s AND parent IN %s AND DATE({field}) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)", (child_status, tuple(manager_parents_names)))[0][0] or 0
                 time_counts["Last Week"] = frappe.db.sql(f"SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = %s AND parent IN %s AND DATE({field}) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)", (child_status, tuple(manager_parents_names)))[0][0] or 0
+                time_counts["All Time"] = responded_count_manager if child_status == 'Responded' else not_responded_count_manager
 
         recent_list = []
         has_more_recent = False
