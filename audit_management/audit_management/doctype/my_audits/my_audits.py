@@ -9,6 +9,12 @@ from audit_management.audit_management.utils import get_working_days, update_aud
 
 
 class MyAudits(Document):
+    def onload(self):
+        # 1. AUTO-REPAIR OLD RECORDS ON LOAD: 
+        # If child table is missing but old fields have data, populate it so UI/Tracker works
+        if not self.audit_stages and self.status != "Draft" and self.emp_branch:
+            self.repair_audit_stages()
+
     def validate(self):
         update_audit_aging(self)
         if self.status == "Closed":
@@ -19,116 +25,6 @@ class MyAudits(Document):
             for field in ["query_type", "primary_nature", "department_alignment"]:
                 if not self.get(field):
                     frappe.throw(_("{0} is mandatory for new records").format(self.meta.get_label(field)))
-
-    # def before_insert(self):
-    #     # Only populate the stages child table when the document is first created
-    #     if not self.emp_branch or not self.emp_division:
-    #         self.set("audit_stages", [])
-    #         return
-
-    #     # Find the Audit Level that matches BOTH branch and division
-    #     # UPDATE: Changed 'branch' to 'emp_branch' to match your Audit Level Doctype columns
-    #     audit_level_name = frappe.db.get_value(
-    #         "Audit Level",
-    #         {
-    #             "emp_branch": self.emp_branch,  # <--- Changed this to emp_branch
-    #             "division": self.emp_division
-    #         },
-    #         "name"
-    #     )
-
-    #     if not audit_level_name:
-    #         self.set("audit_stages", [])
-    #         frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
-    #             self.emp_branch, self.emp_division))
-
-    #     # Fetch the exact Audit Level document
-    #     audit_level = frappe.get_doc("Audit Level", audit_level_name)
-    #     self.set("audit_stages", [])
-
-    #     # Loop through the master table and push it to the transaction document
-    #     for row in audit_level.audit_stages:  # Assuming child table in Audit Level is named 'audit_stages'
-    #         self.append("audit_stages", {
-    #             "stage": row.stage,
-    #             "stage_name": row.stage_name,
-    #             "employee": row.employee,
-    #             "user_id": row.user_id,
-    #             "employee_name": row.employee_name,
-    #             "email": row.email,
-    #             "status": "Pending"  # Force status to Pending for new stages
-    #         })
-
-    # def before_insert(self):
-    #     # Step 1: Get logged-in user and fetch their Employee record
-    #     logged_in_user = frappe.session.user
-
-    #     employee = frappe.db.get_value(
-    #         "Employee",
-    #         {"user_id": logged_in_user},
-    #         ["name", "employee_name", "branch", "company_email",
-    #             "designation", "custom_division"],
-    #         as_dict=True
-    #     )
-
-    #     if not employee:
-    #         frappe.throw(
-    #             _("No Employee record found for logged-in user: <b>{0}</b>. Please check HR master data.").format(logged_in_user))
-
-    #     # Step 2: Set emp_division on the document from the Employee's custom_division
-    #     self.emp_division = employee.custom_division
-
-    #     if not self.emp_division:
-    #         frappe.throw(
-    #             _("Division is not set for Employee: <b>{0}</b>. Please update HR master data.").format(employee.employee_name))
-
-    #     # Step 3: Validate emp_branch is also filled
-    #     if not self.emp_branch:
-    #         frappe.throw(_("Branch is mandatory to create an Audit Query."))
-
-    #     # Step 4: Find matching Audit Level using emp_branch AND division
-    #     # audit_level_name = frappe.db.get_value(
-    #     #     "Audit Level",
-    #     #     {
-    #     #         "emp_branch": self.emp_branch,
-    #     #         "division": self.emp_division
-    #     #     },
-    #     #     "name"
-    #     # )
-
-    #      # ==========================================================
-    #     # THIS IS WHERE IT GOES: Finding the correct Audit Level
-    #     # ==========================================================
-    #     audit_level_name = frappe.db.get_value(
-    #         "Audit Level",
-    #         {
-    #             "emp_branch": self.emp_branch,
-    #             "division": self.emp_division
-    #         },
-    #         "name"
-    #     )
-
-    #     # if not audit_level_name:
-    #     #     frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
-    #     #         self.emp_branch, self.emp_division))
-
-    #     if not audit_level_name:
-    #         frappe.throw(_("No active Audit Level found for Branch: <b>{0}</b> and Division: <b>{1}</b>. Please check master data.").format(
-    #             self.emp_branch, self.emp_division))
-
-    #     # Step 5: Fetch the Audit Level document and populate audit_stages
-    #     audit_level = frappe.get_doc("Audit Level", audit_level_name)
-    #     self.set("audit_stages", [])
-
-    #     for row in audit_level.audit_stages:
-    #         self.append("audit_stages", {
-    #             "stage": row.stage,
-    #             "stage_name": row.stage_name,
-    #             "employee": row.employee,
-    #             "user_id": row.user_id,
-    #             "employee_name": row.employee_name,
-    #             "email": row.email,
-    #             "status": "Pending"
-    #         })
 
     def before_insert(self):
         # 1. Force the status to Draft upon creation
@@ -195,22 +91,57 @@ class MyAudits(Document):
             })
 
     def before_save(self):
+        # 1. REPAIR OLD RECORDS: If child table is missing, populate it
+        if not self.audit_stages and self.status != "Draft" and self.emp_branch:
+            self.repair_audit_stages()
+
         # SKIP SYNC IF ROLLBACK IS IN PROGRESS
         if self.query_status and "Rollback" in self.query_status:
             return
 
-        # 1. Sync Hardcoded Fields to Child Table (Priority for Legacy updates)
-        self.sync_old_to_new()
-
-        # 2. Sync Child Table to Hardcoded Fields (Priority for UI/Reporting)
+        # 2. Sync Child Table to Hardcoded Fields (Keep for background/reporting compatibility)
+        # In the new system, Child Table is the primary source of truth.
         self.sync_new_to_old()
 
-        # 3. Disable standard notifications if new system is active
+        # 3. Sync Hardcoded Fields to Child Table (ONLY FOR LEGACY MIGRATION)
+        # If the record is already using the new system (has stages), we stop prioritizing old fields.
+        if self.status != "Draft" and any(r.status for r in self.audit_stages):
+             # Once a child table row has status, it means migration is done.
+             # We only sync old to new if child table row is empty but old field has data.
+             self.sync_old_to_new(migration_only=True)
+        else:
+             self.sync_old_to_new()
+
+        # 4. Disable standard notifications if new system is active
         settings = frappe.get_single("Audit Management Settings")
         if settings.use_new_system:
             self.flags.ignore_notifications = True
 
-    def sync_old_to_new(self):
+    def repair_audit_stages(self):
+        """Auto-populates child table for old records using Audit Level master."""
+        if not self.emp_branch:
+            return
+
+        # Only populate if not already present
+        if not self.audit_stages:
+            audit_level = frappe.get_doc("Audit Level", self.emp_branch)
+            self.set("audit_stages", [])
+
+            for row in audit_level.audit_stages:
+                self.append("audit_stages", {
+                    "stage": row.stage,
+                    "stage_name": row.stage_name,
+                    "employee": row.employee,
+                    "user_id": row.user_id,
+                    "employee_name": row.employee_name,
+                    "email": row.email,
+                    "status": "" 
+                })
+            
+            # Immediately sync from legacy data to child table
+            self.sync_old_to_new()
+
+    def sync_old_to_new(self, migration_only=False):
         """Syncs hardcoded fields to the child table."""
         if not self.audit_stages:
             return
@@ -226,28 +157,28 @@ class MyAudits(Document):
             row = self.find_matching_row(
                 user_id, m["stage"], m["label"], prefix)
             if row:
+                if migration_only and row.status:
+                    # Skip if already migrated and has status in child table
+                    continue
+
                 old_status = self.get(f"{prefix}_user_status")
                 old_resp = self.get(f"{prefix}_response_box")
 
-                # DEBUG LOGGING
-                frappe.log_error(
-                    title="SYNC DEBUG",
-                    message=f"Prefix: {prefix}\nOld Status: {old_status}\nOld Response: {old_resp}\nRow Status Before: {row.status}"
-                )
-
                 if self.status != "Draft" and old_status and row.status != old_status:
-                    # Never downgrade responded rows if legacy field is lagging
+                    # PROTECTION: Never downgrade responded or overdue rows if legacy field is lagging
                     if row.status == "Responded" and old_status in ["Pending", "No Response"]:
-                        pass
+                        continue
 
-                    # Only sync Responded from legacy if a valid response exists
-                    elif old_status == "Responded":
-                        if old_resp and str(old_resp).strip():
-                            row.status = old_status
+                    if row.status == "No Response" and old_status == "Pending":
+                        continue
 
-                    # Normal sync for other cases (e.g., Pending -> No Response)
-                    else:
-                        row.status = old_status
+                    # Normal sync for valid states
+                    row.status = old_status
+
+                # RESEND PROTECTION: If child table has status but legacy is empty, 
+                # do not overwrite child (happens during resend before save)
+                if not old_status and row.status:
+                    pass 
 
                 # Ensure we only sync response if it doesn't already exist in child table
                 if (
@@ -1126,40 +1057,44 @@ def rollback_stage(docname, stagename, row_name=None):
         is_match = (row.name == row_name) if row_name else (row.stage_name == stagename)
         
         if is_match:
-            frappe.log_error(title="Rollback Debug", message=f"Rollback Stage: {stagename}\nRow Name: {row.name}\nRow Stage Name: '{row.stage_name}'\nRow Status Before: '{row.status}'")
-            
             if row.status not in ["Pending", "No Response"]:
-                frappe.log_error(title="Rollback Debug", message=f"Status check failed for {row.name}: {row.status}")
                 frappe.throw(_("Only Pending or No Response stages can be rolled back. {0} is currently {1}.").format(row.stage_name, row.status))
             
-            # 1. Revoke access first
+            # 1. Revoke access only if user is not in any other active stage
             if row.user_id:
-                frappe.db.delete("DocShare", {
-                    "share_doctype": doc.doctype,
-                    "share_name": doc.name,
-                    "user": row.user_id
-                })
+                other_stages = [r for r in doc.audit_stages if r.name != row.name and r.user_id == row.user_id and r.status in ["Pending", "No Response"]]
+                if not other_stages:
+                    frappe.db.delete("DocShare", {
+                        "share_doctype": doc.doctype,
+                        "share_name": doc.name,
+                        "user": row.user_id
+                    })
             
-            # 2. Clear stage data
+            # 2. Clear child table stage data
             row.status = ""
             row.pending_time = None
             row.response = None
             row.attachment = None
             row.response_time = None
-            
-            frappe.log_error(title="Rollback Debug After", message=f"Row Name: {row.name}\nRow Status After: '{row.status}'")
+
+            # 3. Clear legacy fields to prevent sync conflicts
+            mapping = doc.get_prefix_mapping()
+            for m in mapping:
+                if m["label"].lower() == (row.stage_name or "").strip().lower():
+                    prefix = m["prefix"]
+                    doc.set(f"{prefix}_user_status", "")
+                    doc.set(f"{prefix}_response_box", None)
+                    doc.set(f"{prefix}_pending_time", None)
+                    doc.set(f"{prefix}_attach_box", None)
+                    break
             
             found = True
             break
             
     if found:
+        # Use a status that indicates rollback to skip normal sync in before_save
         doc.query_status = f"Rollback: {stagename}"
         doc.save(ignore_permissions=True)
-        doc.reload()
-        
-        for row in doc.audit_stages:
-            if row.name == row_name or row.stage_name == stagename:
-                frappe.log_error(title="Rollback Final DB Check", message=f"Final DB Status: '{row.status}'")
         return True
     return False
 
@@ -1195,8 +1130,6 @@ def raise_multi_request(docname, stagenames):
                 frappe.share.add(doc.doctype, doc.name, row.user_id,
                                  read=1, write=1, share=1, notify=0)
     
-    # We remove the 'else' block that clears other stages to allow incremental assignment
-
     if not selected_rows:
         frappe.throw("No valid stages selected from the selection.")
 
@@ -1208,7 +1141,9 @@ def raise_multi_request(docname, stagenames):
         doc.query_status = "Pending From All Stages"
     else:
         doc.query_status = f"Pending From {', '.join(all_pending)}"
-        
+    
+    # Update legacy fields IMMEDIATELY before saving to ensure UI consistency
+    doc.sync_new_to_old()
     doc.save(ignore_permissions=True)
 
     # Trigger custom notifications for each newly selected stage
@@ -1234,7 +1169,6 @@ def raise_request(docname, stagename):
     assigned_userid = None
 
     for row in doc.get("audit_stages"):
-        # Fix: use stage_name and user_id (with underscores)
         if row.stage_name == stagename:
             row.status = "Pending"
             row.pending_time = frappe.utils.now()
@@ -1248,21 +1182,17 @@ def raise_request(docname, stagename):
 
     doc.status = "Pending"
     doc.query_status = f"Pending From {stagename}"
+    
+    # Update legacy fields IMMEDIATELY before saving
+    doc.sync_new_to_old()
     doc.save(ignore_permissions=True)
 
     # Give access and notify the assigned member
     if assigned_userid:
-        # notify=0 prevents the redundant background queue email
         frappe.share.add(doc.doctype, doc.name, assigned_userid,
                          read=1, write=1, share=1, notify=0)
         
-        # Trigger immediate custom notification
-        target_row = None
-        for row in doc.audit_stages:
-            if row.status == "Pending":
-                target_row = row
-                break
-        
+        target_row = next((r for r in doc.audit_stages if r.status == "Pending"), None)
         if target_row:
             send_stage_notification(doc, target_row, action="assign")
 
