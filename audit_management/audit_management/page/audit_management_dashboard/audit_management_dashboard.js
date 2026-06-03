@@ -198,6 +198,33 @@ frappe.pages['audit_management_dashboard'].on_page_load = function(wrapper) {
 	let currentItemStages = [];
 	let currentTimeFilter = [];
 
+	const STORAGE_KEY = `audit_dashboard_settings_${frappe.session.user}`;
+
+	const saveFilters = () => {
+		const data = {
+			status: currentStatusFilter,
+			risk: currentRiskFilter,
+			stages: currentItemStages,
+			time: currentTimeFilter
+		};
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+	};
+
+	const loadFilters = () => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				const data = JSON.parse(saved);
+				currentStatusFilter = data.status || [];
+				currentRiskFilter = data.risk || [];
+				currentItemStages = data.stages || [];
+				currentTimeFilter = data.time || [];
+			} catch (e) { console.error("Error loading filters", e); }
+		}
+	};
+
+	loadFilters();
+
 	const upd = (id, val) => { 
 		const $el = $w.find('#' + id); 
 		if ($el.length) $el.text(val ?? 0); 
@@ -238,8 +265,17 @@ frappe.pages['audit_management_dashboard'].on_page_load = function(wrapper) {
 				const $rDD = $w.find('#filter-dropdown-risk');
 				if ($sDD.is(':empty')) {
 					const sOps = userRole === 'stage_user' ? ['Pending', 'Responded', 'No Response'] : ['Draft', 'Pending', 'Closed'];
-					$sDD.html(sOps.map(o => `<div class='multiselect-item' onclick='event.stopPropagation()'><input type='checkbox' class='status-checkbox' value='${o}'><span>${o}</span></div>`).join(''));
-					$rDD.html(['High', 'Medium', 'Normal'].map(o => `<div class='multiselect-item' onclick='event.stopPropagation()'><input type='checkbox' class='risk-checkbox' value='${o}'><span>${o}</span></div>`).join(''));
+					$sDD.html(sOps.map(o => `<div class='multiselect-item' onclick='event.stopPropagation()'><input type='checkbox' class='status-checkbox' value='${o}' ${currentStatusFilter.includes(o) ? 'checked' : ''}><span>${o}</span></div>`).join(''));
+					$rDD.html(['High', 'Medium', 'Normal'].map(o => `<div class='multiselect-item' onclick='event.stopPropagation()'><input type='checkbox' class='risk-checkbox' value='${o}' ${currentRiskFilter.includes(o) ? 'checked' : ''}><span>${o}</span></div>`).join(''));
+					
+					// Update labels initially
+					if (currentStatusFilter.length > 0) {
+						$w.find('#selected-status-label').text(currentStatusFilter.length === 1 ? currentStatusFilter[0] : currentStatusFilter.length + ' Selected');
+					}
+					if (currentRiskFilter.length > 0) {
+						$w.find('#selected-risk-label').text(currentRiskFilter.length === 1 ? currentRiskFilter[0] : currentRiskFilter.length + ' Selected');
+					}
+					$w.find('#clear-filter-btn').toggle(currentStatusFilter.length > 0 || currentRiskFilter.length > 0);
 				}
 
 				// Sync Stats & Sidebar UI
@@ -274,6 +310,12 @@ frappe.pages['audit_management_dashboard'].on_page_load = function(wrapper) {
 				// Drilldown handling
 				const showD = (currentStatusFilter.includes('Responded') || currentStatusFilter.includes('No Response'));
 				$w.find('#drilldown-section').toggle(showD);
+				
+				// Sync Timeframe Checkboxes (Always run)
+				$w.find('.time-checkbox').each(function() {
+					$(this).prop('checked', currentTimeFilter.includes($(this).val()));
+				});
+
 				if (showD) {
 					const $sL = $w.find('#stage-checkbox-list');
 					if ($sL.is(':empty')) {
@@ -283,9 +325,14 @@ frappe.pages['audit_management_dashboard'].on_page_load = function(wrapper) {
 							callback: (res) => {
 								if (res.message) {
 									const counts = d.stage_counts || {};
-									$sL.html(res.message.map(s => `<label class='check-item'><input type='checkbox' class='stage-item-checkbox' value='${s.name}'> ${s.name} (${counts[s.name] || 0})</label>`).join(''));
+									$sL.html(res.message.map(s => `<label class='check-item'><input type='checkbox' class='stage-item-checkbox' value='${s.name}' ${currentItemStages.includes(s.name) ? 'checked' : ''}> ${s.name} (${counts[s.name] || 0})</label>`).join(''));
 								}
 							}
+						});
+					} else {
+						// Update existing checkboxes
+						$sL.find('.stage-item-checkbox').each(function() {
+							$(this).prop('checked', currentItemStages.includes($(this).val()));
 						});
 					}
 				}
@@ -344,13 +391,16 @@ frappe.pages['audit_management_dashboard'].on_page_load = function(wrapper) {
 		$w.find('input[type=checkbox]').prop('checked', false); 
 		currentStatusFilter = []; currentRiskFilter = []; currentItemStages = []; currentTimeFilter = []; 
 		$w.find('#selected-status-label').text('Status'); $w.find('#selected-risk-label').text('Risk'); 
-		$w.find('#clear-filter-btn').hide(); refresh(); 
+		$w.find('#clear-filter-btn').hide(); 
+		saveFilters();
+		refresh(); 
 	});
 	
 	$w.on('change', '.status-checkbox', function() {
 		currentStatusFilter = $w.find('.status-checkbox:checked').map((i, el) => $(el).val()).get();
 		$w.find('#selected-status-label').text(currentStatusFilter.length === 0 ? 'Status' : (currentStatusFilter.length === 1 ? currentStatusFilter[0] : currentStatusFilter.length + ' Selected'));
 		$w.find('#clear-filter-btn').toggle(currentStatusFilter.length > 0 || currentRiskFilter.length > 0);
+		saveFilters();
 		refresh();
 	});
 
@@ -358,19 +408,20 @@ frappe.pages['audit_management_dashboard'].on_page_load = function(wrapper) {
 		currentRiskFilter = $w.find('.risk-checkbox:checked').map((i, el) => $(el).val()).get();
 		$w.find('#selected-risk-label').text(currentRiskFilter.length === 0 ? 'Risk' : (currentRiskFilter.length === 1 ? currentRiskFilter[0] : currentRiskFilter.length + ' Selected'));
 		$w.find('#clear-filter-btn').toggle(currentStatusFilter.length > 0 || currentRiskFilter.length > 0);
+		saveFilters();
 		refresh();
 	});
 
-	$w.on('change', '.time-checkbox', () => { currentTimeFilter = $w.find('.time-checkbox:checked').map((i, el) => $(el).val()).get(); refresh(); });
-	$w.on('change', '.stage-item-checkbox', () => { currentItemStages = $w.find('.stage-item-checkbox:checked').map((i, el) => $(el).val()).get(); refresh(); });
+	$w.on('change', '.time-checkbox', () => { currentTimeFilter = $w.find('.time-checkbox:checked').map((i, el) => $(el).val()).get(); saveFilters(); refresh(); });
+	$w.on('change', '.stage-item-checkbox', () => { currentItemStages = $w.find('.stage-item-checkbox:checked').map((i, el) => $(el).val()).get(); saveFilters(); refresh(); });
 
 	// Sidebar Nav Clicks
-	$w.on('click', '#nav-total', () => { currentStatusFilter = []; currentRiskFilter = []; refresh(); });
-	$w.on('click', '#nav-draft', () => { currentStatusFilter = ['Draft']; refresh(); });
-	$w.on('click', '#nav-pending', () => { currentStatusFilter = ['Pending']; refresh(); });
-	$w.on('click', '#nav-closed', () => { currentStatusFilter = ['Closed']; refresh(); });
-	$w.on('click', '#nav-responded', () => { currentStatusFilter = ['Responded']; refresh(); });
-	$w.on('click', '#nav-nr', () => { currentStatusFilter = ['No Response']; refresh(); });
+	$w.on('click', '#nav-total', () => { currentStatusFilter = []; currentRiskFilter = []; saveFilters(); refresh(); });
+	$w.on('click', '#nav-draft', () => { currentStatusFilter = ['Draft']; saveFilters(); refresh(); });
+	$w.on('click', '#nav-pending', () => { currentStatusFilter = ['Pending']; saveFilters(); refresh(); });
+	$w.on('click', '#nav-closed', () => { currentStatusFilter = ['Closed']; saveFilters(); refresh(); });
+	$w.on('click', '#nav-responded', () => { currentStatusFilter = ['Responded']; saveFilters(); refresh(); });
+	$w.on('click', '#nav-nr', () => { currentStatusFilter = ['No Response']; saveFilters(); refresh(); });
 
 	$w.on('click', '#load-more-p-btn', () => load_more('pending'));
 	$w.on('click', '#load-more-r-btn', () => load_more('recent'));
