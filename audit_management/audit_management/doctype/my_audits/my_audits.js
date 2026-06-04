@@ -255,28 +255,21 @@ frappe.ui.form.on("My Audits", {
     );
 
     const old_fields = [
-      "bm_user_status",
-      "bm_name",
-      "dh_user_status",
-      "dh_name",
-      "com_user_status",
-      "com_name",
-      "rm_user_status",
-      "rm_name",
-      "rom_user_status",
-      "rom_name",
-      "zm_user_status",
-      "zm_name",
-      "zom_user_status",
-      "zom_name",
-      "gm_user_status",
-      "gm_name",
-      "hr_user_status",
-      "hr_name",
-      "coo_user_status",
-      "coo_name",
-      "ceo_user_status",
-      "ceo_name",
+      "bm_user_status", "bm_name", "bm_pending_time", "bm_user_id", "bm_mail", "bm_response_box", "bm_attach_box",
+      "dh_user_status", "dh_name", "dh_pending_time", "dh_user_id", "dh_mail", "dh_response_box", "dh_attach_box",
+      "com_user_status", "com_name", "com_pending_time", "com_user_id", "com_mail", "com_response_box", "com_attach_box",
+      "rm_user_status", "rm_name", "rm_pending_time", "rm_user_id", "rm_mail", "rm_response_box", "rm_attach_box",
+      "rom_user_status", "rom_name", "rom_pending_time", "rom_user_id", "rom_mail", "rom_response_box", "rom_attach_box",
+      "zm_user_status", "zm_name", "zm_pending_time", "zm_user_id", "zm_mail", "zm_response_box", "zm_attach_box",
+      "zom_user_status", "zom_name", "zom_pending_time", "zom_user_id", "zom_mail", "zom_response_box", "zom_attach_box",
+      "gm_user_status", "gm_name", "gm_pending_time", "gm_user_id", "gm_mail", "gm_response_box", "gm_attach_box",
+      "hr_user_status", "hr_name", "hr_pending_time", "hr_user_id", "hr_mail", "hr_response_box", "hr_attach_box",
+      "coo_user_status", "coo_name", "coo_pending_time", "coo_user_id", "coo_mail", "coo_response_box", "coo_attach_box",
+      "ceo_user_status", "ceo_name", "ceo_pending_time", "ceo_user_id", "ceo_mail", "ceo_response_box", "ceo_attach_box",
+      "stage_1_bm_section", "stage_2_dh_section", "stage_2_com_section", "stage_2_rom_section", "stage_4_zom_section",
+      "stage_5_gm_section", "stage_6_hr_section", "stage_7_coo_section", "stage_8_ceo_section", "column_break_nhcaj", "column_break_pcphc",
+      "bm_response", "dh_com_response_section", "rm_rom_response_section", "zm_zom_response_section", "gm_response_section",
+      "hr_response_section", "coo_response_section", "ceo_response_section"
     ];
     old_fields.forEach((f) => frm.toggle_display(f, false));
 
