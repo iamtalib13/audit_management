@@ -47,6 +47,9 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         elif isinstance(time_filter, list): time_filter_list = time_filter
 
     try:
+        from audit_management.audit_management.utils import get_user_allowed_divisions
+        allowed_divisions = get_user_allowed_divisions(user)
+
         # 1. 🟢 BASE FILTERS (Permissions)
         base_filters = {}
         if is_admin: pass
@@ -55,7 +58,9 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
             else: base_filters["emp_division"] = "None"
         elif is_member:
             base_filters["owner"] = user
-        # Note: stage_user (else) does NOT get base_filters by default to preserve assignment-based access
+        else:
+            if allowed_divisions: base_filters["emp_division"] = ["in", allowed_divisions]
+            else: base_filters["emp_division"] = "None"
 
         # 2. 🟢 COUNTER FILTERS (For all top 6 cards: Permissions + Risk ONLY)
         counter_filters = base_filters.copy()
@@ -68,6 +73,10 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         if query_type_list:
             list_filters["query_type"] = ["in", query_type_list]
 
+        # Get Allowed Parents for counts (Global within segment)
+        allowed_parents_global = frappe.get_all("My Audits", filters=counter_filters, fields=["name"], pluck="name")
+        allowed_parents_global_tuple = tuple(allowed_parents_global) if allowed_parents_global else ("None",)
+
         # 4. 🟢 STAGE USER LOGIC
         # Get All User's Assigned Stages (No division restriction for assigned items)
         assigned_stages = frappe.get_all("Audit Items", 
@@ -77,21 +86,12 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         stages_tuple = tuple(user_stages) if len(user_stages) > 1 else (user_stages[0],)
 
         # Count Queries for Stage User (Static - respect Risk but ignore Query Type)
-        # We still need to respect base_filters if they apply (e.g. if stage user is also a member/manager, but role_type logic handles priority)
-        # For a pure stage_user, we allow all assignments.
-        
-        # Helper to get allowed parent IDs based on counter_filters
-        allowed_parents_for_counts = frappe.get_all("My Audits", filters=counter_filters, fields=["name"], pluck="name")
-        # If pure stage_user and no risk filter, we might not want to restrict parents at all.
-        # But if they select Risk=High, we SHOULD restrict counts.
-        
-        # If no risk filter and pure stage user, allow all.
         if not risk_list and not (is_admin or is_manager or is_member):
              parent_limit_sql = ""
              parent_params = []
         else:
              parent_limit_sql = " AND parent IN %s"
-             parent_params = [tuple(allowed_parents_for_counts) if allowed_parents_for_counts else ("None",)]
+             parent_params = [allowed_parents_global_tuple]
 
         pending_items_query = f"SELECT DISTINCT parent FROM `tabAudit Items` WHERE status = 'Pending' AND (user_id = %s OR email = %s) AND stage_name IN %s {parent_limit_sql}"
         responded_items_query = f"SELECT DISTINCT parent FROM `tabAudit Items` WHERE status = 'Responded' AND (user_id = %s OR email = %s) AND stage_name IN %s {parent_limit_sql}"
@@ -155,9 +155,6 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                         {"parent": item.name, "user_id": user, "stage_name": ["in", user_stages]}, "status") or item.status
 
         # 5. 🔵 MANAGER/ADMIN/MEMBER LOGIC
-        from audit_management.audit_management.utils import get_user_allowed_divisions
-        allowed_divisions = get_user_allowed_divisions(user)
-        
         # Top 4 Card Counts (Static - Counter Filters ignore Query Type)
         total_pending = frappe.db.count("My Audits", {**counter_filters, "status": "Pending"})
         closed_count = frappe.db.count("My Audits", {**counter_filters, "status": "Closed"})
@@ -165,15 +162,13 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         total_count = frappe.db.count("My Audits", counter_filters)
         
         # Responded/Not Responded Counts (Static - Counter Filters ignore Query Type)
-        allowed_parents_for_global_counts = frappe.get_all("My Audits", filters=counter_filters, fields=["name"], pluck="name")
         responded_count_manager = 0
         not_responded_count_manager = 0
-        if allowed_parents_for_global_counts:
-            global_tuple = tuple(allowed_parents_for_global_counts)
+        if allowed_parents_global:
             resp_sql = "SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = 'Responded' AND parent IN %s"
             nr_sql = "SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = 'No Response' AND parent IN %s"
-            responded_count_manager = frappe.db.sql(resp_sql, (global_tuple,))[0][0]
-            not_responded_count_manager = frappe.db.sql(nr_sql, (global_tuple,))[0][0]
+            responded_count_manager = frappe.db.sql(resp_sql, (allowed_parents_global_tuple,))[0][0]
+            not_responded_count_manager = frappe.db.sql(nr_sql, (allowed_parents_global_tuple,))[0][0]
 
         # Contextual Drilldown Stats (Dynamic - respect all list_filters)
         manager_parents_contextual = frappe.get_all("My Audits", filters=list_filters, fields=["name"], pluck="name")
@@ -261,22 +256,6 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
             if status_list and not ('Responded' in status_list or 'No Response' in status_list):
                 actual_statuses = [s for s in status_list if s in ['Draft', 'Pending', 'Closed']]
                 if actual_statuses: r_filters["status"] = ["in", actual_statuses]
-
-            recent_list = frappe.get_all(
-                "My Audits",
-                filters=r_filters,
-                fields=["name", "audit_query_subject_box", "risk", "status", "emp_branch", "emp_division", "aging", "creation"],
-                order_by="creation desc",
-                limit_start=recent_start,
-                limit_page_length=page_length + 1
-            )
-            
-            if len(recent_list) > page_length:
-                has_more_recent = True
-                recent_list = recent_list[:page_length]
-
-            for idx, item in enumerate(recent_list, start=recent_start + 1):
-                item["sr_no"] = idx
 
             recent_list = frappe.get_all(
                 "My Audits",
