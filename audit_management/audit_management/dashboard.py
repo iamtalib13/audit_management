@@ -47,29 +47,41 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         elif isinstance(time_filter, list): time_filter_list = time_filter
 
     try:
+        # Get All User's Assigned Stages
+        assigned_stages = frappe.get_all("Audit Items", 
+            filters={"user_id": user, "status": ["in", ["Pending", "No Response", "Responded"]]}, 
+            fields=["stage_name"], pluck="stage_name")
+        user_stages = list(set(assigned_stages)) if assigned_stages else ["BM"]
+
         # 1. 🟢 FETCH PENDING FOR ME (From Child Table - Stage User Logic)
         pending_items_query = """
             SELECT DISTINCT parent
             FROM `tabAudit Items`
             WHERE status = 'Pending'
             AND (user_id = %s OR email = %s)
+            AND stage_name IN %s
         """
         responded_items_query = """
             SELECT DISTINCT parent
             FROM `tabAudit Items`
             WHERE status = 'Responded'
             AND (user_id = %s OR email = %s)
+            AND stage_name IN %s
         """
         not_responded_items_query = """
             SELECT DISTINCT parent
             FROM `tabAudit Items`
             WHERE status = 'No Response'
             AND (user_id = %s OR email = %s)
+            AND stage_name IN %s
         """
 
-        pending_records = frappe.db.sql(pending_items_query, (user, user), as_dict=True)
-        responded_records = frappe.db.sql(responded_items_query, (user, user), as_dict=True)
-        not_responded_records = frappe.db.sql(not_responded_items_query, (user, user), as_dict=True)
+        # Ensure user_stages is a tuple for SQL IN clause
+        stages_tuple = tuple(user_stages) if len(user_stages) > 1 else (user_stages[0],)
+        
+        pending_records = frappe.db.sql(pending_items_query, (user, user, stages_tuple), as_dict=True)
+        responded_records = frappe.db.sql(responded_items_query, (user, user, stages_tuple), as_dict=True)
+        not_responded_records = frappe.db.sql(not_responded_items_query, (user, user, stages_tuple), as_dict=True)
 
         pending_for_me_count = len(pending_records)
         responded_by_me_count = len(responded_records)
@@ -80,12 +92,16 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         
         # Identify which parent records to fetch for the stage user UI list
         selected_parents_stage_user = []
+        target_child_status = None
         if 'Responded' in status_list:
             selected_parents_stage_user = [r.parent for r in responded_records]
+            target_child_status = 'Responded'
         elif 'No Response' in status_list:
             selected_parents_stage_user = [r.parent for r in not_responded_records]
+            target_child_status = 'No Response'
         elif 'Pending' in status_list:
             selected_parents_stage_user = [r.parent for r in pending_records]
+            target_child_status = 'Pending'
         else:
             selected_parents_stage_user = list(set(
                 [r.parent for r in pending_records] + 
@@ -95,9 +111,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
 
         if selected_parents_stage_user:
             p_filters = {"name": ["in", selected_parents_stage_user]}
-            if status_list:
-                actual_statuses = [s for s in status_list if s in ['Draft', 'Pending', 'Closed']]
-                if actual_statuses: p_filters["status"] = ["in", actual_statuses]
+            # ... parent filters ... (status filter removed for stage_user to show based on child)
             
             if risk_list:
                 if "Normal" in risk_list: p_filters["risk"] = ["in", risk_list + [None, ""]]
@@ -119,8 +133,15 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                 has_more_pending = True
                 pending_for_me_list = pending_for_me_list[:page_length]
 
+            # Override parent status with child status for stage_user
             for idx, item in enumerate(pending_for_me_list, start=pending_start + 1):
                 item["sr_no"] = idx
+                if target_child_status:
+                    item["status"] = target_child_status
+                else:
+                    # Fetch actual child status for the user's stage(s)
+                    item["status"] = frappe.db.get_value("Audit Items", 
+                        {"parent": item.name, "user_id": user, "stage_name": ["in", user_stages]}, "status") or item.status
 
         # 2. 🔵 FETCH GLOBAL/ROLE STATS (Manager/Admin/Member)
         from audit_management.audit_management.utils import get_user_allowed_divisions
@@ -263,6 +284,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
 
         return {
             "role_type": "manager" if (is_manager or is_admin) else ("member" if is_member else "stage_user"),
+            "user_stages": user_stages if (is_manager or is_admin or is_member) == False else [],
             "pending_for_me": pending_for_me_count,
             "responded_by_me": responded_by_me_count if (is_member or is_manager or is_admin) == False else responded_count_manager,
             "not_responded_count": not_responded_count_me if (is_member or is_manager or is_admin) == False else not_responded_count_manager,
