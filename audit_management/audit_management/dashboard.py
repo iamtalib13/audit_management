@@ -180,6 +180,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         manager_parents_contextual_tuple = tuple(manager_parents_contextual) if manager_parents_contextual else ("None",)
         
         stage_counts = {}
+        query_type_counts = {}
         time_counts = {"Today": 0, "Yesterday": 0, "Last Week": 0, "All Time": 0}
         
         if manager_parents_contextual:
@@ -188,10 +189,37 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
             elif 'No Response' in status_list: child_status = 'No Response'
             
             if child_status:
+                # 1. Stage Counts
                 stg_sql = f"SELECT stage_name, COUNT(DISTINCT parent) as count FROM `tabAudit Items` WHERE status = %s AND parent IN %s GROUP BY stage_name"
                 stg_data = frappe.db.sql(stg_sql, (child_status, manager_parents_contextual_tuple), as_dict=True)
                 stage_counts = {d.stage_name: d.count for d in stg_data}
                 
+                # 2. Query Type Counts (Contextual to status, stage, time)
+                qt_parents_filters = counter_filters.copy()
+                child_qt_conds = [f"status = '{child_status}'"]
+                qt_params = []
+                if item_stage_list:
+                    child_qt_conds.append("stage_name IN %s")
+                    qt_params.append(tuple(item_stage_list))
+                if time_filter_list:
+                    t_conds = []
+                    fld = "response_time" if child_status == 'Responded' else "pending_time"
+                    for t in time_filter_list:
+                        if t == "Today": t_conds.append(f"DATE({fld}) = CURDATE()")
+                        elif t == "Yesterday": t_conds.append(f"DATE({fld}) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)")
+                        elif t == "Last Week": t_conds.append(f"DATE({fld}) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)")
+                    if t_conds: child_qt_conds.append("(" + " OR ".join(t_conds) + ")")
+                
+                qt_child_sql = f"SELECT DISTINCT parent FROM `tabAudit Items` WHERE {' AND '.join(child_qt_conds)}"
+                qt_child_parents_sql = frappe.db.sql(qt_child_sql, tuple(qt_params))
+                qt_child_parents = [r[0] for r in qt_child_parents_sql] if qt_child_parents_sql else []
+                
+                if qt_child_parents:
+                    qt_parents_filters["name"] = ["in", qt_child_parents]
+                    qt_data = frappe.db.get_all("My Audits", filters=qt_parents_filters, fields=["query_type", "count(name) as count"], group_by="query_type")
+                    query_type_counts = {d.query_type: d.count for d in qt_data if d.query_type}
+
+                # 3. Time Counts
                 field = "response_time" if child_status == 'Responded' else "pending_time"
                 time_counts["Today"] = frappe.db.sql(f"SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = %s AND parent IN %s AND DATE({field}) = CURDATE()", (child_status, manager_parents_contextual_tuple))[0][0] or 0
                 time_counts["Yesterday"] = frappe.db.sql(f"SELECT COUNT(DISTINCT parent) FROM `tabAudit Items` WHERE status = %s AND parent IN %s AND DATE({field}) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)", (child_status, manager_parents_contextual_tuple))[0][0] or 0
@@ -297,6 +325,7 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
             "closed_count": closed_count,
             "draft_count": draft_count,
             "stage_counts": stage_counts,
+            "query_type_counts": query_type_counts,
             "time_counts": time_counts,
             "pending_list": pending_for_me_list,
             "recent_list": recent_list,
