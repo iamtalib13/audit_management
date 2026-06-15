@@ -1726,21 +1726,18 @@ frappe.ui.form.on("My Audits", {
           label: __("Root Cause Analysis (RCA)"),
           fieldname: "root_cause_analysis",
           fieldtype: "Text Editor",
-          reqd: 1,
           default: frm.doc.root_cause_analysis,
         },
         {
           label: __("Action Point with TAT and Closure"),
           fieldname: "action_point_with_tat",
           fieldtype: "Small Text",
-          reqd: 1,
           default: frm.doc.action_point_with_tat,
         },
         {
           label: __("Recommendations"),
           fieldname: "recommendations",
           fieldtype: "Small Text",
-          reqd: 1,
           default: frm.doc.recommendations,
         },
         {

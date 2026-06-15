@@ -290,10 +290,8 @@ class MyAudits(Document):
     def validate_resolution_fields(self):
         """Mandatory fields for query resolution."""
         mandatory_fields = [
-            "root_cause_analysis",
             "rca_category",
-            "recommendations",
-            "action_point_with_tat"
+            "closing_remark"
         ]
         for field in mandatory_fields:
             if not self.get(field):
