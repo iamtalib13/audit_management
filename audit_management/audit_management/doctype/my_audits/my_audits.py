@@ -800,7 +800,7 @@ def has_permission(doc, ptype, user=None):
         # Bypass for users who are currently pending (even if from another division)
         is_pending = False
         for row in (doc.get("audit_stages") or []):
-            if row.status == "Pending" and (row.user_id == user or row.email == user):
+            if row.status in ("Pending", "No Response") and (row.user_id == user or row.email == user):
                 is_pending = True
                 break
         if not is_pending:
@@ -817,9 +817,9 @@ def has_permission(doc, ptype, user=None):
     if doc.owner == user:
         return True
 
-   # ✅ Current Pending User
+   # ✅ Current Pending/No Response User
     for row in (doc.get("audit_stages") or []):
-        if row.status == "Pending" and (row.user_id == user or row.email == user):
+        if row.status in ("Pending", "No Response") and (row.user_id == user or row.email == user):
             return True
 
     # ✅ NEW: Allow users who already responded (history access)
