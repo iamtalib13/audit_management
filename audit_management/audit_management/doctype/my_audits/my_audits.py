@@ -800,7 +800,7 @@ def has_permission(doc, ptype, user=None):
         # Bypass for users who are currently pending (even if from another division)
         is_pending = False
         for row in (doc.get("audit_stages") or []):
-            if row.status == "Pending" and (row.user_id == user or row.email == user):
+            if row.status in ("Pending", "No Response") and (row.user_id == user or row.email == user):
                 is_pending = True
                 break
         if not is_pending:
@@ -817,9 +817,9 @@ def has_permission(doc, ptype, user=None):
     if doc.owner == user:
         return True
 
-   # ✅ Current Pending User
+   # ✅ Current Pending/No Response User
     for row in (doc.get("audit_stages") or []):
-        if row.status == "Pending" and (row.user_id == user or row.email == user):
+        if row.status in ("Pending", "No Response") and (row.user_id == user or row.email == user):
             return True
 
     # ✅ NEW: Allow users who already responded (history access)
@@ -912,6 +912,19 @@ def get_permission_query_conditions(user=None):
         )
     """
 
+    no_response_condition = f"""
+        EXISTS (
+            SELECT name
+            FROM `tabAudit Items`
+            WHERE parent = `tabMy Audits`.name
+            AND status = 'No Response'
+            AND (
+                user_id = '{user}'
+                OR email = '{user}'
+            )
+        )
+    """
+
     # =========================================================
     # FINAL CONDITIONS
     # =========================================================
@@ -940,6 +953,8 @@ def get_permission_query_conditions(user=None):
                     {pending_condition}
                     OR
                     {responded_condition}
+                    OR
+                    {no_response_condition}
                 )
             )
 
