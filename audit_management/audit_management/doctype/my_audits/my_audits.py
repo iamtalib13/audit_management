@@ -912,6 +912,19 @@ def get_permission_query_conditions(user=None):
         )
     """
 
+    no_response_condition = f"""
+        EXISTS (
+            SELECT name
+            FROM `tabAudit Items`
+            WHERE parent = `tabMy Audits`.name
+            AND status = 'No Response'
+            AND (
+                user_id = '{user}'
+                OR email = '{user}'
+            )
+        )
+    """
+
     # =========================================================
     # FINAL CONDITIONS
     # =========================================================
@@ -940,6 +953,8 @@ def get_permission_query_conditions(user=None):
                     {pending_condition}
                     OR
                     {responded_condition}
+                    OR
+                    {no_response_condition}
                 )
             )
 

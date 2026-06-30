@@ -79,9 +79,11 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
 
         # 4. 🟢 STAGE USER LOGIC
         # Get All User's Assigned Stages (No division restriction for assigned items)
-        assigned_stages = frappe.get_all("Audit Items", 
-            filters={"user_id": user, "status": ["in", ["Pending", "No Response", "Responded"]]}, 
-            fields=["stage_name"], pluck="stage_name")
+        assigned_stages_raw = frappe.db.sql(
+            "SELECT stage_name FROM `tabAudit Items` WHERE status IN ('Pending', 'No Response', 'Responded') AND (user_id = %s OR email = %s)",
+            (user, user), as_dict=True
+        )
+        assigned_stages = [r.stage_name for r in assigned_stages_raw]
         user_stages = list(set(assigned_stages)) if assigned_stages else ["BM"]
         stages_tuple = tuple(user_stages) if len(user_stages) > 1 else (user_stages[0],)
 
@@ -151,8 +153,11 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
                 if target_child_status:
                     item["status"] = target_child_status
                 else:
-                    item["status"] = frappe.db.get_value("Audit Items", 
-                        {"parent": item.name, "user_id": user, "stage_name": ["in", user_stages]}, "status") or item.status
+                    status_val = frappe.db.sql(
+                        "SELECT status FROM `tabAudit Items` WHERE parent = %s AND (user_id = %s OR email = %s) AND stage_name IN %s LIMIT 1",
+                        (item.name, user, user, tuple(user_stages)), as_dict=True
+                    )
+                    item["status"] = status_val[0].status if status_val else item.status
 
         # 5. 🔵 MANAGER/ADMIN/MEMBER LOGIC
         # Top 4 Card Counts (Static - Counter Filters ignore Query Type)
