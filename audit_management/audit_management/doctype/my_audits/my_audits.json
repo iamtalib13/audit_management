@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:{emp_branch}-{DD}{MM}{YY}-{###}",
+  "autoname": "format:{branch_name}-{DD}{MM}{YY}-{###}",
  "creation": "2024-09-02 15:38:12.323236",
  "default_view": "List",
  "doctype": "DocType",
@@ -130,6 +130,7 @@
   "audit_details_tab",
   "enter_branch_section",
   "emp_branch",
+  "branch_name",
   "query_type",
   "risk",
   "column_break_mxvj",
@@ -602,15 +603,23 @@
   },
   {
    "fieldname": "emp_branch",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Branch",
-   "options": "Audit Level",
-   "reqd": 1,
-   "set_only_once": 1
-  },
+    "fieldtype": "Link",
+    "ignore_user_permissions": 1,
+    "in_list_view": 1,
+    "in_standard_filter": 1,
+    "label": "Branch",
+    "options": "Audit Level",
+    "reqd": 1,
+    "set_only_once": 1
+   },
+   {
+    "fieldname": "branch_name",
+    "fieldtype": "Data",
+    "hidden": 1,
+    "label": "Branch Name",
+    "read_only": 1,
+    "set_only_once": 1
+   },
   {
    "fieldname": "audit_attach_box",
    "fieldtype": "Attach",
