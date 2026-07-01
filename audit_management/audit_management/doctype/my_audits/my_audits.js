@@ -1811,6 +1811,7 @@ frappe.ui.form.on("My Audits", {
           frm.db
             .get_doc("Audit Level", frm.doc.emp_branch)
             .then((audit_level) => {
+              frm.set_value("branch_name", audit_level.branch_name || "");
               const mapping = {
                 bm: "stage_1_bm",
                 dh: "stage_2_dh",

@@ -71,6 +71,10 @@ class MyAudits(Document):
 
         audit_level = frappe.get_doc("Audit Level", self.emp_branch)
 
+        # 5.1 Set branch_name for naming (fallback if JS didn't set it)
+        if not self.branch_name:
+            self.branch_name = audit_level.branch_name
+
         # 6. Validate division
         if audit_level.division != self.emp_division:
             frappe.throw(_("Audit Level division mismatch: Expected {0}, found {1}.").format(
@@ -125,6 +129,7 @@ class MyAudits(Document):
         # Only populate if not already present
         if not self.audit_stages:
             audit_level = frappe.get_doc("Audit Level", self.emp_branch)
+
             self.set("audit_stages", [])
 
             for row in audit_level.audit_stages:
