@@ -214,7 +214,30 @@ frappe.ui.form.on("My Audits", {
     }
 
     // Timeline filtering is now handled server-side via get_filtered_docinfo override
-    // No client-side filtering needed
+    // But realtime docinfo_update pushes items directly - need client-side filter too
+    if (!frm.is_new() && !frappe.user_roles.includes("System Manager") && !frappe.user_roles.includes("Administrator")) {
+      const _orig_setup = frm.setup_docinfo_change_listener.bind(frm);
+      frm.setup_docinfo_change_listener = function () {
+        _orig_setup();
+        frappe.realtime.off("docinfo_update._audit_filter");
+        frappe.realtime.on("docinfo_update", ({ doc, key, action }) => {
+          if (!doc || !doc.owner) return;
+          let docinfo = frm.get_docinfo();
+          let excluded = (docinfo && docinfo._excluded_users) || [];
+          if (excluded.includes(doc.owner)) {
+            let doc_list = frappe.model.docinfo[frm.doctype] && frappe.model.docinfo[frm.doctype][frm.docname] && frappe.model.docinfo[frm.doctype][frm.docname][key];
+            if (doc_list) {
+              let idx = doc_list.findIndex(d => d.name === doc.name);
+              if (idx > -1) {
+                doc_list.splice(idx, 1);
+                frm.timeline && frm.timeline.refresh();
+              }
+            }
+          }
+        });
+      };
+      frm.setup_docinfo_change_listener();
+    }
   },
 
   // refresh: function(frm) {
