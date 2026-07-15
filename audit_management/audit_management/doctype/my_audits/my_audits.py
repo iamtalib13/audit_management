@@ -1426,6 +1426,11 @@ def _filter_docinfo(docinfo, doctype):
             if not should_exclude(item.get("sender"))
         ]
 
+    docinfo["_excluded_users"] = [
+        name for name in frappe.get_all("User", pluck="name")
+        if should_exclude(name)
+    ]
+
 
 @frappe.whitelist()
 def get_filtered_docinfo(doctype, name):
