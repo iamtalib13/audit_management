@@ -1229,6 +1229,10 @@ def check_pending_tat():
         if not doc.query_type or not doc.get("audit_stages"):
             continue
 
+        # If any stage has responded, stop auto-escalation (Audit Member will manually decide)
+        if any(row.status == "Responded" for row in doc.get("audit_stages")):
+            continue
+
         # Get TAT Configurations from Audit Query Type
         tat_config_doc = frappe.get_cached_doc(
             "Audit Query Type", doc.query_type)
