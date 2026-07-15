@@ -20,6 +20,9 @@ class MyAudits(Document):
         if self.status == "Closed":
             self.validate_resolution_fields()
         
+        # Prevent stage users from removing/deleting attachments
+        self.validate_attachment_removal()
+
         # Enforce mandatory fields for new records
         if self.is_new():
             for field in ["query_type", "primary_nature", "department_alignment"]:
@@ -291,6 +294,49 @@ class MyAudits(Document):
             {"prefix": "cfo", "stage": "9", "label": "CFO"},
             {"prefix": "ceo", "stage": "10", "label": "CEO"}
         ]
+
+    def validate_attachment_removal(self):
+        """Prevent stage users (non-audit-team) from removing/deleting attachments."""
+        if self.is_new():
+            return
+
+        # Skip validation for rollback and audit team operations
+        if getattr(self, 'flags', {}).get('skip_attachment_validation'):
+            return
+
+        user_roles = frappe.get_roles(frappe.session.user)
+        is_audit_team = "Audit Manager" in user_roles or "Audit Member" in user_roles
+        if is_audit_team:
+            return
+
+        # Get previous doc to compare
+        old_doc = self.get_doc_before_save()
+        if not old_doc:
+            return
+
+        # Check child table attachment fields
+        old_stages = {row.name: row for row in (old_doc.audit_stages or []) if row.name}
+        for row in self.audit_stages:
+            if row.name and row.name in old_stages:
+                old_row = old_stages[row.name]
+                if old_row.attachment and not row.attachment:
+                    frappe.throw(
+                        _("Stage users cannot remove attachments. Only Audit Members can delete attachments.")
+                    )
+
+        # Check legacy *_attach_box fields
+        attach_box_fields = [
+            "audit_attach_box", "bm_attach_box", "dh_attach_box", "com_attach_box",
+            "rm_attach_box", "rom_attach_box", "zm_attach_box", "zom_attach_box",
+            "gm_attach_box", "hr_attach_box", "coo_attach_box", "ceo_attach_box"
+        ]
+        for field in attach_box_fields:
+            old_val = old_doc.get(field)
+            new_val = self.get(field)
+            if old_val and not new_val:
+                frappe.throw(
+                    _("Stage users cannot remove attachments. Only Audit Members can delete attachments.")
+                )
 
     def validate_resolution_fields(self):
         """Mandatory fields for query resolution."""
@@ -1112,6 +1158,7 @@ def rollback_stage(docname, stagename, row_name=None):
     if found:
         # Use a status that indicates rollback to skip normal sync in before_save
         doc.query_status = f"Rollback: {stagename}"
+        doc.flags.skip_attachment_validation = True
         doc.save(ignore_permissions=True)
         return True
     return False

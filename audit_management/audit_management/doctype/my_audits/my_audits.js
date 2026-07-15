@@ -1647,6 +1647,35 @@ frappe.ui.form.on("My Audits", {
 
     frm.set_df_property("audit_stages", "read_only", 1);
 
+    // 2b. Make all *_attach_box fields read-only for stage users (prevent delete/remove)
+    if (!is_audit_team) {
+      const attach_fields = [
+        "audit_attach_box", "bm_attach_box", "dh_attach_box", "com_attach_box",
+        "rm_attach_box", "rom_attach_box", "zm_attach_box", "zom_attach_box",
+        "gm_attach_box", "hr_attach_box", "coo_attach_box", "ceo_attach_box"
+      ];
+      attach_fields.forEach((f) => {
+        frm.set_df_property(f, "read_only", 1);
+      });
+    }
+
+    // 2c. Hide Frappe sidebar attachment delete buttons for stage users
+    if (!is_audit_team) {
+      setTimeout(() => {
+        frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash").hide();
+        frm.page.sidebar.find(".attachment-row").each(function () {
+          $(this).find("a, button, span").last().hide();
+        });
+      }, 500);
+      // Also re-apply on sidebar mutation
+      const observer = new MutationObserver(() => {
+        frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash").hide();
+      });
+      if (frm.page.sidebar.length) {
+        observer.observe(frm.page.sidebar[0], { childList: true, subtree: true });
+      }
+    }
+
     // 3. Section Visibility
     if (is_audit_team) {
       frm.toggle_display("audit_items_section", true);
