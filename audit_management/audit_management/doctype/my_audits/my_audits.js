@@ -212,6 +212,9 @@ frappe.ui.form.on("My Audits", {
         }
       }, 1000);
     }
+
+    // Timeline filtering is now handled server-side via get_filtered_docinfo override
+    // No client-side filtering needed
   },
 
   // refresh: function(frm) {

@@ -149,9 +149,10 @@ scheduler_events = {
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "audit_management.event.get_events"
-# }
+override_whitelisted_methods = {
+	"frappe.desk.form.load.getdoc": "audit_management.audit_management.doctype.my_audits.my_audits.filtered_getdoc",
+	"frappe.desk.form.load.get_docinfo": "audit_management.audit_management.doctype.my_audits.my_audits.get_filtered_docinfo"
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,

@@ -1327,6 +1327,7 @@ def check_pending_tat():
                 doc.query_status = "Unresolved - Escalation Exhausted"
 
             doc.save(ignore_permissions=True)
+            
 import frappe
 from frappe.utils import getdate, nowdate, format_datetime
 import html
@@ -1381,3 +1382,64 @@ def get_status_tracker_html(docname):
     except Exception as e:
         frappe.log_error(f"Tracker Error: {str(e)}")
         return f"Error: {str(e)}"
+
+
+def _filter_docinfo(docinfo, doctype):
+    """Filter docinfo for My Audits - hide admin/system manager/system generate items from non-privileged users."""
+    if doctype != "My Audits":
+        return
+
+    current_user = frappe.session.user
+    current_user_roles = frappe.get_roles(current_user)
+    is_privileged = (
+        "System Manager" in current_user_roles
+        or current_user == "Administrator"
+    )
+
+    if is_privileged:
+        return
+
+    _sys_manager_users_cache = {}
+
+    def should_exclude(owner_name):
+        if not owner_name:
+            return False
+        if owner_name.lower() == "administrator":
+            return True
+        if owner_name.lower() in ("system generate", "system_generate"):
+            return True
+        if owner_name not in _sys_manager_users_cache:
+            _sys_manager_users_cache[owner_name] = "System Manager" in frappe.get_roles(owner_name)
+        return _sys_manager_users_cache[owner_name]
+
+    for key in ["version", "comments", "info_logs", "assignment_logs",
+                 "attachment_logs", "workflow_logs", "like_logs",
+                 "shared", "milestones", "view_logs"]:
+        docinfo[key] = [
+            item for item in (docinfo.get(key) or [])
+            if not should_exclude(item.get("owner"))
+        ]
+
+    for key in ["communications", "automated_messages"]:
+        docinfo[key] = [
+            item for item in (docinfo.get(key) or [])
+            if not should_exclude(item.get("sender"))
+        ]
+
+
+@frappe.whitelist()
+def get_filtered_docinfo(doctype, name):
+    from frappe.desk.form.load import get_docinfo as _get_docinfo
+    _get_docinfo(doctype=doctype, name=name)
+    docinfo = frappe.response.get("docinfo")
+    if docinfo:
+        _filter_docinfo(docinfo, doctype)
+
+
+@frappe.whitelist()
+def filtered_getdoc(doctype, name):
+    from frappe.desk.form.load import getdoc as _getdoc
+    _getdoc(doctype, name)
+    docinfo = frappe.response.get("docinfo")
+    if docinfo:
+        _filter_docinfo(docinfo, doctype)
