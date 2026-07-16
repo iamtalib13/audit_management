@@ -212,6 +212,28 @@ frappe.ui.form.on("My Audits", {
         }
       }, 1000);
     }
+
+    // Realtime filter: remove admin/system entries as they arrive
+    if (!frm.is_new() && !frappe.user_roles.includes("System Manager") && !frappe.user_roles.includes("Administrator")) {
+      if (!frm._audit_realtime_filter) {
+        frm._audit_realtime_filter = true;
+        frappe.realtime.on("docinfo_update", ({ doc, key, action }) => {
+          if (!doc || !doc.owner || action !== "add") return;
+          let docinfo = frm.get_docinfo();
+          let excluded = (docinfo && docinfo._excluded_users) || [];
+          if (excluded.includes(doc.owner)) {
+            let list = frappe.model.docinfo[frm.doctype] && frappe.model.docinfo[frm.doctype][frm.docname] && frappe.model.docinfo[frm.doctype][frm.docname][key];
+            if (list) {
+              let idx = list.findIndex(d => d.name === doc.name);
+              if (idx > -1) {
+                list.splice(idx, 1);
+                if (frm.timeline) frm.timeline.refresh();
+              }
+            }
+          }
+        });
+      }
+    }
   },
 
   // refresh: function(frm) {
@@ -1647,6 +1669,35 @@ frappe.ui.form.on("My Audits", {
 
     frm.set_df_property("audit_stages", "read_only", 1);
 
+    // 2b. Make all *_attach_box fields read-only for stage users (prevent delete/remove)
+    if (!is_audit_team) {
+      const attach_fields = [
+        "audit_attach_box", "bm_attach_box", "dh_attach_box", "com_attach_box",
+        "rm_attach_box", "rom_attach_box", "zm_attach_box", "zom_attach_box",
+        "gm_attach_box", "hr_attach_box", "coo_attach_box", "ceo_attach_box"
+      ];
+      attach_fields.forEach((f) => {
+        frm.set_df_property(f, "read_only", 1);
+      });
+    }
+
+    // 2c. Hide Frappe sidebar attachment delete buttons for stage users
+    if (!is_audit_team) {
+      setTimeout(() => {
+        frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash").hide();
+        frm.page.sidebar.find(".attachment-row").each(function () {
+          $(this).find("a, button, span").last().hide();
+        });
+      }, 500);
+      // Also re-apply on sidebar mutation
+      const observer = new MutationObserver(() => {
+        frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash").hide();
+      });
+      if (frm.page.sidebar.length) {
+        observer.observe(frm.page.sidebar[0], { childList: true, subtree: true });
+      }
+    }
+
     // 3. Section Visibility
     if (is_audit_team) {
       frm.toggle_display("audit_items_section", true);
@@ -2457,14 +2508,19 @@ function render_interactive_tracker(frm, can_edit) {
     console.log("-> Fetching TAT config for:", frm.doc.query_type);
     frappe.db.get_doc("Audit Query Type", frm.doc.query_type).then((qt) => {
       frm.tat_config = {};
+      frm.tat_config_blank = null;
       frm.default_tat = qt.default_tat_days || 0;
       if (qt.tat_config) {
         qt.tat_config.forEach((row) => {
-          frm.tat_config[row.stage] = row.tat_days;
+          if (row.stage) {
+            frm.tat_config[row.stage] = row.tat_days;
+          } else if (qt.query_type === "Audit Report Compliance") {
+            frm.tat_config_blank = row.tat_days;
+          }
         });
       }
       frm.tat_config_loaded = true;
-      console.log("-> TAT config loaded. Re-calling render_interactive_tracker.");
+      console.log("-> TAT config loaded.", JSON.stringify(frm.tat_config), "blank_tat:", frm.tat_config_blank, "default_tat:", frm.default_tat);
       render_interactive_tracker(frm, can_edit);
     });
     return;
@@ -2680,6 +2736,8 @@ function render_interactive_tracker(frm, can_edit) {
     let stage_tat = frm.default_tat || 0;
     if (frm.tat_config && frm.tat_config[row.stage_name]) {
       stage_tat = frm.tat_config[row.stage_name];
+    } else if (frm.tat_config_blank !== null && row.stage === "1") {
+      stage_tat = frm.tat_config_blank;
     }
 
     let base_tat_label = stage_tat === 1 ? "1 Day" : `${stage_tat} Days`;

@@ -18,11 +18,11 @@
    "in_list_view": 1,
    "label": "Stage",
    "options": "Audit Stage",
-   "reqd": 1
-  },
-  {
-   "default": "1",
-   "fieldname": "tat_days",
+   "reqd": 0
+   },
+   {
+    "default": "1",
+    "fieldname": "tat_days",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "TAT Days",

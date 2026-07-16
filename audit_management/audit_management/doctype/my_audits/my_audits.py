@@ -20,6 +20,9 @@ class MyAudits(Document):
         if self.status == "Closed":
             self.validate_resolution_fields()
         
+        # Prevent stage users from removing/deleting attachments
+        self.validate_attachment_removal()
+
         # Enforce mandatory fields for new records
         if self.is_new():
             for field in ["query_type", "primary_nature", "department_alignment"]:
@@ -291,6 +294,49 @@ class MyAudits(Document):
             {"prefix": "cfo", "stage": "9", "label": "CFO"},
             {"prefix": "ceo", "stage": "10", "label": "CEO"}
         ]
+
+    def validate_attachment_removal(self):
+        """Prevent stage users (non-audit-team) from removing/deleting attachments."""
+        if self.is_new():
+            return
+
+        # Skip validation for rollback and audit team operations
+        if getattr(self, 'flags', {}).get('skip_attachment_validation'):
+            return
+
+        user_roles = frappe.get_roles(frappe.session.user)
+        is_audit_team = "Audit Manager" in user_roles or "Audit Member" in user_roles
+        if is_audit_team:
+            return
+
+        # Get previous doc to compare
+        old_doc = self.get_doc_before_save()
+        if not old_doc:
+            return
+
+        # Check child table attachment fields
+        old_stages = {row.name: row for row in (old_doc.audit_stages or []) if row.name}
+        for row in self.audit_stages:
+            if row.name and row.name in old_stages:
+                old_row = old_stages[row.name]
+                if old_row.attachment and not row.attachment:
+                    frappe.throw(
+                        _("Stage users cannot remove attachments. Only Audit Members can delete attachments.")
+                    )
+
+        # Check legacy *_attach_box fields
+        attach_box_fields = [
+            "audit_attach_box", "bm_attach_box", "dh_attach_box", "com_attach_box",
+            "rm_attach_box", "rom_attach_box", "zm_attach_box", "zom_attach_box",
+            "gm_attach_box", "hr_attach_box", "coo_attach_box", "ceo_attach_box"
+        ]
+        for field in attach_box_fields:
+            old_val = old_doc.get(field)
+            new_val = self.get(field)
+            if old_val and not new_val:
+                frappe.throw(
+                    _("Stage users cannot remove attachments. Only Audit Members can delete attachments.")
+                )
 
     def validate_resolution_fields(self):
         """Mandatory fields for query resolution."""
@@ -1112,6 +1158,7 @@ def rollback_stage(docname, stagename, row_name=None):
     if found:
         # Use a status that indicates rollback to skip normal sync in before_save
         doc.query_status = f"Rollback: {stagename}"
+        doc.flags.skip_attachment_validation = True
         doc.save(ignore_permissions=True)
         return True
     return False
@@ -1229,11 +1276,21 @@ def check_pending_tat():
         if not doc.query_type or not doc.get("audit_stages"):
             continue
 
+        # If any stage has responded, stop auto-escalation (Audit Member will manually decide)
+        if any(row.status == "Responded" for row in doc.get("audit_stages")):
+            continue
+
         # Get TAT Configurations from Audit Query Type
         tat_config_doc = frappe.get_cached_doc(
             "Audit Query Type", doc.query_type)
-        tat_map = {
-            row.stage: row.tat_days for row in tat_config_doc.tat_config} if getattr(tat_config_doc, "tat_config", None) else {}
+        tat_map = {}
+        blank_stage_tat = None
+        if getattr(tat_config_doc, "tat_config", None):
+            for row in tat_config_doc.tat_config:
+                if row.stage:
+                    tat_map[row.stage] = row.tat_days
+                elif doc.query_type == "Audit Report Compliance":
+                    blank_stage_tat = row.tat_days
         default_tat = getattr(tat_config_doc, "default_tat_days", 1)
 
         # Find the current pending stage
@@ -1247,7 +1304,7 @@ def check_pending_tat():
             continue
 
         # Calculate days elapsed (using stage_name with underscore)
-        tat_days = tat_map.get(current_row.stage_name, default_tat)
+        tat_days = tat_map.get(current_row.stage_name, blank_stage_tat if blank_stage_tat is not None and current_row.stage == "1" else default_tat)
         elapsed_days = time_diff_in_hours(
             nowtime, current_row.pending_time) / 24.0
 
@@ -1276,6 +1333,7 @@ def check_pending_tat():
                 doc.query_status = "Unresolved - Escalation Exhausted"
 
             doc.save(ignore_permissions=True)
+            
 import frappe
 from frappe.utils import getdate, nowdate, format_datetime
 import html
@@ -1330,3 +1388,69 @@ def get_status_tracker_html(docname):
     except Exception as e:
         frappe.log_error(f"Tracker Error: {str(e)}")
         return f"Error: {str(e)}"
+
+
+def _filter_docinfo(docinfo, doctype):
+    """Filter docinfo for My Audits - hide admin/system manager/system generate items from non-privileged users."""
+    if doctype != "My Audits":
+        return
+
+    current_user = frappe.session.user
+    current_user_roles = frappe.get_roles(current_user)
+    is_privileged = (
+        "System Manager" in current_user_roles
+        or current_user == "Administrator"
+    )
+
+    if is_privileged:
+        return
+
+    _sys_manager_users_cache = {}
+
+    def should_exclude(owner_name):
+        if not owner_name:
+            return False
+        if owner_name.lower() == "administrator":
+            return True
+        if owner_name.lower() in ("system generate", "system_generate"):
+            return True
+        if owner_name not in _sys_manager_users_cache:
+            _sys_manager_users_cache[owner_name] = "System Manager" in frappe.get_roles(owner_name)
+        return _sys_manager_users_cache[owner_name]
+
+    for key in ["version", "comments", "info_logs", "assignment_logs",
+                 "attachment_logs", "workflow_logs", "like_logs",
+                 "shared", "milestones", "view_logs"]:
+        docinfo[key] = [
+            item for item in (docinfo.get(key) or [])
+            if not should_exclude(item.get("owner"))
+        ]
+
+    for key in ["communications", "automated_messages"]:
+        docinfo[key] = [
+            item for item in (docinfo.get(key) or [])
+            if not should_exclude(item.get("sender"))
+        ]
+
+    docinfo["_excluded_users"] = [
+        name for name in frappe.get_all("User", pluck="name")
+        if should_exclude(name)
+    ]
+
+
+@frappe.whitelist()
+def get_filtered_docinfo(doctype, name):
+    from frappe.desk.form.load import get_docinfo as _get_docinfo
+    _get_docinfo(doctype=doctype, name=name)
+    docinfo = frappe.response.get("docinfo")
+    if docinfo:
+        _filter_docinfo(docinfo, doctype)
+
+
+@frappe.whitelist()
+def filtered_getdoc(doctype, name):
+    from frappe.desk.form.load import getdoc as _getdoc
+    _getdoc(doctype, name)
+    docinfo = frappe.response.get("docinfo")
+    if docinfo:
+        _filter_docinfo(docinfo, doctype)
