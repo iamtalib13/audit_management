@@ -1283,8 +1283,14 @@ def check_pending_tat():
         # Get TAT Configurations from Audit Query Type
         tat_config_doc = frappe.get_cached_doc(
             "Audit Query Type", doc.query_type)
-        tat_map = {
-            row.stage: row.tat_days for row in tat_config_doc.tat_config} if getattr(tat_config_doc, "tat_config", None) else {}
+        tat_map = {}
+        blank_stage_tat = None
+        if getattr(tat_config_doc, "tat_config", None):
+            for row in tat_config_doc.tat_config:
+                if row.stage:
+                    tat_map[row.stage] = row.tat_days
+                elif doc.query_type == "Audit Report Compliance":
+                    blank_stage_tat = row.tat_days
         default_tat = getattr(tat_config_doc, "default_tat_days", 1)
 
         # Find the current pending stage
@@ -1298,7 +1304,7 @@ def check_pending_tat():
             continue
 
         # Calculate days elapsed (using stage_name with underscore)
-        tat_days = tat_map.get(current_row.stage_name, default_tat)
+        tat_days = tat_map.get(current_row.stage_name, blank_stage_tat if blank_stage_tat is not None and current_row.stage == "1" else default_tat)
         elapsed_days = time_diff_in_hours(
             nowtime, current_row.pending_time) / 24.0
 

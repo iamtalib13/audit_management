@@ -2508,14 +2508,19 @@ function render_interactive_tracker(frm, can_edit) {
     console.log("-> Fetching TAT config for:", frm.doc.query_type);
     frappe.db.get_doc("Audit Query Type", frm.doc.query_type).then((qt) => {
       frm.tat_config = {};
+      frm.tat_config_blank = null;
       frm.default_tat = qt.default_tat_days || 0;
       if (qt.tat_config) {
         qt.tat_config.forEach((row) => {
-          frm.tat_config[row.stage] = row.tat_days;
+          if (row.stage) {
+            frm.tat_config[row.stage] = row.tat_days;
+          } else if (qt.query_type === "Audit Report Compliance") {
+            frm.tat_config_blank = row.tat_days;
+          }
         });
       }
       frm.tat_config_loaded = true;
-      console.log("-> TAT config loaded. Re-calling render_interactive_tracker.");
+      console.log("-> TAT config loaded.", JSON.stringify(frm.tat_config), "blank_tat:", frm.tat_config_blank, "default_tat:", frm.default_tat);
       render_interactive_tracker(frm, can_edit);
     });
     return;
@@ -2731,6 +2736,8 @@ function render_interactive_tracker(frm, can_edit) {
     let stage_tat = frm.default_tat || 0;
     if (frm.tat_config && frm.tat_config[row.stage_name]) {
       stage_tat = frm.tat_config[row.stage_name];
+    } else if (frm.tat_config_blank !== null && row.stage === "1") {
+      stage_tat = frm.tat_config_blank;
     }
 
     let base_tat_label = stage_tat === 1 ? "1 Day" : `${stage_tat} Days`;
