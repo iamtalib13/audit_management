@@ -908,7 +908,7 @@ def get_permission_query_conditions(user=None):
     # =========================================================
     if "Audit Member" in roles and not is_audit_manager:
         return f"""
-            `tabMy Audits`.owner = '{user}'
+            `tabMy Audits`.`owner` = '{user}'
         """
 
     # =========================================================
@@ -925,9 +925,9 @@ def get_permission_query_conditions(user=None):
 
         sol_condition = f"""
             (
-                `tabMy Audits`.status != 'Draft'
+                `tabMy Audits`.`status` != 'Draft'
                 AND
-                `tabMy Audits`.emp_branch IN (
+                `tabMy Audits`.`emp_branch` IN (
                     SELECT name
                     FROM `tabAudit Level`
                     WHERE sahayog_branch IN ({sol_ids_sql})
@@ -941,7 +941,7 @@ def get_permission_query_conditions(user=None):
         EXISTS (
             SELECT name
             FROM `tabAudit Items`
-            WHERE parent = `tabMy Audits`.name
+            WHERE parent = `tabMy Audits`.`name`
             AND status = 'Pending'
             AND (
                 user_id = '{user}'
@@ -954,7 +954,7 @@ def get_permission_query_conditions(user=None):
         EXISTS (
             SELECT name
             FROM `tabAudit Items`
-            WHERE parent = `tabMy Audits`.name
+            WHERE parent = `tabMy Audits`.`name`
             AND status = 'Responded'
             AND (
                 user_id = '{user}'
@@ -967,7 +967,7 @@ def get_permission_query_conditions(user=None):
         EXISTS (
             SELECT name
             FROM `tabAudit Items`
-            WHERE parent = `tabMy Audits`.name
+            WHERE parent = `tabMy Audits`.`name`
             AND status = 'No Response'
             AND (
                 user_id = '{user}'
@@ -984,8 +984,8 @@ def get_permission_query_conditions(user=None):
 
             -- Draft only owner
             (
-                `tabMy Audits`.status = 'Draft'
-                AND `tabMy Audits`.owner = '{user}'
+                `tabMy Audits`.`status` = 'Draft'
+                AND `tabMy Audits`.`owner` = '{user}'
             )
 
             OR
@@ -999,7 +999,7 @@ def get_permission_query_conditions(user=None):
 
             -- Pending stage access
             (
-                `tabMy Audits`.status != 'Draft'
+                `tabMy Audits`.`status` != 'Draft'
                 AND (
                     {pending_condition}
                     OR
@@ -1013,7 +1013,7 @@ def get_permission_query_conditions(user=None):
 
             -- Owner access
             (
-                `tabMy Audits`.owner = '{user}'
+                `tabMy Audits`.`owner` = '{user}'
             )
 
         )

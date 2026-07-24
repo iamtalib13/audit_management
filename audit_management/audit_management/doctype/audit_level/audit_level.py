@@ -214,7 +214,7 @@ def get_permission_query_conditions(user=None):
 
     divisions_sql = ", ".join([frappe.db.escape(d) for d in allowed_divisions])
 
-    return f"`tabAudit Level`.division IN ({divisions_sql})"
+    return f"`tabAudit Level`.`division` IN ({divisions_sql})"
 
 
 def has_permission(doc, ptype, user=None):
