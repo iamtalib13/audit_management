@@ -429,6 +429,17 @@ def send_to_all_stages(docname):
     if not doc.get("audit_stages"):
         frappe.throw("No stages found to assign.")
 
+    # Pre-validate: Check all stage users have email before sending
+    missing_email_stages = []
+    for row in doc.get("audit_stages"):
+        if row.stage_name and not row.email:
+            missing_email_stages.append(row.stage_name)
+    if missing_email_stages:
+        frappe.throw(
+            _("Cannot send: Email address is missing for stage(s): <b>{0}</b>. "
+              "Please update emails in Audit Items table first.").format(", ".join(missing_email_stages))
+        )
+
     for row in doc.get("audit_stages"):
         if row.user_id:
             row.status = "Pending"
@@ -458,6 +469,13 @@ def send_to_next_stage(docname):
             break
 
     if next_row:
+        # Pre-validate: Check stage user has email
+        if not next_row.email:
+            frappe.throw(
+                _("Cannot send: Email address is missing for stage <b>{0}</b>. "
+                  "Please update email in Audit Items table first.").format(next_row.stage_name)
+            )
+
         next_row.status = "Pending"
         next_row.pending_time = now()
         doc.query_status = f"Pending From {next_row.stage_name}"
@@ -480,6 +498,10 @@ def send_stage_notification(doc, stage_row, action="assign"):
     """
     Sends dynamic notification using Email Template.
     action: "assign" (when query is sent to a stage) or "respond" (when a stage responds)
+    
+    Email fields:
+      - To: Primary recipient only (stage user for assign, query creator for respond)
+      - CC: CC members from Audit Management Settings only
     """
     settings = frappe.get_single("Audit Management Settings")
     template_name = settings.use_new_email_template
@@ -487,43 +509,49 @@ def send_stage_notification(doc, stage_row, action="assign"):
     if not template_name:
         return
 
-    # 1. Determine Recipients
-    recipients = []
+    # 1. Determine Recipients (To field - primary recipient ONLY)
+    to_email = None
     if action == "assign":
         if stage_row and stage_row.email:
-            recipients = [stage_row.email]
+            to_email = stage_row.email.strip().lower()
     else:
         # Response goes back to the person who created the query
         if doc.query_generated_by_mail:
-            recipients = [doc.query_generated_by_mail]
+            to_email = doc.query_generated_by_mail.strip().lower()
         else:
             # FALLBACK: If generator email field is empty, use doc owner's email
             owner_email = frappe.db.get_value("User", doc.owner, "email")
             if owner_email:
-                recipients = [owner_email]
+                to_email = owner_email.strip().lower()
 
-    if not recipients:
-        frappe.log_error(f"Audit Notification Failed: No recipients for {action} on {doc.name}", "Audit Management")
-        return
+    if not to_email:
+        stage_label = stage_row.stage_name if stage_row and hasattr(stage_row, 'stage_name') else "Unknown"
+        frappe.throw(
+            _("Cannot send email: No email address found for stage <b>{0}</b>. "
+              "Please update the email in Audit Items table before sending.").format(stage_label)
+        )
 
-    # 2. Collect CC Emails
+    recipients = [to_email]
+
+    # 2. Collect CC Emails (CC field - CC members ONLY, never mixed with To)
     cc_list = []
     static_cc = settings.query_cc_emails if action == "assign" else settings.response_cc_emails
 
     if static_cc:
         try:
-            # Try rendering as Jinja
             rendered_cc = frappe.render_template(static_cc, {"doc": doc})
-        except:
+        except Exception:
             rendered_cc = static_cc
-            
-        import re
-        # Split by comma, space, newline, or semicolon
-        emails = re.split(r'[,\s\n;]+', rendered_cc)
-        cc_list.extend([e.strip() for e in emails if e.strip() and "@" in e])
 
-    # De-duplicate and remove recipients from CC list
-    cc_list = list(set([e for e in cc_list if e and e not in recipients]))
+        import re
+        emails = re.split(r'[,\s\n;]+', rendered_cc)
+        for e in emails:
+            e = e.strip().lower()
+            if e and "@" in e and e != to_email:
+                cc_list.append(e)
+
+    # De-duplicate CC list
+    cc_list = list(set(cc_list))
 
     # 3. Render and Send
     try:
@@ -542,9 +570,9 @@ def send_stage_notification(doc, stage_row, action="assign"):
             message=email_data.get("message"),
             reference_doctype=doc.doctype,
             reference_name=doc.name,
+            expose_recipients="header",
             now=True
         )
-        # FORCE COMMIT: ensures email is sent immediately
         frappe.db.commit()
         
         frappe.msgprint(_("Email notification sent to {0}").format(", ".join(recipients)))
@@ -1183,6 +1211,17 @@ def raise_multi_request(docname, stagenames):
     selected_rows = []
     found_stagenames = []
 
+    # Pre-validate: Check all selected stage users have email before sending
+    missing_email_stages = []
+    for row in doc.get("audit_stages"):
+        if row.stage_name in stagenames and not row.email:
+            missing_email_stages.append(row.stage_name)
+    if missing_email_stages:
+        frappe.throw(
+            _("Cannot send: Email address is missing for stage(s): <b>{0}</b>. "
+              "Please update emails in Audit Items table first.").format(", ".join(missing_email_stages))
+        )
+
     for row in doc.get("audit_stages"):
         if row.stage_name in stagenames:
             row.status = "Pending"
@@ -1232,13 +1271,20 @@ def raise_request(docname, stagename):
 
     stage_found = False
     assigned_userid = None
+    target_email = None
 
     for row in doc.get("audit_stages"):
         if row.stage_name == stagename:
+            if not row.email:
+                frappe.throw(
+                    _("Cannot send: Email address is missing for stage <b>{0}</b>. "
+                      "Please update email in Audit Items table first.").format(stagename)
+                )
             row.status = "Pending"
             row.pending_time = frappe.utils.now()
             stage_found = True
             assigned_userid = row.user_id
+            target_email = row.email
         else:
             row.status = ""  # Clear others
 
