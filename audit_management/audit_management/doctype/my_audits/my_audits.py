@@ -1371,10 +1371,11 @@ def check_pending_tat():
                 # Fix: use stage_name (with underscore)
                 doc.query_status = f"Pending From {next_row.stage_name}"
 
-                # Notify next person
+                # Notify next person via custom email (uses stage email field, not user_id)
                 if next_row.user_id:
                     frappe.share.add(doc.doctype, doc.name,
-                                     next_row.user_id, read=1, write=1, notify=1)
+                                     next_row.user_id, read=1, write=1, notify=0)
+                send_stage_notification(doc, next_row, action="assign")
             else:
                 doc.query_status = "Unresolved - Escalation Exhausted"
 
