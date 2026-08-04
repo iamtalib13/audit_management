@@ -453,10 +453,6 @@ def send_stage_notification(doc, stage_row, action="assign"):
     """
     Sends dynamic notification using Email Template.
     action: "assign" (when query is sent to a stage) or "respond" (when a stage responds)
-    
-    Email fields:
-      - To: Primary recipient only (stage user for assign, query creator for respond)
-      - CC: CC members from Audit Management Settings only
     """
     settings = frappe.get_single("Audit Management Settings")
     template_name = settings.use_new_email_template
@@ -464,17 +460,22 @@ def send_stage_notification(doc, stage_row, action="assign"):
     if not template_name:
         return
 
-    # 1. Determine Recipients (To field - primary recipient ONLY)
+    # 1. Determine Primary Recipient (To)
     to_email = None
     if action == "assign":
-        if stage_row and stage_row.email:
+        # To: Always Stage 1 user (first stage) for entire case lifetime
+        if doc.audit_stages:
+            stage_1 = doc.audit_stages[0]
+            if stage_1.email:
+                to_email = stage_1.email.strip().lower()
+        # Fallback: if Stage 1 has no email, use current stage
+        if not to_email and stage_row and stage_row.email:
             to_email = stage_row.email.strip().lower()
     else:
-        # Response goes back to the person who created the query
+        # respond: send back to query creator
         if doc.query_generated_by_mail:
             to_email = doc.query_generated_by_mail.strip().lower()
         else:
-            # FALLBACK: If generator email field is empty, use doc owner's email
             owner_email = frappe.db.get_value("User", doc.owner, "email")
             if owner_email:
                 to_email = owner_email.strip().lower()
@@ -488,10 +489,25 @@ def send_stage_notification(doc, stage_row, action="assign"):
 
     recipients = [to_email]
 
-    # 2. Collect CC Emails (CC field - CC members ONLY, never mixed with To)
+    # 2. Collect CC Emails
     cc_list = []
-    static_cc = settings.query_cc_emails if action == "assign" else settings.response_cc_emails
 
+    if action == "assign":
+        # CC: All stage users who have been assigned (any status set), except Stage 1 (already in To)
+        for row in doc.audit_stages:
+            if row.email and row.status in ["Pending", "No Response", "Responded"]:
+                email = row.email.strip().lower()
+                if email and email != to_email and email not in cc_list:
+                    cc_list.append(email)
+
+        # Also ensure current stage_row is in CC (if not Stage 1 and not already added)
+        if stage_row and stage_row.email:
+            current_email = stage_row.email.strip().lower()
+            if current_email != to_email and current_email not in cc_list:
+                cc_list.append(current_email)
+
+    # Add Settings CC emails
+    static_cc = settings.query_cc_emails if action == "assign" else settings.response_cc_emails
     if static_cc:
         try:
             rendered_cc = frappe.render_template(static_cc, {"doc": doc})
@@ -502,7 +518,7 @@ def send_stage_notification(doc, stage_row, action="assign"):
         emails = re.split(r'[,\s\n;]+', rendered_cc)
         for e in emails:
             e = e.strip().lower()
-            if e and "@" in e and e != to_email:
+            if e and "@" in e and e != to_email and e not in cc_list:
                 cc_list.append(e)
 
     # De-duplicate CC list
