@@ -5,19 +5,20 @@
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
- "field_order": [
-  "stage",
-  "stage_name",
-  "employee",
-  "user_id",
-  "employee_name",
-  "email",
-  "status",
-  "response",
-  "attachment",
-  "pending_time",
-  "response_time"
- ],
+"field_order": [
+   "stage",
+   "stage_name",
+   "employee",
+   "user_id",
+   "employee_name",
+   "designation",
+   "email",
+   "status",
+   "response",
+   "attachment",
+   "pending_time",
+   "response_time"
+  ],
  "fields": [
   {
    "columns": 1,
@@ -54,21 +55,29 @@
    "label": "User ID",
    "read_only": 1
   },
-  {
-   "columns": 1,
-   "fetch_from": "employee.employee_name",
-   "fieldname": "employee_name",
-   "fieldtype": "Data",
-   "label": "Employee Name",
-   "read_only": 1
-  },
-  {
-   "columns": 2,
-   "fieldname": "email",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Email"
-  },
+{
+    "columns": 1,
+    "fetch_from": "employee.employee_name",
+    "fieldname": "employee_name",
+    "fieldtype": "Data",
+    "label": "Employee Name",
+    "read_only": 1
+   },
+   {
+    "columns": 1,
+    "fetch_from": "employee.designation",
+    "fieldname": "designation",
+    "fieldtype": "Data",
+    "label": "Designation",
+    "read_only": 1
+   },
+   {
+    "columns": 2,
+    "fieldname": "email",
+    "fieldtype": "Data",
+    "in_list_view": 1,
+    "label": "Email"
+   },
   {
    "fieldname": "attachment",
    "fieldtype": "Attach",

@@ -136,12 +136,17 @@ class MyAudits(Document):
             self.set("audit_stages", [])
 
             for row in audit_level.audit_stages:
+                designation = ""
+                if row.employee:
+                    designation = frappe.db.get_value("Employee", row.employee, "designation") or ""
+                
                 self.append("audit_stages", {
                     "stage": row.stage,
                     "stage_name": row.stage_name,
                     "employee": row.employee,
                     "user_id": row.user_id,
                     "employee_name": row.employee_name,
+                    "designation": designation,
                     "email": row.email,
                     "status": "" 
                 })
@@ -360,12 +365,17 @@ def populate_audit_stages(doc):
     doc.set("audit_stages", [])
 
     for row in audit_level.audit_stages:
+        designation = ""
+        if row.employee:
+            designation = frappe.db.get_value("Employee", row.employee, "designation") or ""
+        
         doc.append("audit_stages", {
             "stage": row.stage,
             "stage_name": row.stage_name,
             "employee": row.employee,
             "user_id": row.user_id,
             "employee_name": row.employee_name,
+            "designation": designation,
             "email": row.email,
             "status": ""
         })
