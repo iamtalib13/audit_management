@@ -470,6 +470,50 @@ def send_stage_notification(doc, stage_row, action="assign"):
     if not template_name:
         return
 
+    # 1. Determine GM stage index and target stage index
+    gm_idx = None
+    if doc.audit_stages:
+        for idx, r in enumerate(doc.audit_stages):
+            st_name = (r.stage_name or "").strip().upper()
+            if st_name == "GM" or st_name.startswith("GM "):
+                gm_idx = idx
+                break
+
+    target_idx = None
+    if stage_row and doc.audit_stages:
+        for idx, r in enumerate(doc.audit_stages):
+            if r.name == stage_row.name or (r.stage_name and r.stage_name == stage_row.stage_name):
+                target_idx = idx
+                break
+
+    # If action is 'assign' and target stage is GM or AFTER GM, skip email completely
+    if action == "assign" and target_idx is not None and gm_idx is not None and target_idx >= gm_idx:
+        return
+
+    # Check if target stage_row itself is GM or CXO level stage by name
+    if action == "assign" and stage_row and (stage_row.stage_name or "").strip().upper() in ["GM", "HR", "CHRO", "COO", "CEO"]:
+        return
+
+    # Fetch CXO level employee emails to exclude (checks 'cxo_level' & 'custom_cxo_level')
+    cxo_emails = set()
+    try:
+        col_name = "cxo_level" if frappe.db.has_column("Employee", "cxo_level") else ("custom_cxo_level" if frappe.db.has_column("Employee", "custom_cxo_level") else None)
+        if col_name:
+            emp_list = frappe.get_all("Employee", filters={col_name: 1}, fields=["user_id", "company_email", "prefered_email", "personal_email"])
+            for emp in emp_list:
+                for f in ["user_id", "company_email", "prefered_email", "personal_email"]:
+                    val = (emp.get(f) or "").strip().lower()
+                    if val and "@" in val:
+                        cxo_emails.add(val)
+    except Exception:
+        pass
+
+    # If target stage user is a CXO level employee, skip sending email completely
+    if action == "assign" and stage_row and stage_row.email:
+        target_email = stage_row.email.strip().lower()
+        if target_email in cxo_emails:
+            return
+
     # 1. Determine Primary Recipient (To)
     to_email = None
     if action == "assign":
@@ -490,33 +534,38 @@ def send_stage_notification(doc, stage_row, action="assign"):
             if owner_email:
                 to_email = owner_email.strip().lower()
 
-    if not to_email:
-        stage_label = stage_row.stage_name if stage_row and hasattr(stage_row, 'stage_name') else "Unknown"
-        frappe.throw(
-            _("Cannot send email: No email address found for stage <b>{0}</b>. "
-              "Please update the email in Audit Items table before sending.").format(stage_label)
-        )
+    if not to_email or to_email in cxo_emails:
+        if not to_email:
+            stage_label = stage_row.stage_name if stage_row and hasattr(stage_row, 'stage_name') else "Unknown"
+            frappe.throw(
+                _("Cannot send email: No email address found for stage <b>{0}</b>. "
+                  "Please update the email in Audit Items table before sending.").format(stage_label)
+            )
+        return  # Recipient is CXO, skip sending email
 
     recipients = [to_email]
 
-    # 2. Collect CC Emails
+    # 2. Collect CC Emails (excluding GM, stages after GM, and CXO level employees)
     cc_list = []
 
     if action == "assign":
-        # CC: All stage users who have been assigned (any status set), except Stage 1 (already in To)
-        for row in doc.audit_stages:
+        # CC: All stage users BEFORE GM stage who have been assigned
+        for idx, row in enumerate(doc.audit_stages):
+            if gm_idx is not None and idx >= gm_idx:
+                break  # Stop adding CC for GM stage and any stage after GM
             if row.email and row.status in ["Pending", "No Response", "Responded"]:
                 email = row.email.strip().lower()
-                if email and email != to_email and email not in cc_list:
+                if email and email != to_email and email not in cc_list and email not in cxo_emails:
                     cc_list.append(email)
 
-        # Also ensure current stage_row is in CC (if not Stage 1 and not already added)
+        # Ensure current stage_row is in CC ONLY if it is before GM and not CXO level
         if stage_row and stage_row.email:
-            current_email = stage_row.email.strip().lower()
-            if current_email != to_email and current_email not in cc_list:
-                cc_list.append(current_email)
+            if target_idx is None or gm_idx is None or target_idx < gm_idx:
+                current_email = stage_row.email.strip().lower()
+                if current_email != to_email and current_email not in cc_list and current_email not in cxo_emails:
+                    cc_list.append(current_email)
 
-    # Add Settings CC emails
+    # Add Settings CC emails (filtered for CXO)
     static_cc = settings.query_cc_emails if action == "assign" else settings.response_cc_emails
     if static_cc:
         try:
@@ -528,7 +577,7 @@ def send_stage_notification(doc, stage_row, action="assign"):
         emails = re.split(r'[,\s\n;]+', rendered_cc)
         for e in emails:
             e = e.strip().lower()
-            if e and "@" in e and e != to_email and e not in cc_list:
+            if e and "@" in e and e != to_email and e not in cc_list and e not in cxo_emails:
                 cc_list.append(e)
 
     # De-duplicate CC list
