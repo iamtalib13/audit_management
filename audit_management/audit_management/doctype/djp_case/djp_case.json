@@ -2,7 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
- "creation": "2026-08-08 15:22:43.309197",
+ "creation": "2026-08-14 11:32:48.319902",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -124,7 +124,7 @@
   {
    "fieldname": "section_break_cmg",
    "fieldtype": "Section Break",
-   "label": "CMG Mapping (Auto-populated)"
+   "label": "CMG Mapping"
   },
   {
    "fieldname": "cmg_code",
@@ -254,7 +254,7 @@
    "link_fieldname": "employee"
   }
  ],
- "modified": "2026-08-08 16:00:11.842279",
+ "modified": "2026-08-14 11:35:03.358843",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DJP Case",
