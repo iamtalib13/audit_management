@@ -1,0 +1,104 @@
+{
+  "actions": [],
+  "allow_import": 1,
+  "allow_rename": 1,
+  "creation": "2026-08-08 10:00:00.000000",
+  "custom": 0,
+  "default_view": "List",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "stage_name",
+    "dc_level",
+    "sequence",
+    "description",
+    "is_active"
+  ],
+  "fields": [
+    {
+      "fieldname": "stage_name",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Stage Name",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "dc_level",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "DC Level",
+      "options": "Zonal DC\nNational DC\nManagement Centre Core Committee",
+      "reqd": 1
+    },
+    {
+      "fieldname": "sequence",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "Sequence",
+      "reqd": 1
+    },
+    {
+      "fieldname": "description",
+      "fieldtype": "Small Text",
+      "label": "Description"
+    },
+    {
+      "default": "1",
+      "fieldname": "is_active",
+      "fieldtype": "Check",
+      "label": "Active"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "istable": 0,
+  "links": [],
+  "modified": "2026-08-08 10:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Audit Management",
+  "name": "DJP Stage",
+  "naming_rule": "By fieldname",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "select": 1,
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Audit Manager",
+      "select": 1,
+      "write": 1
+    },
+    {
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Audit Member",
+      "select": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "show_title_field_in_link": 1,
+  "sort_field": "sequence",
+  "sort_order": "ASC",
+  "states": [],
+  "title_field": "stage_name"
+}
