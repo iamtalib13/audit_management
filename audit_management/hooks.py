@@ -133,7 +133,6 @@ has_permission = {
 scheduler_events = {
     "daily": [
         "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat",
-        # "audit_management.audit_management.doctype.my_audits.my_audits.send_daily_reminders"
     ],
     "cron": {
         "* * * * *": [
@@ -231,4 +230,13 @@ fixtures = [
         ],
     },
 
+    # DJP Case DocTypes
+    {"dt": "DocType", "filters": [["name", "in", [
+        "CMG Grid",
+        "Disciplinary Committee",
+        "DJP Stage",
+        "DJP Case Stage",
+        "DJP Case",
+        "DJP Stage Assignment"
+    ]]]},
 ]
