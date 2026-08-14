@@ -2,7 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
- "creation": "2026-08-14 11:32:48.319902",
+ "creation": "2026-08-14 12:19:39.876243",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -95,7 +95,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Departmental & Product Alignment",
-   "options": "Department"
+   "options": "Audit Department"
   },
   {
    "fieldname": "misconduct_type",
@@ -194,7 +194,8 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Draft\nUnder Review\nEscalated\nClosed\nCessation"
+   "options": "Draft\nUnder Review\nEscalated\nClosed\nCessation",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_3",
@@ -254,7 +255,7 @@
    "link_fieldname": "employee"
   }
  ],
- "modified": "2026-08-14 11:35:03.358843",
+ "modified": "2026-08-14 12:23:51.355216",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DJP Case",
