@@ -5,20 +5,49 @@ from datetime import datetime
 
 
 @frappe.whitelist()
+def get_cmg_options(misconduct_type=None, severity=None):
+    """Fetch allowed severity and occurrence options from CMG Grid in Audit Management Settings"""
+    settings = frappe.get_single("Audit Management Settings")
+    grid = settings.get("cmg_grid", [])
+
+    severities = set()
+    occurrences = set()
+
+    for row in grid:
+        is_active = getattr(row, "is_active", 1)
+        if is_active in [0, False]:
+            continue
+
+        if misconduct_type and row.misconduct_type == misconduct_type:
+            if row.severity:
+                severities.add(row.severity)
+            if severity and row.severity == severity:
+                if row.occurrence:
+                    occurrences.add(row.occurrence)
+
+    return {
+        "severities": sorted(list(severities)),
+        "occurrences": sorted(list(occurrences))
+    }
+
+
+@frappe.whitelist()
 def get_cmg_mapping(misconduct_type, severity, occurrence):
     """Fetch CMG mapping from Audit Management Settings"""
     settings = frappe.get_single("Audit Management Settings")
-    
+
     for row in settings.get("cmg_grid", []):
-        if (row.misconduct_type == misconduct_type and 
-            row.severity == severity and 
-            row.occurrence == occurrence and
-            row.is_active):
-            return {
-                "cmg_code": row.cmg_code,
-                "cmg_recommended_outcome": row.cmg_recommended_outcome
-            }
-    
+        is_active = getattr(row, "is_active", 1)
+        if is_active in [0, False]:
+            continue
+
+        if row.misconduct_type == misconduct_type and row.severity == severity:
+            if row.occurrence == occurrence or row.occurrence == "Any" or occurrence == "Any":
+                return {
+                    "cmg_code": row.cmg_code,
+                    "cmg_recommended_outcome": row.cmg_recommended_outcome
+                }
+
     return None
 
 
