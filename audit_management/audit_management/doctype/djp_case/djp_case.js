@@ -176,6 +176,36 @@ frappe.ui.form.on('DJP Case', {
                     frm.refresh_field('cmg_code');
                     frm.refresh_field('cmg_recommended_outcome');
                     frm.events.set_tat_deadline(frm);
+
+                    // Auto-populate DJP Case stages based on BRD rules if local form
+                    if (frm.doc.__islocal) {
+                        frm.events.auto_populate_stage_rows(frm);
+                    }
+                }
+            }
+        });
+    },
+
+    // Auto-populates stage rows into the child table based on BRD escalation and branch assignment
+    auto_populate_stage_rows: function(frm) {
+        if (!frm.doc.cmg_code) return;
+
+        frappe.call({
+            method: 'audit_management.audit_management.doctype.djp_case.djp_case.fetch_auto_djp_stages',
+            args: {
+                cmg_code: frm.doc.cmg_code,
+                emp_branch: frm.doc.emp_branch,
+                created_on: frm.doc.created_on,
+                accused_employee: frm.doc.employee
+            },
+            callback: function(r) {
+                if (r.message && Array.isArray(r.message)) {
+                    frm.clear_table('djp_case_stages');
+                    r.message.forEach(row => {
+                        let child = frm.add_child('djp_case_stages');
+                        Object.assign(child, row);
+                    });
+                    frm.refresh_field('djp_case_stages');
                 }
             }
         });
