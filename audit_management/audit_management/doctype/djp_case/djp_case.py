@@ -60,6 +60,73 @@ def get_cmg_mapping(misconduct_type, severity, occurrence):
     return None
 
 
+# Calculates and returns DJP Stage rows for auto-population based on CMG Code and Branch
+@frappe.whitelist()
+def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_employee=None):
+    """Return DJP stage rows for UI auto-population"""
+    if not cmg_code:
+        return []
+
+    dc_levels = get_dc_levels_for_cmg(cmg_code)
+    settings = frappe.get_single("Audit Management Settings")
+    dc_structure = settings.get("disciplinary_committee", [])
+
+    base_time = getdate(created_on) if created_on else getdate(now_datetime())
+    total_tat = get_total_tat_for_cmg(cmg_code)
+    total_stages = len(dc_levels)
+
+    stage_rows = []
+    stage_sequence = 1
+
+    for dc_level in dc_levels:
+        committee = next((c for c in dc_structure if c.dc_level == dc_level and getattr(c, 'is_active', 1)), None)
+
+        stage_doc = frappe.db.get_value("DJP Stage",
+            {"dc_level": dc_level, "is_active": 1},
+            ["name"], order_by="sequence asc")
+
+        employee = get_committee_employee(dc_level, emp_branch, committee, accused_employee=accused_employee) if (committee and emp_branch) else None
+
+        if total_stages == 1:
+            stage_days = total_tat
+        elif stage_sequence == 1:
+            stage_days = max(1, int(total_tat * 0.4))
+        else:
+            rem_days = total_tat - max(1, int(total_tat * 0.4))
+            stage_days = max(1, int(rem_days / (total_stages - 1)))
+
+        tat_deadline = str(add_days(base_time, stage_days))
+
+        stage_rows.append({
+            "stage": stage_sequence,
+            "stage_name": stage_doc or dc_level,
+            "dc_level": dc_level,
+            "employee": employee.name if employee else "",
+            "user_id": employee.user_id if employee else "",
+            "employee_name": employee.employee_name if employee else "",
+            "designation": employee.designation if employee else "",
+            "email": (employee.company_email or employee.prefered_email) if employee else "",
+            "status": "Pending",
+            "tat_deadline": tat_deadline
+        })
+        stage_sequence += 1
+
+    return stage_rows
+
+
+def get_total_tat_for_cmg(cmg_code):
+    """Return max TAT days based on BRD rules"""
+    tat_map = {
+        "C0": 7,
+        "C1": 7,
+        "C2": 15,
+        "C3": 15,
+        "C4": 15,
+        "C5": 45
+    }
+    return tat_map.get(cmg_code, 15)
+
+
 @frappe.whitelist()
 def populate_djp_stages(docname, cmg_code, emp_branch):
     """Populate DJP Case stages based on CMG Code and branch"""
@@ -130,20 +197,26 @@ def get_dc_levels_for_cmg(cmg_code):
     return ["Zonal DC"]
 
 
-def get_committee_employee(dc_level, emp_branch, committee):
-    """Get employee for committee level and branch"""
+def get_committee_employee(dc_level, emp_branch, committee, accused_employee=None):
+    """Get employee for committee level and branch, excluding accused employee"""
     roles = [r.strip() for r in committee.member_roles.split(",")] if hasattr(committee, 'member_roles') and committee.member_roles else []
 
+    base_filters = {"branch": emp_branch, "status": "Active"}
+    if accused_employee:
+        base_filters["name"] = ["!=", accused_employee]
+
     for role in roles:
+        role_filters = {**base_filters, "designation": ["like", f"%{role}%"]}
         employees = frappe.get_all("Employee",
-            filters={"branch": emp_branch, "status": "Active", "designation": ["like", f"%{role}%"]},
+            filters=role_filters,
             fields=["name", "employee_name", "designation", "user_id", "company_email", "prefered_email"],
             limit=1)
         if employees:
             return employees[0]
 
+    fallback_filters = {**base_filters, "user_id": ["!=", ""]}
     employees = frappe.get_all("Employee",
-        filters={"branch": emp_branch, "status": "Active", "user_id": ["!=", ""]},
+        filters=fallback_filters,
         fields=["name", "employee_name", "designation", "user_id", "company_email", "prefered_email"],
         limit=1)
     return employees[0] if employees else None
