@@ -25,11 +25,17 @@ frappe.ui.form.on('DJP Case', {
 
         // Add attractive standalone action buttons with icons
         if (!frm.doc.__islocal && frm.doc.status !== 'Closed' && frm.doc.status !== 'Cessation') {
-            const is_admin_or_manager = frappe.user.has_role('System Manager') ||
-                                      frappe.user.has_role('Administrator') ||
-                                      frappe.user.has_role('Audit Manager') ||
-                                      frappe.session.user === 'Administrator';
+            const is_admin = frappe.user.has_role('System Manager') ||
+                             frappe.user.has_role('Administrator') ||
+                             frappe.session.user === 'Administrator';
 
+            const is_admin_or_manager = is_admin || frappe.user.has_role('Audit Manager');
+
+            const is_creator_or_audit = is_admin_or_manager ||
+                                         frappe.user.has_role('Audit Member') ||
+                                         frappe.session.user === frm.doc.owner;
+
+            // 1. Populate Stages (Admin / Audit Manager only)
             if (is_admin_or_manager) {
                 let b1 = frm.add_custom_button(__('Populate Stages'), function() {
                     frm.events.populate_stages(frm);
@@ -38,23 +44,35 @@ frappe.ui.form.on('DJP Case', {
                 b1.prepend('<i class="fa fa-sitemap mr-1"></i> ');
             }
 
-            let b2 = frm.add_custom_button(__('Send to Reviewer'), function() {
-                frm.events.send_to_current_stage(frm);
-            });
-            b2.addClass('djp-btn-send').find('i, svg').remove();
-            b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
+            // 2. Send to Reviewer (Case Creator & Audit Team)
+            if (is_creator_or_audit) {
+                let b2 = frm.add_custom_button(__('Send to Reviewer'), function() {
+                    frm.events.send_to_current_stage(frm);
+                });
+                b2.addClass('djp-btn-send').find('i, svg').remove();
+                b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
+            }
 
-            let b3 = frm.add_custom_button(__('Submit Response'), function() {
-                frm.events.submit_stage_response(frm);
-            });
-            b3.addClass('btn-primary').find('i, svg').remove();
-            b3.prepend('<i class="fa fa-reply mr-1"></i> ');
+            // 3. Submit Response (Stage Reviewer & Admin - visible before & after response)
+            const is_assigned_stage_reviewer = frm.doc.djp_case_stages && frm.doc.djp_case_stages.some(s => s.user_id === frappe.session.user);
+            const is_stage_reviewer = is_assigned_stage_reviewer || is_admin;
 
-            let b4 = frm.add_custom_button(__('Close Case'), function() {
-                frm.events.close_case(frm);
-            });
-            b4.addClass('djp-btn-close').find('i, svg').remove();
-            b4.prepend('<i class="fa fa-check-circle mr-1"></i> ');
+            if (is_stage_reviewer) {
+                let b3 = frm.add_custom_button(__('Submit Response'), function() {
+                    frm.events.submit_stage_response(frm);
+                });
+                b3.addClass('btn-primary').find('i, svg').remove();
+                b3.prepend('<i class="fa fa-reply mr-1"></i> ');
+            }
+
+            // 4. Close Case (Case Creator & Audit Team)
+            if (is_creator_or_audit) {
+                let b4 = frm.add_custom_button(__('Close Case'), function() {
+                    frm.events.close_case(frm);
+                });
+                b4.addClass('djp-btn-close').find('i, svg').remove();
+                b4.prepend('<i class="fa fa-check-circle mr-1"></i> ');
+            }
         }
 
         // Highlight TAT breach
