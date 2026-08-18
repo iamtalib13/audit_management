@@ -92,7 +92,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nNo Response\nResponded\nSkipped\nEscalated"
+   "options": "Pending\nSent\nNo Response\nResponded\nSkipped\nEscalated"
   },
   {
    "fieldname": "response",
