@@ -234,7 +234,7 @@ def get_stage_tat(cmg_code, stage_num, total_stages):
 
 @frappe.whitelist()
 def send_to_current_stage(docname):
-    """Send notification to current stage reviewer"""
+    """Send notification to current stage reviewer and update stage status"""
     doc = frappe.get_doc("DJP Case", docname)
 
     if doc.current_stage > len(doc.djp_case_stages):
@@ -242,8 +242,13 @@ def send_to_current_stage(docname):
 
     current_stage_row = doc.djp_case_stages[doc.current_stage - 1]
 
-    if current_stage_row.status != "Pending":
-        frappe.throw(_("Current stage is not in Pending status"))
+    if current_stage_row.status not in ["Pending", "Draft"]:
+        frappe.throw(_("Current stage is already sent or processed"))
+
+    current_stage_row.status = "Sent"
+    current_stage_row.pending_time = now_datetime()
+    doc.status = "Under Review"
+    doc.save()
 
     send_stage_notification(doc, current_stage_row, "assign")
 
