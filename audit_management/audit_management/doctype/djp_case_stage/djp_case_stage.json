@@ -88,11 +88,13 @@
    "label": "Email"
   },
   {
+   "default": "Not Sent",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nSent\nNo Response\nResponded\nSkipped\nEscalated"
+   "options": "Not Sent\nPending\nResponded\nNo Responded\nOverdue\nSkipped",
+   "read_only": 1
   },
   {
    "fieldname": "response",
