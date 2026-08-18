@@ -132,11 +132,11 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
     """Populate DJP Case stages based on CMG Code and branch"""
     doc = frappe.get_doc("DJP Case", docname)
 
-    if doc.djp_case_stages:
-        frappe.throw(_("Stages already populated"))
-
     if not cmg_code:
         frappe.throw(_("CMG Code is required to populate stages"))
+
+    # Clear existing stages to allow re-populating/editing
+    doc.set("djp_case_stages", [])
 
     dc_levels = get_dc_levels_for_cmg(cmg_code)
 
