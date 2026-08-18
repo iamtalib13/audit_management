@@ -36,12 +36,6 @@ frappe.ui.form.on('DJP Case', {
             b2.addClass('djp-btn-send').find('i, svg').remove();
             b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
 
-            let b3 = frm.add_custom_button(__('Escalate Case'), function() {
-                frm.events.escalate_case(frm);
-            });
-            b3.addClass('djp-btn-escalate').find('i, svg').remove();
-            b3.prepend('<i class="fa fa-exclamation-triangle mr-1"></i> ');
-
             let b4 = frm.add_custom_button(__('Close Case'), function() {
                 frm.events.close_case(frm);
             });
@@ -381,33 +375,43 @@ frappe.ui.form.on('DJP Case', {
 
         if (!$('#djp-tracker-style').length) {
             $('<style id="djp-tracker-style">\
-                .djp-stage-tracker-container { margin-top: 8px; margin-bottom: 12px; padding: 8px 14px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); position: relative; overflow: visible !important; }\
-                .djp-tracker-header { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }\
-                .djp-tracker-flow { display: flex; align-items: center; width: 100%; overflow: visible !important; padding: 4px 0; }\
-                .djp-tracker-step { display: flex; align-items: center; position: relative; flex: 1; min-width: 140px; overflow: visible !important; }\
-                .djp-step-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; transition: all 0.2s ease; position: relative; cursor: pointer; }\
-                .djp-step-pill:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.08); }\
-                .djp-pill-active { background: #eff6ff !important; color: #1d4ed8 !important; border-color: #3b82f6 !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important; }\
-                .djp-pill-responded { background: #f0fdf4 !important; color: #15803d !important; border-color: #4ade80 !important; }\
-                .djp-pill-escalated { background: #fffbeb !important; color: #b45309 !important; border-color: #fcd34d !important; }\
+                .djp-stage-tracker-container { margin-top: 32px; margin-bottom: 12px; padding: 10px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); position: relative; overflow: visible !important; }\
+                .djp-tracker-header { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }\
+                .djp-tracker-flow { display: flex; align-items: flex-start; justify-content: flex-start !important; width: 100%; overflow: visible !important; padding: 4px 0; }\
+                .djp-tracker-step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 0 0 auto !important; min-width: 145px; max-width: 220px; overflow: visible !important; margin-right: 12px; }\
+                .djp-step-top-row { display: flex; align-items: center; width: 100%; position: relative; }\
+                .djp-step-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; transition: all 0.2s ease; position: relative; cursor: pointer; white-space: nowrap; }\
+                .djp-step-pill:hover { transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.08); }\
+                .djp-pill-active { background: #dbeafe !important; color: #1d4ed8 !important; border-color: #3b82f6 !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important; }\
+                .djp-pill-responded { background: #dcfce7 !important; color: #15803d !important; border-color: #22c55e !important; }\
+                .djp-pill-overdue { background: #fee2e2 !important; color: #b91c1c !important; border-color: #ef4444 !important; }\
+                .djp-pill-escalated { background: #fef3c7 !important; color: #b45309 !important; border-color: #f59e0b !important; }\
                 .djp-pill-skipped { background: #f8fafc !important; color: #94a3b8 !important; border-color: #e2e8f0 !important; }\
                 .djp-step-num { width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.08); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }\
                 .djp-pill-active .djp-step-num { background: #2563eb; color: #ffffff; }\
                 .djp-pill-responded .djp-step-num { background: #16a34a; color: #ffffff; }\
+                .djp-pill-overdue .djp-step-num { background: #dc2626; color: #ffffff; }\
                 .djp-pill-escalated .djp-step-num { background: #d97706; color: #ffffff; }\
                 .djp-step-connector { flex: 1; height: 2px; background: #e2e8f0; margin: 0 8px; }\
-                .djp-conn-completed { background: #16a34a; }\
-                .djp-conn-escalated { background: #d97706; }\
-                .djp-step-pill .djp-tooltip {\
-                    visibility: hidden; opacity: 0; position: absolute; top: 130%; left: 50%; transform: translateX(-50%);\
+                .djp-conn-completed { background: #22c55e; }\
+                .djp-conn-escalated { background: #f59e0b; }\
+                .djp-step-status-subtext { margin-top: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; text-align: center; white-space: nowrap; }\
+                .djp-status-pending { color: #64748b; }\
+                .djp-status-active { color: #2563eb; }\
+                .djp-status-responded { color: #16a34a; }\
+                .djp-status-overdue { color: #dc2626; }\
+                .djp-status-escalated { color: #d97706; }\
+                .djp-status-skipped { color: #94a3b8; }\
+                .djp-pill-wrapper .djp-tooltip {\
+                    visibility: hidden; opacity: 0; position: absolute; bottom: 125%; top: auto; left: 50%; transform: translateX(-50%); margin-bottom: 6px;\
                     background-color: #0f172a; color: #ffffff; text-align: left; padding: 8px 12px; border-radius: 8px;\
-                    font-size: 11px; font-weight: 400; line-height: 1.5; white-space: nowrap; z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);\
+                    font-size: 11px; font-weight: 400; line-height: 1.5; white-space: nowrap; z-index: 999999 !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);\
                     transition: opacity 0.2s ease, visibility 0.2s ease; pointer-events: none;\
                 }\
-                .djp-step-pill .djp-tooltip::after {\
-                    content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: transparent transparent #0f172a transparent;\
+                .djp-pill-wrapper .djp-tooltip::after {\
+                    content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #0f172a transparent transparent transparent;\
                 }\
-                .djp-step-pill:hover .djp-tooltip { visibility: visible; opacity: 1; }\
+                .djp-pill-wrapper:hover .djp-tooltip, .djp-step-pill:hover .djp-tooltip { visibility: visible !important; opacity: 1 !important; }\
             </style>').appendTo('head');
         }
 
@@ -417,7 +421,7 @@ frappe.ui.form.on('DJP Case', {
         let html = '<div class="djp-stage-tracker-container">';
         html += '<div class="djp-tracker-header">';
         html += '<span><i class="fa fa-tasks mr-1"></i> Stage Tracker</span>';
-        html += `<span class="badge badge-info" style="font-size: 10px; font-weight: 600;">Current: ${frm.doc.current_dc_level || 'Stage ' + current_stage}</span>`;
+        html += `<span class="badge badge-info" style="font-size: 10px; font-weight: 600;">Current Stage: ${frm.doc.current_dc_level || 'Stage ' + current_stage}</span>`;
         html += '</div>';
 
         html += '<div class="djp-tracker-flow">';
@@ -426,24 +430,49 @@ frappe.ui.form.on('DJP Case', {
             const isLast = idx === stages.length - 1;
             const isCurrent = (stg.stage === current_stage) && frm.doc.status !== 'Closed' && frm.doc.status !== 'Cessation';
             
+            let isOverdue = false;
+            if (stg.tat_deadline && (stg.status === 'Pending' || stg.status === 'Sent')) {
+                const deadline = frappe.datetime.str_to_obj(stg.tat_deadline);
+                if (deadline < new Date()) {
+                    isOverdue = true;
+                }
+            }
+
             let pillClass = '';
             let connClass = '';
+            let statusText = stg.status || 'Pending';
+            let statusTextClass = 'djp-status-pending';
 
             if (stg.status === 'Responded') {
                 pillClass = 'djp-pill-responded';
                 connClass = 'djp-conn-completed';
+                statusText = '✓ Responded';
+                statusTextClass = 'djp-status-responded';
             } else if (stg.status === 'Escalated') {
                 pillClass = 'djp-pill-escalated';
                 connClass = 'djp-conn-escalated';
-            } else if (isCurrent) {
+                statusText = '↑ Escalated';
+                statusTextClass = 'djp-status-escalated';
+            } else if (isOverdue) {
+                pillClass = 'djp-pill-overdue';
+                statusText = '⚠ Overdue / No Response';
+                statusTextClass = 'djp-status-overdue';
+            } else if (stg.status === 'Sent' || isCurrent) {
                 pillClass = 'djp-pill-active';
+                statusText = '⚡ Sent (Under Review)';
+                statusTextClass = 'djp-status-active';
             } else if (stg.status === 'Skipped') {
                 pillClass = 'djp-pill-skipped';
+                statusText = 'Skipped';
+                statusTextClass = 'djp-status-skipped';
+            } else {
+                statusText = 'Pending (Not Sent)';
             }
 
             let iconHtml = stg.stage;
             if (stg.status === 'Responded') iconHtml = '<i class="fa fa-check" style="font-size:9px;"></i>';
             else if (stg.status === 'Escalated') iconHtml = '<i class="fa fa-arrow-up" style="font-size:9px;"></i>';
+            else if (isOverdue) iconHtml = '<i class="fa fa-exclamation" style="font-size:9px;"></i>';
 
             let empName = stg.employee_name || stg.employee || 'Unassigned';
             let empDesig = stg.designation ? ` (${stg.designation})` : '';
@@ -464,11 +493,14 @@ frappe.ui.form.on('DJP Case', {
             }
 
             html += '<div class="djp-tracker-step">';
+            
+            // Pill Wrapper (Pill + Status directly below)
+            html += '<div class="djp-pill-wrapper" style="display: flex; flex-direction: column; align-items: center; position: relative;">';
             html += `<div class="djp-step-pill ${pillClass}">`;
             html += `<span class="djp-step-num">${iconHtml}</span>`;
             html += `<span>${stg.dc_level || stg.stage_name}</span>`;
             
-            // Hover Tooltip (Positioned Below)
+            // Hover Tooltip
             html += `<div class="djp-tooltip">`;
             html += `<div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">${stg.dc_level || stg.stage_name}</div>`;
             html += `<div><strong>Assigned To:</strong> ${empName}${empDesig}</div>`;
@@ -479,8 +511,12 @@ frappe.ui.form.on('DJP Case', {
 
             html += `</div>`; // .djp-step-pill
 
+            // Subtext directly under card
+            html += `<div class="djp-step-status-subtext ${statusTextClass}">${statusText}</div>`;
+            html += '</div>'; // .djp-pill-wrapper
+
             if (!isLast) {
-                html += `<div class="djp-step-connector ${connClass}"></div>`;
+                html += `<div class="djp-step-connector ${connClass}" style="margin-top: 14px;"></div>`;
             }
             html += '</div>'; // .djp-tracker-step
         });
