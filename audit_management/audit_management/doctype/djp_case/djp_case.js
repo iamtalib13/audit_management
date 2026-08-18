@@ -25,11 +25,18 @@ frappe.ui.form.on('DJP Case', {
 
         // Add attractive standalone action buttons with icons
         if (!frm.doc.__islocal && frm.doc.status !== 'Closed' && frm.doc.status !== 'Cessation') {
-            let b1 = frm.add_custom_button(__('Populate Stages'), function() {
-                frm.events.populate_stages(frm);
-            });
-            b1.addClass('djp-btn-populate').find('i, svg').remove();
-            b1.prepend('<i class="fa fa-sitemap mr-1"></i> ');
+            const is_admin_or_manager = frappe.user.has_role('System Manager') ||
+                                      frappe.user.has_role('Administrator') ||
+                                      frappe.user.has_role('Audit Manager') ||
+                                      frappe.session.user === 'Administrator';
+
+            if (is_admin_or_manager) {
+                let b1 = frm.add_custom_button(__('Populate Stages'), function() {
+                    frm.events.populate_stages(frm);
+                });
+                b1.addClass('djp-btn-populate').find('i, svg').remove();
+                b1.prepend('<i class="fa fa-sitemap mr-1"></i> ');
+            }
 
             let b2 = frm.add_custom_button(__('Send to Reviewer'), function() {
                 frm.events.send_to_current_stage(frm);
