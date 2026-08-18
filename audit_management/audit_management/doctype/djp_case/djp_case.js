@@ -8,7 +8,7 @@ frappe.ui.form.on('DJP Case', {
             frm.events.update_severity_options(frm);
         }
 
-        // Inject attractive custom styling for DJP Action buttons
+        // Inject attractive custom styling for DJP Action buttons and hide Connections section
         if (!$('#djp-case-custom-css').length) {
             $('<style id="djp-case-custom-css">\
                 .djp-btn-populate { background-color: #4f46e5 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
@@ -19,6 +19,7 @@ frappe.ui.form.on('DJP Case', {
                 .djp-btn-escalate:hover { background-color: #b45309 !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.3) !important; color: #ffffff !important; }\
                 .djp-btn-close { background-color: #16a34a !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
                 .djp-btn-close:hover { background-color: #15803d !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3) !important; color: #ffffff !important; }\
+                [data-doctype="DJP Case"] .form-links, [data-doctype="DJP Case"] .form-documents, [data-doctype="DJP Case"] .form-dashboard-section { display: none !important; }\
             </style>').appendTo('head');
         }
 
@@ -375,7 +376,7 @@ frappe.ui.form.on('DJP Case', {
 
         if (!$('#djp-tracker-style').length) {
             $('<style id="djp-tracker-style">\
-                .djp-stage-tracker-container { margin-top: 32px; margin-bottom: 12px; padding: 10px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); position: relative; overflow: visible !important; }\
+                .djp-stage-tracker-container { margin-top: 8px; margin-bottom: 12px; padding: 10px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); position: relative; overflow: visible !important; }\
                 .djp-tracker-header { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }\
                 .djp-tracker-flow { display: flex; align-items: flex-start; justify-content: flex-start !important; width: 100%; overflow: visible !important; padding: 4px 0; }\
                 .djp-tracker-step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 0 0 auto !important; min-width: 145px; max-width: 220px; overflow: visible !important; margin-right: 12px; }\
@@ -403,13 +404,13 @@ frappe.ui.form.on('DJP Case', {
                 .djp-status-escalated { color: #d97706; }\
                 .djp-status-skipped { color: #94a3b8; }\
                 .djp-pill-wrapper .djp-tooltip {\
-                    visibility: hidden; opacity: 0; position: absolute; bottom: 125%; top: auto; left: 50%; transform: translateX(-50%); margin-bottom: 6px;\
+                    visibility: hidden; opacity: 0; position: absolute; top: 100%; bottom: auto; left: 50%; transform: translateX(-50%); margin-top: 38px;\
                     background-color: #0f172a; color: #ffffff; text-align: left; padding: 8px 12px; border-radius: 8px;\
                     font-size: 11px; font-weight: 400; line-height: 1.5; white-space: nowrap; z-index: 999999 !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);\
                     transition: opacity 0.2s ease, visibility 0.2s ease; pointer-events: none;\
                 }\
                 .djp-pill-wrapper .djp-tooltip::after {\
-                    content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #0f172a transparent transparent transparent;\
+                    content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: transparent transparent #0f172a transparent;\
                 }\
                 .djp-pill-wrapper:hover .djp-tooltip, .djp-step-pill:hover .djp-tooltip { visibility: visible !important; opacity: 1 !important; }\
             </style>').appendTo('head');
@@ -455,7 +456,7 @@ frappe.ui.form.on('DJP Case', {
                 statusTextClass = 'djp-status-escalated';
             } else if (isOverdue) {
                 pillClass = 'djp-pill-overdue';
-                statusText = '⚠ Overdue / No Response';
+                statusText = '⚠ Overdue';
                 statusTextClass = 'djp-status-overdue';
             } else if (stg.status === 'Sent' || isCurrent) {
                 pillClass = 'djp-pill-active';
@@ -467,6 +468,27 @@ frappe.ui.form.on('DJP Case', {
                 statusTextClass = 'djp-status-skipped';
             } else {
                 statusText = 'Pending (Not Sent)';
+            }
+
+            let remainingDaysInfo = '';
+            if (stg.tat_deadline) {
+                let now = new Date();
+                let deadlineObj = frappe.datetime.str_to_obj(stg.tat_deadline);
+                if (deadlineObj) {
+                    let diffMs = deadlineObj - now;
+                    let diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                    if (stg.status === 'Responded') {
+                        remainingDaysInfo = '✓ Completed';
+                    } else if (stg.status === 'Escalated') {
+                        remainingDaysInfo = '↑ Escalated';
+                    } else if (diffDays < 0) {
+                        remainingDaysInfo = `⚠ Overdue (${Math.abs(diffDays)}d ago)`;
+                    } else if (diffDays === 0) {
+                        remainingDaysInfo = '⏳ Due Today';
+                    } else {
+                        remainingDaysInfo = `⏱ ${diffDays} Days Left`;
+                    }
+                }
             }
 
             let iconHtml = stg.stage;
@@ -500,7 +522,7 @@ frappe.ui.form.on('DJP Case', {
             html += `<span class="djp-step-num">${iconHtml}</span>`;
             html += `<span>${stg.dc_level || stg.stage_name}</span>`;
             
-            // Hover Tooltip
+            // Hover Tooltip (Floating Outside)
             html += `<div class="djp-tooltip">`;
             html += `<div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">${stg.dc_level || stg.stage_name}</div>`;
             html += `<div><strong>Assigned To:</strong> ${empName}${empDesig}</div>`;
@@ -511,8 +533,14 @@ frappe.ui.form.on('DJP Case', {
 
             html += `</div>`; // .djp-step-pill
 
-            // Subtext directly under card
-            html += `<div class="djp-step-status-subtext ${statusTextClass}">${statusText}</div>`;
+            // Subtext directly under card (Status + Remaining Days)
+            html += `<div class="djp-step-status-subtext ${statusTextClass}">`;
+            html += `<div>${statusText}</div>`;
+            if (remainingDaysInfo) {
+                html += `<div style="font-size: 9px; margin-top: 2px; opacity: 0.9; font-weight: 600;">${remainingDaysInfo}</div>`;
+            }
+            html += `</div>`;
+
             html += '</div>'; // .djp-pill-wrapper
 
             if (!isLast) {
