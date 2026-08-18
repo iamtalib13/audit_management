@@ -229,14 +229,4 @@ fixtures = [
             ]]
         ],
     },
-
-    # DJP Case DocTypes
-    {"dt": "DocType", "filters": [["name", "in", [
-        "CMG Grid",
-        "Disciplinary Committee",
-        "DJP Stage",
-        "DJP Case Stage",
-        "DJP Case",
-        "DJP Stage Assignment"
-    ]]]},
 ]
