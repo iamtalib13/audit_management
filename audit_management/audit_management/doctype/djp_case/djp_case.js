@@ -8,23 +8,45 @@ frappe.ui.form.on('DJP Case', {
             frm.events.update_severity_options(frm);
         }
 
-        // Add custom buttons
+        // Inject attractive custom styling for DJP Action buttons
+        if (!$('#djp-case-custom-css').length) {
+            $('<style id="djp-case-custom-css">\
+                .djp-btn-populate { background-color: #4f46e5 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
+                .djp-btn-populate:hover { background-color: #4338ca !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3) !important; color: #ffffff !important; }\
+                .djp-btn-send { background-color: #0d9488 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
+                .djp-btn-send:hover { background-color: #0f766e !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3) !important; color: #ffffff !important; }\
+                .djp-btn-escalate { background-color: #d97706 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
+                .djp-btn-escalate:hover { background-color: #b45309 !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.3) !important; color: #ffffff !important; }\
+                .djp-btn-close { background-color: #16a34a !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
+                .djp-btn-close:hover { background-color: #15803d !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3) !important; color: #ffffff !important; }\
+            </style>').appendTo('head');
+        }
+
+        // Add attractive standalone action buttons with icons
         if (!frm.doc.__islocal && frm.doc.status !== 'Closed' && frm.doc.status !== 'Cessation') {
-            frm.add_custom_button(__('Populate Stages'), function() {
+            let b1 = frm.add_custom_button(__('Populate Stages'), function() {
                 frm.events.populate_stages(frm);
-            }, __('Actions'));
+            });
+            b1.addClass('djp-btn-populate').find('i, svg').remove();
+            b1.prepend('<i class="fa fa-sitemap mr-1"></i> ');
 
-            frm.add_custom_button(__('Send to Current Stage'), function() {
+            let b2 = frm.add_custom_button(__('Send to Reviewer'), function() {
                 frm.events.send_to_current_stage(frm);
-            }, __('Actions'));
+            });
+            b2.addClass('djp-btn-send').find('i, svg').remove();
+            b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
 
-            frm.add_custom_button(__('Escalate'), function() {
+            let b3 = frm.add_custom_button(__('Escalate Case'), function() {
                 frm.events.escalate_case(frm);
-            }, __('Actions'));
+            });
+            b3.addClass('djp-btn-escalate').find('i, svg').remove();
+            b3.prepend('<i class="fa fa-exclamation-triangle mr-1"></i> ');
 
-            frm.add_custom_button(__('Close Case'), function() {
+            let b4 = frm.add_custom_button(__('Close Case'), function() {
                 frm.events.close_case(frm);
-            }, __('Actions'));
+            });
+            b4.addClass('djp-btn-close').find('i, svg').remove();
+            b4.prepend('<i class="fa fa-check-circle mr-1"></i> ');
         }
 
         // Highlight TAT breach
