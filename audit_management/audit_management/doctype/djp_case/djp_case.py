@@ -295,11 +295,57 @@ def send_to_selected_stage(docname, target_stage):
     doc.status = "Under Review"
     doc.save()
 
+    if selected_row.user_id:
+        # Grant Read/Write share permission to Reviewer User
+        try:
+            frappe.share.add("DJP Case", doc.name, selected_row.user_id, read=1, write=1, share=0)
+        except Exception as e:
+            frappe.log_error(f"DJP Case share failed: {e}")
+
+        # Add ToDo assignment for Reviewer User
+        try:
+            from frappe.desk.form.assign_to import add as add_assignment
+            add_assignment({
+                "assign_to": [selected_row.user_id],
+                "doctype": "DJP Case",
+                "name": doc.name,
+                "description": f"DJP Case Review assigned for {doc.employee_name or doc.employee} ({selected_row.dc_level or selected_row.stage_name})",
+                "date": selected_row.tat_deadline
+            })
+        except Exception as e:
+            frappe.log_error(f"DJP Case assignment failed: {e}")
+
     send_stage_notification(doc, selected_row, "assign")
 
     reviewer_name = selected_row.employee_name or selected_row.employee
     dc_title = selected_row.dc_level or selected_row.stage_name
     return {"success": True, "message": _("Case successfully sent to {0} ({1})").format(reviewer_name, dc_title)}
+
+
+@frappe.whitelist()
+def get_user_djp_cases():
+    """Fetch assigned DJP cases for current logged-in user to render in Custom HTML Block cards"""
+    user = frappe.session.user
+    if not user or user == "Guest":
+        return []
+
+    shared_names = frappe.share.get_shared("DJP Case", user)
+    stage_cases = frappe.get_all("DJP Case Stage",
+        filters={"user_id": user, "status": ["in", ["Pending", "Overdue"]]},
+        pluck="parent")
+
+    all_names = list(set((shared_names or []) + (stage_cases or [])))
+    if not all_names:
+        return []
+
+    cases = frappe.get_all("DJP Case",
+        filters={"name": ["in", all_names], "status": ["!=", "Closed"]},
+        fields=["name", "employee", "employee_name", "designation", "emp_branch",
+                "misconduct_type", "severity", "cmg_code", "cmg_recommended_outcome",
+                "status", "current_stage", "current_dc_level", "tat_deadline", "creation"],
+        order_by="creation desc")
+
+    return cases
 
 
 def send_stage_notification(doc, stage_row, action):
