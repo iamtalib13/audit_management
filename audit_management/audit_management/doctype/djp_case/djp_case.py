@@ -323,6 +323,33 @@ def send_to_selected_stage(docname, target_stage):
 
 
 @frappe.whitelist()
+def submit_stage_response(docname, response, attachment=None):
+    """Submit response for active stage reviewer"""
+    doc = frappe.get_doc("DJP Case", docname)
+
+    if doc.status in ["Closed", "Cessation"]:
+        frappe.throw(_("Case is already closed"))
+
+    if doc.current_stage < 1 or doc.current_stage > len(doc.djp_case_stages):
+        frappe.throw(_("Invalid current stage"))
+
+    current_row = doc.djp_case_stages[doc.current_stage - 1]
+
+    current_row.response = response
+    if attachment:
+        current_row.attachment = attachment
+
+    current_row.status = "Responded"
+    current_row.response_time = now_datetime()
+
+    doc.save()
+
+    reviewer_name = current_row.employee_name or current_row.employee
+    dc_title = current_row.dc_level or current_row.stage_name
+    return {"success": True, "message": _("Response successfully submitted by {0} ({1})").format(reviewer_name, dc_title)}
+
+
+@frappe.whitelist()
 def get_user_djp_cases():
     """Fetch assigned DJP cases for current logged-in user to render in Custom HTML Block cards"""
     user = frappe.session.user
