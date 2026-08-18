@@ -106,7 +106,7 @@ def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
             "employee_name": employee.employee_name if employee else "",
             "designation": employee.designation if employee else "",
             "email": (employee.company_email or employee.prefered_email) if employee else "",
-            "status": "Pending",
+            "status": "Not Sent",
             "tat_deadline": tat_deadline
         })
         stage_sequence += 1
@@ -172,15 +172,15 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
             "employee_name": employee.employee_name,
             "designation": employee.designation,
             "email": employee.company_email or employee.prefered_email,
-            "status": "Pending",
-            "pending_time": now_datetime(),
+            "status": "Not Sent",
+            "pending_time": None,
             "tat_deadline": tat_deadline
         })
         stage_sequence += 1
 
     doc.current_stage = 1
     doc.current_dc_level = dc_levels[0] if dc_levels else ""
-    doc.status = "Under Review"
+    doc.status = "Draft"
     doc.save()
 
     return {"success": True}
@@ -253,6 +253,53 @@ def send_to_current_stage(docname):
     send_stage_notification(doc, current_stage_row, "assign")
 
     return {"success": True}
+
+
+@frappe.whitelist()
+def send_to_selected_stage(docname, target_stage):
+    """Send notification to user-selected stage reviewer"""
+    doc = frappe.get_doc("DJP Case", docname)
+
+    target_stage = int(target_stage)
+    if target_stage < 1 or target_stage > len(doc.djp_case_stages):
+        frappe.throw(_("Invalid stage selected"))
+
+    # Mark previous unresponded stages as "No Responded"
+    for idx, row in enumerate(doc.djp_case_stages):
+        if idx < target_stage - 1:
+            if row.status in ["Pending", "Overdue", "Not Sent"] and row.status != "Responded":
+                row.status = "No Responded"
+
+    selected_row = doc.djp_case_stages[target_stage - 1]
+
+    if not selected_row.employee:
+        frappe.throw(_("No reviewer assigned to selected stage '{0}'").format(selected_row.dc_level or selected_row.stage_name))
+
+    now_dt = now_datetime()
+    today_date = getdate(now_dt)
+
+    selected_row.status = "Pending"
+    selected_row.pending_time = now_dt
+
+    # Dynamically calculate stage TAT deadline starting from send date
+    total_stages = len(doc.djp_case_stages)
+    stage_tat_days = get_stage_tat(doc.cmg_code, target_stage, total_stages)
+    selected_row.tat_deadline = str(add_days(today_date, stage_tat_days))
+
+    # Dynamically update overall case TAT deadline starting from send date
+    total_tat_days = get_total_tat_for_cmg(doc.cmg_code)
+    doc.tat_deadline = str(add_days(today_date, total_tat_days))
+
+    doc.current_stage = target_stage
+    doc.current_dc_level = selected_row.dc_level or selected_row.stage_name
+    doc.status = "Under Review"
+    doc.save()
+
+    send_stage_notification(doc, selected_row, "assign")
+
+    reviewer_name = selected_row.employee_name or selected_row.employee
+    dc_title = selected_row.dc_level or selected_row.stage_name
+    return {"success": True, "message": _("Case successfully sent to {0} ({1})").format(reviewer_name, dc_title)}
 
 
 def send_stage_notification(doc, stage_row, action):
