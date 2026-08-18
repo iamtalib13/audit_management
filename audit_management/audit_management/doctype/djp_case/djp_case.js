@@ -44,6 +44,12 @@ frappe.ui.form.on('DJP Case', {
             b2.addClass('djp-btn-send').find('i, svg').remove();
             b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
 
+            let b3 = frm.add_custom_button(__('Submit Response'), function() {
+                frm.events.submit_stage_response(frm);
+            });
+            b3.addClass('btn-primary').find('i, svg').remove();
+            b3.prepend('<i class="fa fa-reply mr-1"></i> ');
+
             let b4 = frm.add_custom_button(__('Close Case'), function() {
                 frm.events.close_case(frm);
             });
@@ -453,6 +459,49 @@ frappe.ui.form.on('DJP Case', {
         d.show();
     },
 
+    submit_stage_response: function(frm) {
+        const d = new frappe.ui.Dialog({
+            title: __('Submit Review Response'),
+            fields: [
+                {
+                    fieldname: 'response',
+                    fieldtype: 'Small Text',
+                    label: __('Review Response / Remarks (Required)'),
+                    reqd: 1
+                },
+                {
+                    fieldname: 'attachment',
+                    fieldtype: 'Attach',
+                    label: __('Upload Supporting Document (Optional)')
+                }
+            ],
+            primary_action_label: __('Submit Response'),
+            primary_action: function(values) {
+                frappe.call({
+                    method: 'audit_management.audit_management.doctype.djp_case.djp_case.submit_stage_response',
+                    args: {
+                        docname: frm.doc.name,
+                        response: values.response,
+                        attachment: values.attachment
+                    },
+                    freeze: true,
+                    freeze_message: __('Submitting stage review response...'),
+                    callback: function(r) {
+                        if (!r.exc && r.message) {
+                            d.hide();
+                            frappe.show_alert({
+                                message: r.message.message || __('Response submitted successfully!'),
+                                indicator: 'green'
+                            });
+                            frm.reload_doc();
+                        }
+                    }
+                });
+            }
+        });
+        d.show();
+    },
+
     // Render visual stage & escalation progress tracker UI
     render_djp_stage_tracker: function(frm) {
         if (!frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0) {
@@ -617,13 +666,18 @@ frappe.ui.form.on('DJP Case', {
             html += `<span class="djp-step-num">${iconHtml}</span>`;
             html += `<span>${stg.dc_level || stg.stage_name}</span>`;
             
+            let respInfo = stg.response ? `<div style="margin-top:4px; border-top:1px solid #334155; padding-top:4px; color:#38bdf8;"><strong>Response:</strong> ${stg.response}</div>` : '';
+            let attachInfo = stg.attachment ? `<div style="margin-top:2px; color:#a7f3d0;"><strong>Attachment:</strong> <a href="${stg.attachment}" target="_blank" style="color:#a7f3d0; text-decoration:underline;"><i class="fa fa-paperclip"></i> View File</a></div>` : '';
+
             // Hover Tooltip (Floating Outside)
             html += `<div class="djp-tooltip">`;
             html += `<div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">${stg.dc_level || stg.stage_name}</div>`;
             html += `<div><strong>Assigned To:</strong> ${empName}${empDesig}</div>`;
-            html += `<div><strong>Status:</strong> ${stg.status || 'Pending'}</div>`;
+            html += `<div><strong>Status:</strong> ${stg.status || 'Not Sent'}</div>`;
             html += `<div><strong>Sent On:</strong> ${sentOn}</div>`;
             html += `<div><strong>TAT:</strong> ${tatDays} Days (Deadline: ${formattedTat})</div>`;
+            html += respInfo;
+            html += attachInfo;
             html += `</div>`;
 
             html += `</div>`; // .djp-step-pill
