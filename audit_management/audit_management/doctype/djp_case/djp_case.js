@@ -4,6 +4,26 @@ frappe.ui.form.on('DJP Case', {
         frm.set_df_property('cmg_code', 'read_only', 1);
         frm.set_df_property('cmg_recommended_outcome', 'read_only', 1);
 
+        // Make form 100% strictly read-only and unclickable for Stage Reviewers (non-creator / non-admin / non-manager)
+        const is_admin_or_creator = (frm.doc.owner === frappe.session.user) ||
+                                    frappe.user.has_role('System Manager') ||
+                                    frappe.user.has_role('Administrator') ||
+                                    frappe.user.has_role('Audit Manager') ||
+                                    frappe.session.user === 'Administrator';
+
+        if (!is_admin_or_creator && !frm.is_new()) {
+            frm.set_read_only();
+            if (!$('#djp-reviewer-readonly-style').length) {
+                $('<style id="djp-reviewer-readonly-style">\
+                    [data-doctype="DJP Case"] .form-section { pointer-events: none !important; opacity: 0.9 !important; user-select: text !important; }\
+                    [data-doctype="DJP Case"] .grid-row, [data-doctype="DJP Case"] .grid-add-row, [data-doctype="DJP Case"] .grid-remove-rows { pointer-events: none !important; }\
+                    [data-doctype="DJP Case"] .page-actions, [data-doctype="DJP Case"] .djp-stage-tracker-container { pointer-events: auto !important; }\
+                </style>').appendTo('head');
+            }
+        } else {
+            $('#djp-reviewer-readonly-style').remove();
+        }
+
         if (frm.doc.misconduct_type) {
             frm.events.update_severity_options(frm);
         }
