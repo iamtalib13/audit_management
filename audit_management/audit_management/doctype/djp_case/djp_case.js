@@ -498,6 +498,8 @@ frappe.ui.form.on('DJP Case', {
     },
 
     submit_stage_response: function(frm) {
+        let uploaded_files = []; // Array of { name: '...', url: '...' }
+
         const d = new frappe.ui.Dialog({
             title: __('Submit Review Response'),
             fields: [
@@ -508,19 +510,21 @@ frappe.ui.form.on('DJP Case', {
                     reqd: 1
                 },
                 {
-                    fieldname: 'attachment',
-                    fieldtype: 'Attach',
-                    label: __('Upload Supporting Document (Optional)')
+                    fieldname: 'upload_section',
+                    fieldtype: 'HTML',
+                    label: __('Upload Attachments')
                 }
             ],
             primary_action_label: __('Submit Response'),
             primary_action: function(values) {
+                let attachment_urls = uploaded_files.map(f => f.url).join(', ');
+
                 frappe.call({
                     method: 'audit_management.audit_management.doctype.djp_case.djp_case.submit_stage_response',
                     args: {
                         docname: frm.doc.name,
                         response: values.response,
-                        attachment: values.attachment
+                        attachment: attachment_urls
                     },
                     freeze: true,
                     freeze_message: __('Submitting stage review response...'),
@@ -537,7 +541,93 @@ frappe.ui.form.on('DJP Case', {
                 });
             }
         });
+
         d.show();
+
+        // Render multi-file public uploader
+        let $upload_wrapper = d.get_field('upload_section').$wrapper;
+
+        function render_file_list() {
+            let list_html = '';
+            if (uploaded_files.length === 0) {
+                list_html = '<span style="font-size: 11px; color: #64748b;">No files attached</span>';
+            } else {
+                list_html = uploaded_files.map((f, i) => `
+                    <div style="display: inline-flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 4px; font-size: 11px; margin-top: 4px;">
+                        <i class="fa fa-paperclip" style="color: #2563eb;"></i>
+                        <a href="${f.url}" target="_blank" style="color: #0f172a; text-decoration: none; font-weight: 600;">${f.name}</a>
+                        <i class="fa fa-times text-danger djp-remove-file" data-idx="${i}" style="cursor: pointer; margin-left: 4px;" title="Remove"></i>
+                    </div>
+                `).join(' ');
+            }
+            $upload_wrapper.find('#djp_file_list_container').html(list_html);
+        }
+
+        $upload_wrapper.html(`
+            <div style="margin-top: 10px; padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px;">
+                <label style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block;">Upload Supporting Documents (Multiple Allowed)</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="file" id="djp_direct_file_input" multiple style="display: none;">
+                    <button type="button" class="btn btn-default btn-xs" id="djp_btn_select_file" style="font-weight: 600; background: #ffffff; border: 1px solid #cbd5e1;">
+                        <i class="fa fa-plus mr-1" style="color: #2563eb;"></i> Attach Files
+                    </button>
+                    <span id="djp_upload_status" style="font-size: 11px; color: #64748b;"></span>
+                </div>
+                <div id="djp_file_list_container" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+            </div>
+        `);
+
+        render_file_list();
+
+        $upload_wrapper.find('#djp_btn_select_file').on('click', function() {
+            $upload_wrapper.find('#djp_direct_file_input').click();
+        });
+
+        $upload_wrapper.find('#djp_file_list_container').on('click', '.djp-remove-file', function() {
+            let idx = $(this).data('idx');
+            uploaded_files.splice(idx, 1);
+            render_file_list();
+        });
+
+        $upload_wrapper.find('#djp_direct_file_input').on('change', function(e) {
+            let files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            let remaining = files.length;
+            $upload_wrapper.find('#djp_upload_status').html('<span style="color: #2563eb;"><i class="fa fa-spinner fa-spin mr-1"></i> Uploading ' + files.length + ' file(s)...</span>');
+
+            files.forEach(file => {
+                let formdata = new FormData();
+                formdata.append('file', file, file.name);
+                formdata.append('doctype', frm.doc.doctype);
+                formdata.append('docname', frm.doc.name);
+                formdata.append('is_private', 0); // FORCE PUBLIC FILE UPLOAD!
+
+                $.ajax({
+                    url: '/api/method/upload_file',
+                    type: 'POST',
+                    data: formdata,
+                    contentType: false,
+                    processData: false,
+                    headers: {
+                        'X-Frappe-CSRF-Token': frappe.csrf_token
+                    },
+                    success: function(r) {
+                        if (r.message && r.message.file_url) {
+                            uploaded_files.push({ name: file.name, url: r.message.file_url });
+                        }
+                    },
+                    complete: function() {
+                        remaining--;
+                        if (remaining <= 0) {
+                            $upload_wrapper.find('#djp_upload_status').html('<span style="color: #16a34a; font-weight: 600;"><i class="fa fa-check-circle mr-1"></i> Uploaded!</span>');
+                            render_file_list();
+                            setTimeout(() => { $upload_wrapper.find('#djp_upload_status').empty(); }, 2000);
+                        }
+                    }
+                });
+            });
+        });
     },
 
     // Render visual stage & escalation progress tracker UI
@@ -705,7 +795,15 @@ frappe.ui.form.on('DJP Case', {
             html += `<span>${stg.dc_level || stg.stage_name}</span>`;
             
             let respInfo = stg.response ? `<div style="margin-top:4px; border-top:1px solid #334155; padding-top:4px; color:#38bdf8;"><strong>Response:</strong> ${stg.response}</div>` : '';
-            let attachInfo = stg.attachment ? `<div style="margin-top:2px; color:#a7f3d0;"><strong>Attachment:</strong> <a href="${stg.attachment}" target="_blank" style="color:#a7f3d0; text-decoration:underline;"><i class="fa fa-paperclip"></i> View File</a></div>` : '';
+            let attachInfo = '';
+            if (stg.attachment) {
+                let links = stg.attachment.split(',').map(url => url.trim()).filter(Boolean);
+                let linkHtml = links.map((url, i) => {
+                    let filename = url.split('/').pop();
+                    return `<a href="${url}" target="_blank" style="color:#a7f3d0; text-decoration:underline;"><i class="fa fa-paperclip"></i> ${filename}</a>`;
+                }).join(', ');
+                attachInfo = `<div style="margin-top:2px; color:#a7f3d0;"><strong>Attachments (${links.length}):</strong> ${linkHtml}</div>`;
+            }
 
             // Hover Tooltip (Floating Outside)
             html += `<div class="djp-tooltip">`;
