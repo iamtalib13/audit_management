@@ -337,6 +337,19 @@ def submit_stage_response(docname, response, attachment=None):
 
     current_row.response = response
     if attachment:
+        # Force uploaded file to be public (is_private = 0) for seamless access
+        file_name = frappe.db.get_value("File", {"file_url": attachment}, "name")
+        if not file_name and attachment.startswith("/private/"):
+            pub_url = attachment.replace("/private/", "/")
+            file_name = frappe.db.get_value("File", {"file_url": pub_url}, "name")
+
+        if file_name:
+            file_doc = frappe.get_doc("File", file_name)
+            if file_doc.is_private:
+                file_doc.is_private = 0
+                file_doc.save(ignore_permissions=True)
+                attachment = file_doc.file_url
+
         current_row.attachment = attachment
 
     current_row.status = "Responded"
