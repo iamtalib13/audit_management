@@ -91,8 +91,6 @@ def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
             {"dc_level": dc_level, "is_active": 1},
             ["name"], order_by="sequence asc")
 
-        employee = get_committee_employee(dc_level, emp_branch, committee, accused_employee=accused_employee) if (committee and emp_branch) else None
-
         if total_stages == 1:
             stage_days = total_tat
         elif stage_sequence == 1:
@@ -107,11 +105,11 @@ def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
             "stage": stage_sequence,
             "stage_name": stage_doc or dc_level,
             "dc_level": dc_level,
-            "employee": employee.name if employee else "",
-            "user_id": employee.user_id if employee else "",
-            "employee_name": employee.employee_name if employee else "",
-            "designation": employee.designation if employee else "",
-            "email": (employee.company_email or employee.prefered_email) if employee else "",
+            "employee": "",
+            "user_id": "",
+            "employee_name": "",
+            "designation": "",
+            "email": "",
             "status": "Not Sent",
             "tat_deadline": tat_deadline
         })
@@ -162,10 +160,6 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
         if not stage_doc:
             continue
 
-        employee = get_committee_employee(dc_level, emp_branch, committee)
-        if not employee:
-            continue
-
         stage_tat = get_stage_tat(cmg_code, stage_sequence, len(dc_levels))
         tat_deadline = add_days(doc.created_on or now_datetime(), stage_tat)
 
@@ -173,11 +167,11 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
             "stage": stage_sequence,
             "stage_name": stage_doc,
             "dc_level": dc_level,
-            "employee": employee.employee,
-            "user_id": employee.user_id,
-            "employee_name": employee.employee_name,
-            "designation": employee.designation,
-            "email": employee.company_email or employee.prefered_email,
+            "employee": "",
+            "user_id": "",
+            "employee_name": "",
+            "designation": "",
+            "email": "",
             "status": "Not Sent",
             "pending_time": None,
             "tat_deadline": tat_deadline

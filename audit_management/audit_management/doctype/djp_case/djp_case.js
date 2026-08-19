@@ -1,4 +1,14 @@
 frappe.ui.form.on('DJP Case', {
+    setup: function(frm) {
+        frm.set_query('employee', 'djp_case_stages', function(doc, cdt, cdn) {
+            return {
+                filters: {
+                    'name': ['!=', doc.employee],
+                    'user_id': ['!=', frappe.session.user]
+                }
+            };
+        });
+    },
     refresh: function(frm) {
         // Enforce Read Only for CMG fields
         frm.set_df_property('cmg_code', 'read_only', 1);
@@ -132,10 +142,6 @@ frappe.ui.form.on('DJP Case', {
     },
 
     validate: function(frm) {
-        if (frm.doc.misconduct_type && frm.doc.severity && frm.doc.occurrence) {
-            frm.events.fetch_cmg_mapping(frm);
-        }
-
         if (frm.doc.cmg_code && !frm.doc.tat_deadline) {
             frm.events.set_tat_deadline(frm);
         }
