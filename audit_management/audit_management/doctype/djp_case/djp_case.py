@@ -8,7 +8,13 @@ from frappe.utils import now_datetime, add_days, getdate
 
 
 class DJPCase(Document):
-    pass
+    def autoname(self):
+        """Generate custom nomenclature: DJP-{Branch}-{Year}-{Number} (e.g. DJP-MUM-2026-00001)"""
+        branch = (self.emp_branch or "GEN").strip().upper()
+        branch_code = "".join(e for e in branch if e.isalnum()) or "GEN"
+        year = now_datetime().strftime("%Y")
+        prefix = f"DJP-{branch_code}-{year}-"
+        self.name = frappe.model.naming.make_autoname(f"{prefix}.#####")
 
 
 # Dynamically fetches valid Severity and Occurrence options from CMG Grid settings
