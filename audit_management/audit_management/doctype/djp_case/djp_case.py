@@ -363,29 +363,163 @@ def submit_stage_response(docname, response, attachment=None):
 
 
 @frappe.whitelist()
-def get_user_djp_cases():
-    """Fetch assigned DJP cases for current logged-in user to render in Custom HTML Block cards"""
+def get_user_djp_cases(filter_type=None):
+    """Fetch DJP cases accessible by user for interactive dashboard table filtering"""
     user = frappe.session.user
     if not user or user == "Guest":
         return []
 
-    shared_names = frappe.share.get_shared("DJP Case", user)
-    stage_cases = frappe.get_all("DJP Case Stage",
-        filters={"user_id": user, "status": ["in", ["Pending", "Overdue"]]},
-        pluck="parent")
+    is_admin_or_manager = user == "Administrator" or \
+                          "System Manager" in frappe.get_roles(user) or \
+                          "Audit Manager" in frappe.get_roles(user)
 
-    all_names = list(set((shared_names or []) + (stage_cases or [])))
-    if not all_names:
-        return []
+    if is_admin_or_manager:
+        filters = {}
+    else:
+        shared_names = frappe.share.get_shared("DJP Case", user) or []
+        stage_cases = frappe.get_all("DJP Case Stage", filters={"user_id": user}, pluck="parent") or []
+        user_cases = frappe.get_all("DJP Case", filters={"owner": user}, pluck="name") or []
+        all_allowed = list(set(shared_names + stage_cases + user_cases))
+        if not all_allowed:
+            return []
+        filters = {"name": ["in", all_allowed]}
 
     cases = frappe.get_all("DJP Case",
-        filters={"name": ["in", all_names], "status": ["!=", "Closed"]},
+        filters=filters,
         fields=["name", "employee", "employee_name", "designation", "emp_branch",
                 "misconduct_type", "severity", "cmg_code", "cmg_recommended_outcome",
                 "status", "current_stage", "current_dc_level", "tat_deadline", "creation"],
         order_by="creation desc")
 
+    for c in cases:
+        # Check user specific stage status
+        stg_status = frappe.db.get_value("DJP Case Stage", {"parent": c.name, "user_id": user}, "status")
+        c["user_stage_status"] = stg_status or "Not Sent"
+
     return cases
+
+
+@frappe.whitelist()
+def get_djp_dashboard_data():
+    """Return dashboard analytics for DJP Cases tailored for Case Creators, Admins & Stage Reviewers"""
+    user = frappe.session.user
+    if not user or user == "Guest":
+        return {}
+
+    user_roles = frappe.get_roles(user)
+    is_admin_or_manager = user == "Administrator" or \
+                          "System Manager" in user_roles or \
+                          "Audit Manager" in user_roles or \
+                          "Audit Member" in user_roles
+
+    role_type = "manager" if is_admin_or_manager else "stage_user"
+
+    if is_admin_or_manager:
+        base_filters = {}
+    else:
+        shared_names = frappe.share.get_shared("DJP Case", user) or []
+        stage_cases = frappe.get_all("DJP Case Stage", filters={"user_id": user}, pluck="parent") or []
+        user_cases = frappe.get_all("DJP Case", filters={"owner": user}, pluck="name") or []
+        all_allowed = list(set(shared_names + stage_cases + user_cases))
+        base_filters = {"name": ["in", all_allowed]} if all_allowed else {"name": "NONE"}
+
+    total_count = frappe.db.count("DJP Case", base_filters)
+    draft_count = frappe.db.count("DJP Case", {**base_filters, "status": "Draft"})
+    under_review_count = frappe.db.count("DJP Case", {**base_filters, "status": "Under Review"})
+    closed_count = frappe.db.count("DJP Case", {**base_filters, "status": ["in", ["Closed", "Cessation"]]})
+
+    pending_for_me_count = frappe.db.sql(
+        "SELECT COUNT(DISTINCT parent) FROM `tabDJP Case Stage` WHERE user_id = %s AND status = 'Pending'", (user,)
+    )[0][0]
+
+    responded_by_me_count = frappe.db.sql(
+        "SELECT COUNT(DISTINCT parent) FROM `tabDJP Case Stage` WHERE user_id = %s AND status = 'Responded'", (user,)
+    )[0][0]
+
+    no_response_by_me_count = frappe.db.sql(
+        "SELECT COUNT(DISTINCT parent) FROM `tabDJP Case Stage` WHERE user_id = %s AND status = 'No Responded'", (user,)
+    )[0][0]
+
+    cmg_counts_data = frappe.db.get_all("DJP Case", filters=base_filters, fields=["cmg_code", "count(name) as count"], group_by="cmg_code")
+    cmg_counts = {d.cmg_code or "Unassigned": d.count for d in cmg_counts_data}
+
+    dc_counts_data = frappe.db.get_all("DJP Case", filters=base_filters, fields=["current_dc_level", "count(name) as count"], group_by="current_dc_level")
+    dc_counts = {d.current_dc_level or "Unassigned": d.count for d in dc_counts_data}
+
+    return {
+        "total_count": total_count,
+        "draft_count": draft_count,
+        "under_review_count": under_review_count,
+        "closed_count": closed_count,
+        "pending_for_me_count": pending_for_me_count,
+        "responded_by_me_count": responded_by_me_count,
+        "no_response_by_me_count": no_response_by_me_count,
+        "role_type": role_type,
+        "cmg_counts": cmg_counts,
+        "dc_counts": dc_counts,
+        "is_admin": is_admin_or_manager
+    }
+
+
+def get_permission_query_conditions(user=None):
+    """Permission query condition for DJP Case list view & reports.
+    Ensures Stage Reviewers see ONLY cases where a stage has been sent to them or they own/have share access.
+    Unsent stages ('Not Sent') remain hidden from stage reviewers.
+    """
+    if not user:
+        user = frappe.session.user
+
+    user_roles = frappe.get_roles(user)
+    if user == "Administrator" or "System Manager" in user_roles or "Audit Manager" in user_roles or "Audit Member" in user_roles:
+        return ""
+
+    user_escaped = frappe.db.escape(user)
+
+    conditions = f"""(
+        `tabDJP Case`.`owner` = {user_escaped}
+        OR `tabDJP Case`.`name` IN (
+            SELECT share_name FROM `tabDocShare` 
+            WHERE share_doctype = 'DJP Case' AND user = {user_escaped}
+        )
+        OR `tabDJP Case`.`name` IN (
+            SELECT parent FROM `tabDJP Case Stage` 
+            WHERE user_id = {user_escaped} AND status IN ('Pending', 'Responded', 'No Responded', 'Overdue')
+        )
+    )"""
+
+    return conditions
+
+
+def has_permission(doc, ptype="read", user=None):
+    """Document permission validation for DJP Case form view & API access"""
+    if not user:
+        user = frappe.session.user
+
+    user_roles = frappe.get_roles(user)
+    if user == "Administrator" or "System Manager" in user_roles or "Audit Manager" in user_roles or "Audit Member" in user_roles:
+        return True
+
+    doc_owner = doc.owner if hasattr(doc, "owner") else getattr(doc, "owner", None)
+    if doc_owner == user:
+        return True
+
+    doc_name = doc.name if hasattr(doc, "name") else getattr(doc, "name", None)
+    if not doc_name:
+        return True
+
+    if frappe.db.exists("DocShare", {"share_doctype": "DJP Case", "share_name": doc_name, "user": user}):
+        return True
+
+    active_stage = frappe.db.exists("DJP Case Stage", {
+        "parent": doc_name,
+        "user_id": user,
+        "status": ["in", ["Pending", "Responded", "No Responded", "Overdue"]]
+    })
+
+    if active_stage:
+        return True
+
+    return False
 
 
 def send_stage_notification(doc, stage_row, action):
