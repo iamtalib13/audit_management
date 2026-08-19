@@ -652,3 +652,32 @@ def get_employee_black_mark_count(employee):
         "status": ["in", ["Closed", "Cessation"]]
     })
     return count
+
+
+@frappe.whitelist()
+def check_djp_pending_tat():
+    """Check and update overdue TAT for active DJP Case Stages"""
+    now = now_datetime()
+    overdue_stages = frappe.get_all(
+        "DJP Case Stage",
+        filters={
+            "status": "Pending",
+            "tat_deadline": ["<", now]
+        },
+        fields=["name", "parent", "dc_level", "user_id", "employee_name", "tat_deadline"]
+    )
+
+    updated_count = 0
+    for stage in overdue_stages:
+        frappe.db.set_value("DJP Case Stage", stage.name, "status", "No Responded")
+        updated_count += 1
+
+    if updated_count > 0:
+        frappe.db.commit()
+
+    return {
+        "checked_at": str(now),
+        "overdue_count": len(overdue_stages),
+        "updated_count": updated_count,
+        "overdue_stages": overdue_stages
+    }
