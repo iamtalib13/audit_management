@@ -228,7 +228,7 @@ frappe.ui.form.on('DJP Case', {
                         frm.set_value('occurrence', '');
                         frm.set_value('cmg_code', '');
                         frm.set_value('cmg_recommended_outcome', '');
-                    } else if (frm.doc.occurrence) {
+                    } else if (frm.doc.occurrence && frm.doc.__islocal) {
                         frm.events.fetch_cmg_mapping(frm);
                     }
                 }
@@ -307,7 +307,11 @@ frappe.ui.form.on('DJP Case', {
 
         const days = tat_days[frm.doc.cmg_code] || 15;
         const deadline = frappe.datetime.add_days(frm.doc.created_on, days);
-        if (frm.doc.tat_deadline !== deadline) {
+        
+        let current_tat = frm.doc.tat_deadline ? frappe.datetime.str_to_obj(frm.doc.tat_deadline).getTime() : null;
+        let new_tat = frappe.datetime.str_to_obj(deadline).getTime();
+
+        if (current_tat !== new_tat) {
             frm.set_value('tat_deadline', deadline);
         }
     },
