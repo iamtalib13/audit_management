@@ -181,10 +181,10 @@ frappe.ui.form.on('DJP Case', {
                     frm.set_df_property('severity', 'options', options.join('\n'));
                     frm.refresh_field('severity');
 
-                    if (valid_severities.length === 1) {
+                    if (frm.doc.__islocal && valid_severities.length === 1 && !frm.doc.severity) {
                         frm.set_value('severity', valid_severities[0]);
                         frm.events.update_occurrence_options(frm);
-                    } else if (frm.doc.severity && !valid_severities.includes(frm.doc.severity)) {
+                    } else if (frm.doc.__islocal && frm.doc.severity && !valid_severities.includes(frm.doc.severity)) {
                         frm.set_value('severity', '');
                         frm.set_value('occurrence', '');
                         frm.set_value('cmg_code', '');
@@ -221,10 +221,10 @@ frappe.ui.form.on('DJP Case', {
                     frm.set_df_property('occurrence', 'options', options.join('\n'));
                     frm.refresh_field('occurrence');
 
-                    if (valid_occurrences.length === 1) {
+                    if (frm.doc.__islocal && valid_occurrences.length === 1 && !frm.doc.occurrence) {
                         frm.set_value('occurrence', valid_occurrences[0]);
                         frm.events.fetch_cmg_mapping(frm);
-                    } else if (frm.doc.occurrence && !valid_occurrences.includes(frm.doc.occurrence) && !valid_occurrences.includes('Any')) {
+                    } else if (frm.doc.__islocal && frm.doc.occurrence && !valid_occurrences.includes(frm.doc.occurrence) && !valid_occurrences.includes('Any')) {
                         frm.set_value('occurrence', '');
                         frm.set_value('cmg_code', '');
                         frm.set_value('cmg_recommended_outcome', '');
@@ -249,8 +249,12 @@ frappe.ui.form.on('DJP Case', {
             },
             callback: function(r) {
                 if (r.message) {
-                    frm.set_value('cmg_code', r.message.cmg_code);
-                    frm.set_value('cmg_recommended_outcome', r.message.cmg_recommended_outcome);
+                    if (frm.doc.cmg_code !== r.message.cmg_code) {
+                        frm.set_value('cmg_code', r.message.cmg_code);
+                    }
+                    if (frm.doc.cmg_recommended_outcome !== r.message.cmg_recommended_outcome) {
+                        frm.set_value('cmg_recommended_outcome', r.message.cmg_recommended_outcome);
+                    }
                     frm.refresh_field('cmg_code');
                     frm.refresh_field('cmg_recommended_outcome');
                     frm.events.set_tat_deadline(frm);
@@ -303,7 +307,9 @@ frappe.ui.form.on('DJP Case', {
 
         const days = tat_days[frm.doc.cmg_code] || 15;
         const deadline = frappe.datetime.add_days(frm.doc.created_on, days);
-        frm.set_value('tat_deadline', deadline);
+        if (frm.doc.tat_deadline !== deadline) {
+            frm.set_value('tat_deadline', deadline);
+        }
     },
 
     populate_stages: function(frm) {
@@ -463,29 +469,44 @@ frappe.ui.form.on('DJP Case', {
             title: __('Close Case'),
             fields: [
                 {
-                    fieldname: 'outcome',
+                    fieldname: 'final_decision',
                     fieldtype: 'Select',
-                    label: __('Final Outcome (Required)'),
-                    options: 'Cessation\nWarning Letter\nExonerated\nCase Closed without Action\nOther',
+                    label: __('Final Decision / Outcome (Required)'),
+                    options: frm.fields_dict.final_decision.df.options,
+                    default: frm.doc.cmg_recommended_outcome || '',
+                    reqd: 1
+                },
+                {
+                    fieldname: 'justification',
+                    fieldtype: 'Small Text',
+                    label: __('Justification (Required)'),
                     reqd: 1
                 },
                 {
                     fieldname: 'governance_notes',
                     fieldtype: 'Small Text',
-                    label: __('Governance Notes')
+                    label: __('Governance Notes (Optional)')
                 }
             ],
             primary_action_label: __('Close Case'),
             primary_action: function(values) {
+                if (!values.final_decision || !values.justification) {
+                    frappe.msgprint(__('Please fill out both Final Decision and Justification fields to close case'));
+                    return;
+                }
+
                 frappe.call({
                     method: 'audit_management.audit_management.doctype.djp_case.djp_case.close_case',
                     args: {
                         docname: frm.doc.name,
-                        outcome: values.outcome,
+                        final_decision: values.final_decision,
+                        justification: values.justification,
                         governance_notes: values.governance_notes
                     },
+                    freeze: true,
+                    freeze_message: __('Closing DJP Case...'),
                     callback: function(r) {
-                        if (r.message) {
+                        if (!r.exc && r.message) {
                             d.hide();
                             frm.reload_doc();
                             frappe.show_alert({message: __('Case closed successfully'), indicator: 'green'});

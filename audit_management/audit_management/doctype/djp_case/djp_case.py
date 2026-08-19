@@ -592,18 +592,22 @@ def escalate_case(docname, justification):
 
 
 @frappe.whitelist()
-def close_case(docname, final_decision, justification, governance_notes):
-    """Close case with final decision"""
+def close_case(docname, final_decision=None, justification=None, governance_notes=None, outcome=None):
+    """Close case with final decision and required justification"""
     doc = frappe.get_doc("DJP Case", docname)
 
-    doc.final_decision = final_decision
-    doc.final_justification = justification
-    doc.governance_notes = governance_notes
-    doc.status = "Closed"
+    decision = final_decision or outcome
+    if not decision:
+        frappe.throw(_("Final Decision / Outcome is required to close case"))
 
-    cmg_code = final_decision.split(" - ")[0] if " - " in final_decision else final_decision
-    if cmg_code != doc.cmg_code and not justification:
-        frappe.throw(_("Justification required for deviation from CMG recommendation"))
+    if not justification or not str(justification).strip():
+        frappe.throw(_("Justification is required to close case"))
+
+    doc.final_decision = decision
+    doc.final_justification = justification
+    if governance_notes:
+        doc.governance_notes = (doc.governance_notes or "") + "\n" + governance_notes
+    doc.status = "Closed"
 
     for row in doc.djp_case_stages:
         if row.status == "Pending":
