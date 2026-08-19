@@ -1,5 +1,15 @@
 frappe.ui.form.on('DJP Case', {
     setup: function(frm) {
+        // Prevent user from selecting themselves as the Accused Employee
+        frm.set_query('employee', function() {
+            return {
+                filters: {
+                    'user_id': ['!=', frappe.session.user]
+                }
+            };
+        });
+
+        // Prevent user from selecting Accused Employee or themselves as a Stage Reviewer
         frm.set_query('employee', 'djp_case_stages', function(doc, cdt, cdn) {
             return {
                 filters: {
