@@ -135,10 +135,12 @@ has_permission = {
 scheduler_events = {
     "daily": [
         "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat",
+        "audit_management.audit_management.doctype.djp_case.djp_case.check_djp_pending_tat",
     ],
     "cron": {
         "* * * * *": [
             "audit_management.audit_management.doctype.my_audits.my_audits.check_pending_tat",
+            "audit_management.audit_management.doctype.djp_case.djp_case.check_djp_pending_tat",
         ]
     }
 }
