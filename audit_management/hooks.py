@@ -102,11 +102,13 @@ after_migrate = [
 permission_query_conditions = {
     "My Audits": "audit_management.audit_management.doctype.my_audits.my_audits.get_permission_query_conditions",
     "Audit Level": "audit_management.audit_management.doctype.audit_level.audit_level.get_permission_query_conditions",
+    "DJP Case": "audit_management.audit_management.doctype.djp_case.djp_case.get_permission_query_conditions",
 }
 
 has_permission = {
     "My Audits": "audit_management.audit_management.doctype.my_audits.my_audits.has_permission",
     "Audit Level": "audit_management.audit_management.doctype.audit_level.audit_level.has_permission",
+    "DJP Case": "audit_management.audit_management.doctype.djp_case.djp_case.has_permission",
 }
 
 # DocType Class
