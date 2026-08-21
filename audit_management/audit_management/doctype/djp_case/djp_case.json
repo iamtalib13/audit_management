@@ -226,6 +226,7 @@
   {
    "fieldname": "section_break_final",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Final Decision"
   },
   {
@@ -256,7 +257,7 @@
    "link_fieldname": "employee"
   }
  ],
- "modified": "2026-08-19 12:22:43.668455",
+ "modified": "2026-08-21 10:59:25.527297",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DJP Case",
