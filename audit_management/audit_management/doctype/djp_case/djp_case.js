@@ -138,6 +138,56 @@ frappe.ui.form.on('DJP Case', {
         if (frm.dashboard && frm.dashboard.wrapper) {
             frm.dashboard.wrapper.find('.form-links').hide();
         }
+        // 5. Reopen Case Button (Sirf Closed status me dikhega)
+        if (!frm.doc.__islocal && frm.doc.status === 'Closed') {
+                const is_admin_or_manager = frappe.user.has_role('System Manager') ||
+                                            frappe.user.has_role('Administrator') ||
+                                            frappe.user.has_role('Audit Manager') ||
+                                            frappe.session.user === 'Administrator' ||
+                                            frappe.session.user === frm.doc.owner;
+
+                // Sirf Admin, Manager ya Creator ko permission den
+                if (is_admin_or_manager) {                                                                             
+                    let btn_reopen = frm.add_custom_button(__('Reopen Case'), function() {                             
+                        // Dialog open hoga reason puchne ke liye                                                      
+                        const d = new frappe.ui.Dialog({                                                               
+                            title: __('Reopen Case'),                                                                  
+                            fields: [                                                                                  
+                                {                                                                                      
+                                    fieldname: 'reason',                                                               
+                                    fieldtype: 'Small Text',                                                           
+                                    label: __('Reason for Reopening (Required)'),                                      
+                                    reqd: 1                                                                            
+                                }                                                                                      
+                            ],                                                                                         
+                            primary_action_label: __('Reopen'),                                                        
+                            primary_action: function(values) {                                                         
+                                frappe.call({                                                                          
+                                    method: 'audit_management.audit_management.doctype.djp_case.djp_case.reopen_case', 
+                                    args: {                                                                            
+                                        docname: frm.doc.name,                                                         
+                                        reason: values.reason                                                          
+                                    },                                                                                 
+                                    freeze: true,                                                                      
+                                    freeze_message: __('Reopening Case...'),                                           
+                                    callback: function(r) {
+                                        if (!r.exc) {
+                                            d.hide();
+                                            frm.reload_doc();
+                                            frappe.show_alert({message: __('Case Reopened'), indicator: 'orange'});    
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                        d.show();
+                    });
+    
+                    // Button ko style dene ke liye (Optional)
+                    btn_reopen.css({'background-color': '#d97706', 'color': 'white', 'font-weight': 'bold'});          
+                    btn_reopen.prepend('<i class="fa fa-unlock mr-1"></i> ');
+                }
+            }
     },
 
     onload: function(frm) {

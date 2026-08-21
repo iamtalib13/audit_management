@@ -679,3 +679,29 @@ def check_djp_pending_tat():
         "updated_count": updated_count,
         "overdue_stages": overdue_stages
     }
+
+@frappe.whitelist()                                                                                                
+def reopen_case(docname, reason):                                                                                  
+        """Reopen a closed case with justification"""                                                                  
+        doc = frappe.get_doc("DJP Case", docname)                                                                      
+                                                                                                                       
+        if doc.status != "Closed":                                                                                     
+            frappe.throw(_("Only closed cases can be reopened."))                                                      
+                                                                                                                       
+        if not reason or not str(reason).strip():                                                                      
+            frappe.throw(_("Reason is required to reopen the case"))                                                   
+                                                                                                                       
+        # Status wapas change karein                                                                                   
+        doc.status = "Draft" # Ya agar aapne 'Reopened' jaisa koi status rakha hai toh wo use karein                   
+        doc.final_decision = ""                                                                                        
+        doc.final_justification = ""                                                                                   
+                                                                                                                       
+        # Audit trail (Governance Notes me log maintain karne ke liye)                                                 
+        note = f"Case Reopened by {frappe.session.user} on {frappe.utils.now_datetime()}.\nReason: {reason}"           
+        doc.governance_notes = (doc.governance_notes or "") + "\n\n" + note                                            
+                                                                                                                       
+        # Stages table update karein agar required ho                                                                  
+        # (Optional: jaise 'Skipped' stages ko wapas 'Not Sent' ya 'Pending' karna)                                    
+                                                                                                                       
+        doc.save(ignore_permissions=True)                                                                              
+        return {"message": "Case Reopened Successfully"}
