@@ -20,6 +20,7 @@
   "misconduct_type",
   "severity",
   "occurrence",
+  "case_attachment",
   "section_break_cmg",
   "cmg_code",
   "cmg_recommended_outcome",
@@ -246,6 +247,11 @@
    "fieldname": "governance_notes",
    "fieldtype": "Small Text",
    "label": "Governance Notes"
+  },
+  {
+   "fieldname": "case_attachment",
+   "fieldtype": "Attach",
+   "label": "Case Attachment"
   }
  ],
  "grid_page_length": 50,
@@ -257,7 +263,7 @@
    "link_fieldname": "employee"
   }
  ],
- "modified": "2026-08-21 10:59:25.527297",
+ "modified": "2026-08-25 11:13:13.336045",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DJP Case",
