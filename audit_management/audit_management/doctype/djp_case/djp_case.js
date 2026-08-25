@@ -107,8 +107,8 @@ frappe.ui.form.on('DJP Case', {
 
             // 2. Send to Reviewer (Case Creator & Audit Team)
             if (is_creator_or_audit) {
-                let b2 = frm.add_custom_button(__('Send to Reviewer'), function() {
-                    frm.events.send_to_current_stage(frm);
+                let b2 = frm.add_custom_button(__('Send to All Reviewers'), function() {
+                    frm.events.send_to_all_reviewers(frm);
                 });
                 b2.addClass('djp-btn-send').find('i, svg').remove();
                 b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
@@ -429,107 +429,26 @@ frappe.ui.form.on('DJP Case', {
         });
     },
 
-    send_to_current_stage: function(frm) {
+    send_to_all_reviewers: function(frm) {
         if (!frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0) {
             frappe.msgprint(__('Please populate stages first using "Populate Stages" button.'));
             return;
         }
 
-        const default_stage = frm.doc.current_stage || 1;
-
-        let table_rows_html = frm.doc.djp_case_stages.map(stg => {
-            let isChecked = (stg.stage === default_stage) ? 'checked' : '';
-            let empName = stg.employee_name || stg.employee || '<span class="text-muted">Unassigned</span>';
-            let empDesig = stg.designation ? `<br><span style="font-size: 11px; color: #64748b;">${stg.designation}</span>` : '';
-            let tatDeadline = stg.tat_deadline ? frappe.datetime.str_to_user(stg.tat_deadline.split(' ')[0]) : 'N/A';
-            
-            let statusBadge = '<span class="badge badge-secondary" style="font-weight: 600;">Not Sent</span>';
-            if (stg.status === 'Pending') statusBadge = '<span class="badge badge-info" style="font-weight: 600; background: #2563eb; color: #fff;">Pending</span>';
-            else if (stg.status === 'Responded') statusBadge = '<span class="badge badge-success" style="font-weight: 600;">Responded</span>';
-            else if (stg.status === 'No Responded') statusBadge = '<span class="badge badge-warning" style="font-weight: 600; background: #d97706; color: #fff;">No Responded</span>';
-            else if (stg.status === 'Overdue') statusBadge = '<span class="badge badge-danger" style="font-weight: 600;">Overdue</span>';
-            else if (stg.status === 'Skipped') statusBadge = '<span class="badge badge-light" style="font-weight: 600;">Skipped</span>';
-
-            return `
-                <tr style="cursor: pointer;" onclick="$(this).find('input[type=radio]').prop('checked', true);">
-                    <td style="text-align: center; vertical-align: middle; padding: 10px;">
-                        <input type="radio" name="selected_djp_stage" value="${stg.stage}" ${isChecked} style="cursor: pointer; width: 16px; height: 16px; accent-color: #2563eb;">
-                    </td>
-                    <td style="vertical-align: middle; padding: 10px;">
-                        <strong style="color: #1e293b; font-size: 12px;">Stage ${stg.stage}: ${stg.dc_level || stg.stage_name}</strong>
-                    </td>
-                    <td style="vertical-align: middle; padding: 10px;">
-                        <strong style="color: #0f172a; font-size: 12px;">${empName}</strong>${empDesig}
-                    </td>
-                    <td style="text-align: center; vertical-align: middle; padding: 10px;">${statusBadge}</td>
-                    <td style="text-align: center; vertical-align: middle; font-size: 11px; font-weight: 600; color: #475569; padding: 10px;">${tatDeadline}</td>
-                </tr>
-            `;
-        }).join('');
-
-        let dialog_html = `
-            <div style="margin-bottom: 12px; font-size: 12px; color: #475569;">
-                Select the stage reviewer to whom you want to send this DJP case for review:
-            </div>
-            <div style="max-height: 320px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                <table class="table table-bordered table-hover" style="margin-bottom: 0; background: #ffffff;">
-                    <thead style="background-color: #f1f5f9; font-size: 11px; text-transform: uppercase; color: #475569; letter-spacing: 0.5px;">
-                        <tr>
-                            <th style="width: 50px; text-align: center; padding: 8px;">Select</th>
-                            <th style="padding: 8px;">Stage & Level</th>
-                            <th style="padding: 8px;">Assigned Reviewer</th>
-                            <th style="width: 100px; text-align: center; padding: 8px;">Status</th>
-                            <th style="width: 110px; text-align: center; padding: 8px;">TAT Deadline</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${table_rows_html}
-                    </tbody>
-                </table>
-            </div>
-        `;
-
-        let d = new frappe.ui.Dialog({
-            title: __('Send Case to Reviewer'),
-            size: 'large',
-            fields: [
-                {
-                    fieldtype: 'HTML',
-                    fieldname: 'stage_table_html',
-                    options: dialog_html
-                }
-            ],
-            primary_action_label: __('Send Case'),
-            primary_action: function() {
-                let selected_stage = d.$wrapper.find('input[name="selected_djp_stage"]:checked').val();
-                if (!selected_stage) {
-                    frappe.msgprint(__('Please select a stage reviewer from the table.'));
-                    return;
-                }
-
-                d.hide();
-                frappe.call({
-                    method: 'audit_management.audit_management.doctype.djp_case.djp_case.send_to_selected_stage',
-                    args: {
-                        docname: frm.doc.name,
-                        target_stage: selected_stage
-                    },
-                    freeze: true,
-                    freeze_message: __('Sending case notification to reviewer...'),
-                    callback: function(r) {
-                        if (!r.exc && r.message) {
-                            frappe.show_alert({
-                                message: r.message.message || __('Case sent to selected reviewer successfully!'),
-                                indicator: 'green'
-                            });
-                            frm.reload_doc();
-                        }
+        frappe.confirm(__('Are you sure you want to send this case to ALL reviewers simultaneously? They will all share the same TAT deadline.'), function() {
+            frappe.call({
+                method: 'audit_management.audit_management.doctype.djp_case.djp_case.send_to_all_reviewers',
+                args: { docname: frm.doc.name },
+                freeze: true,
+                freeze_message: __('Sending to all reviewers...'),
+                callback: function(r) {
+                    if (r.message && r.message.success) {
+                        frappe.show_alert({message: r.message.message, indicator: 'green'});
+                        frm.reload_doc();
                     }
-                });
-            }
+                }
+            });
         });
-
-        d.show();
     },
 
     escalate_case: function(frm) {

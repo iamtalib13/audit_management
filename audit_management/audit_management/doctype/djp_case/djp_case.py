@@ -250,13 +250,8 @@ def get_committee_employee(dc_level, emp_branch, committee, accused_employee=Non
 
 
 def get_stage_tat(cmg_code, stage_num, total_stages):
-    """Distribute TAT across stages"""
-    total_tat = {"C0": 7, "C1": 7, "C2": 15, "C3": 15, "C4": 15, "C5": 45}.get(cmg_code, 15)
-    if stage_num == 1:
-        return max(1, int(total_tat * 0.4))
-    else:
-        remaining = total_tat - max(1, int(total_tat * 0.4))
-        return max(1, int(remaining / (total_stages - 1)))
+    """Return full TAT for all stages without distributing"""
+    return {"C0": 7, "C1": 7, "C2": 15, "C3": 15, "C4": 15, "C5": 45}.get(cmg_code, 15)
 
 
 @frappe.whitelist()
@@ -283,81 +278,63 @@ def send_to_current_stage(docname):
 
 
 @frappe.whitelist()
-def send_to_selected_stage(docname, target_stage):
-    """Send notification to user-selected stage reviewer"""
+def send_to_all_reviewers(docname):
+    """Send notification and assign ToDo to ALL stage reviewers simultaneously with the same TAT"""
     doc = frappe.get_doc("DJP Case", docname)
 
-    target_stage = int(target_stage)
-    if target_stage < 1 or target_stage > len(doc.djp_case_stages):
-        frappe.throw(_("Invalid stage selected"))
-
-    # Mark previous unresponded stages as "No Responded"
-    for idx, row in enumerate(doc.djp_case_stages):
-        if idx < target_stage - 1:
-            if row.status in ["Pending", "Overdue", "Not Sent"] and row.status != "Responded":
-                row.status = "No Responded"
-
-    selected_row = doc.djp_case_stages[target_stage - 1]
-
-    if not selected_row.employee:
-        frappe.throw(_("No reviewer assigned to selected stage '{0}'").format(selected_row.dc_level or selected_row.stage_name))
+    if not doc.djp_case_stages:
+        frappe.throw(_("No stages to send"))
 
     now_dt = now_datetime()
     today_date = getdate(now_dt)
+    
+    total_tat_days = get_stage_tat(doc.cmg_code, 1, 1)
+    tat_deadline_str = str(add_days(today_date, total_tat_days))
+    
+    from frappe.desk.form.assign_to import add as add_assignment
 
-    selected_row.status = "Pending"
-    selected_row.pending_time = now_dt
+    for row in doc.djp_case_stages:
+        if not row.employee:
+            continue
 
-    # Dynamically calculate stage TAT deadline starting from send date
-    total_stages = len(doc.djp_case_stages)
-    stage_tat_days = get_stage_tat(doc.cmg_code, target_stage, total_stages)
-    selected_row.tat_deadline = str(add_days(today_date, stage_tat_days))
+        row.status = "Pending"
+        row.pending_time = now_dt
+        row.tat_deadline = tat_deadline_str
 
-    # Dynamically update overall case TAT deadline starting from send date
-    total_tat_days = get_total_tat_for_cmg(doc.cmg_code)
-    doc.tat_deadline = str(add_days(today_date, total_tat_days))
+        if row.user_id:
+            try:
+                frappe.share.add("DJP Case", doc.name, row.user_id, read=1, write=1, share=0)
+            except Exception:
+                pass
 
-    doc.current_stage = target_stage
-    doc.current_dc_level = selected_row.dc_level or selected_row.stage_name
-    doc.status = "Under Review"
-    doc.save()
-
-    if selected_row.user_id:
-        # Grant Read/Write share permission to Reviewer User
-        try:
-            frappe.share.add("DJP Case", doc.name, selected_row.user_id, read=1, write=1, share=0)
-        except Exception as e:
-            frappe.log_error(f"DJP Case share failed: {e}")
-
-        # Add ToDo assignment for Reviewer User
-        try:
-            from frappe.desk.form.assign_to import add as add_assignment
-            
-            # Close existing open ToDos for this user on this document
             existing_todos = frappe.get_all("ToDo", filters={
                 "reference_type": "DJP Case",
                 "reference_name": doc.name,
-                "allocated_to": selected_row.user_id,
+                "allocated_to": row.user_id,
                 "status": "Open"
             })
             for todo in existing_todos:
                 frappe.db.set_value("ToDo", todo.name, "status", "Closed")
 
-            add_assignment({
-                "assign_to": [selected_row.user_id],
-                "doctype": "DJP Case",
-                "name": doc.name,
-                "description": f"DJP Case Review assigned for {doc.employee_name or doc.employee} ({selected_row.dc_level or selected_row.stage_name})",
-                "date": selected_row.tat_deadline
-            })
-        except Exception as e:
-            frappe.log_error(f"DJP Case assignment failed: {e}")
+            try:
+                add_assignment({
+                    "assign_to": [row.user_id],
+                    "doctype": "DJP Case",
+                    "name": doc.name,
+                    "description": f"DJP Case Review assigned for {doc.employee_name or doc.employee} ({row.dc_level or row.stage_name})",
+                    "date": tat_deadline_str
+                })
+            except Exception as e:
+                frappe.log_error(f"DJP Case assignment failed: {e}")
 
-    send_stage_notification(doc, selected_row, "assign")
+        send_stage_notification(doc, row, "assign")
 
-    reviewer_name = selected_row.employee_name or selected_row.employee
-    dc_title = selected_row.dc_level or selected_row.stage_name
-    return {"success": True, "message": _("Case successfully sent to {0} ({1})").format(reviewer_name, dc_title)}
+    doc.tat_deadline = tat_deadline_str
+    doc.status = "Under Review"
+    doc.current_stage = 1  # Not really relevant sequentially anymore, but keep it at 1
+    doc.save()
+
+    return {"success": True, "message": _("Case successfully sent to all reviewers with TAT of {0} days").format(total_tat_days)}
 
 
 @frappe.whitelist()
