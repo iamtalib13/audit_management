@@ -17,7 +17,34 @@ class DJPCase(Document):
         self.name = frappe.model.naming.make_autoname(f"{prefix}.#####")
 
 
+
+    def validate(self):
+        self.validate_attachment_removal()
+
+    def validate_attachment_removal(self):
+        if self.is_new():
+            return
+        
+        user = frappe.session.user
+        is_admin_or_creator = (
+            user == self.owner or 
+            "System Manager" in frappe.get_roles(user) or 
+            "Administrator" in frappe.get_roles(user) or 
+            "Audit Manager" in frappe.get_roles(user) or 
+            user == "Administrator"
+        )
+        if is_admin_or_creator:
+            return
+
+        old_doc = self.get_doc_before_save()
+        if not old_doc:
+            return
+
+        if old_doc.case_attachment and not self.case_attachment:
+            frappe.throw(frappe._("Stage users cannot remove attachments. Only Case Creator or Audit Managers can delete attachments."))
+
 # Dynamically fetches valid Severity and Occurrence options from CMG Grid settings
+
 @frappe.whitelist()
 def get_cmg_options(misconduct_type=None, severity=None):
     """Fetch allowed severity and occurrence options from CMG Grid in Audit Management Settings"""
