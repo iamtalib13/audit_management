@@ -40,8 +40,29 @@ frappe.ui.form.on('DJP Case', {
                     [data-doctype="DJP Case"] .page-actions, [data-doctype="DJP Case"] .djp-stage-tracker-container { pointer-events: auto !important; }\
                 </style>').appendTo('head');
             }
+
+            // Lock attachment field specifically
+            frm.set_df_property("case_attachment", "read_only", 1);
+            
+            // Hide Frappe sidebar attachment delete buttons for stage users
+            setTimeout(() => {
+                frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash").hide();
+                frm.page.sidebar.find(".attachment-row").each(function () {
+                    $(this).find("a, button, span").last().hide();
+                });
+            }, 500);
+            
+            // Also re-apply on sidebar mutation
+            const observer = new MutationObserver(() => {
+                frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash").hide();
+            });
+            if (frm.page.sidebar.length) {
+                observer.observe(frm.page.sidebar[0], { childList: true, subtree: true });
+            }
+
         } else {
             $('#djp-reviewer-readonly-style').remove();
+            frm.set_df_property("case_attachment", "read_only", 0);
         }
 
         if (frm.doc.misconduct_type) {
