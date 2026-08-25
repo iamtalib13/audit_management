@@ -93,7 +93,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Not Sent\nPending\nResponded\nNo Responded\nOverdue\nSkipped",
+   "options": "Not Sent\nPending\nResponded\nSent Back\nNo Responded\nOverdue\nSkipped",
    "read_only": 1
   },
   {

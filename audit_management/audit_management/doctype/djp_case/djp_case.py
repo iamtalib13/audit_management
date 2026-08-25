@@ -332,6 +332,17 @@ def send_to_selected_stage(docname, target_stage):
         # Add ToDo assignment for Reviewer User
         try:
             from frappe.desk.form.assign_to import add as add_assignment
+            
+            # Close existing open ToDos for this user on this document
+            existing_todos = frappe.get_all("ToDo", filters={
+                "reference_type": "DJP Case",
+                "reference_name": doc.name,
+                "allocated_to": selected_row.user_id,
+                "status": "Open"
+            })
+            for todo in existing_todos:
+                frappe.db.set_value("ToDo", todo.name, "status", "Closed")
+
             add_assignment({
                 "assign_to": [selected_row.user_id],
                 "doctype": "DJP Case",
@@ -387,6 +398,43 @@ def submit_stage_response(docname, response, attachment=None):
     reviewer_name = current_row.employee_name or current_row.employee
     dc_title = current_row.dc_level or current_row.stage_name
     return {"success": True, "message": _("Response successfully submitted by {0} ({1})").format(reviewer_name, dc_title)}
+
+
+@frappe.whitelist()
+def send_back_case(docname, remark):
+    """Send back the case to the creator for clarification or further action"""
+    doc = frappe.get_doc("DJP Case", docname)
+
+    if doc.status in ["Closed", "Cessation"]:
+        frappe.throw(_("Case is already closed"))
+
+    if doc.current_stage < 1 or doc.current_stage > len(doc.djp_case_stages):
+        frappe.throw(_("Invalid current stage"))
+
+    current_row = doc.djp_case_stages[doc.current_stage - 1]
+
+    # Save the remark and mark the stage as Sent Back
+    current_row.response = f"Sent Back Remark: {remark}"
+    current_row.status = "Sent Back"
+    current_row.response_time = now_datetime()
+
+    # Revert main document to Draft so creator can edit
+    doc.status = "Draft"
+    doc.save()
+
+    # Close existing open ToDo for this stage reviewer
+    existing_todos = frappe.get_all("ToDo", filters={
+        "reference_type": "DJP Case",
+        "reference_name": doc.name,
+        "allocated_to": current_row.user_id,
+        "status": "Open"
+    })
+    for todo in existing_todos:
+        frappe.db.set_value("ToDo", todo.name, "status", "Closed")
+
+    reviewer_name = current_row.employee_name or current_row.employee
+    dc_title = current_row.dc_level or current_row.stage_name
+    return {"success": True, "message": _("Case sent back to creator by {0} ({1})").format(reviewer_name, dc_title)}
 
 
 @frappe.whitelist()

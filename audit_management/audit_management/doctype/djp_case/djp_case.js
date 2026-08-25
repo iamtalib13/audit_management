@@ -124,6 +124,15 @@ frappe.ui.form.on('DJP Case', {
                 });
                 b3.addClass('btn-primary').find('i, svg').remove();
                 b3.prepend('<i class="fa fa-reply mr-1"></i> ');
+
+                const is_pending = frm.doc.djp_case_stages && frm.doc.djp_case_stages.some(s => s.user_id === frappe.session.user && s.status === 'Pending');
+                if (is_pending || is_admin) {
+                    let b_send_back = frm.add_custom_button(__('Send Back'), function() {
+                        frm.events.send_back_case(frm);
+                    });
+                    b_send_back.addClass('btn-danger').find('i, svg').remove();
+                    b_send_back.prepend('<i class="fa fa-undo mr-1"></i> ');
+                }
             }
 
             // 4. Close Case (Case Creator & Audit Team)
@@ -607,6 +616,41 @@ frappe.ui.form.on('DJP Case', {
             }
         });
         d.show();
+    },
+
+    send_back_case: function(frm) {
+        frappe.prompt(
+            [
+                {
+                    fieldname: 'remark',
+                    fieldtype: 'Small Text',
+                    label: __('Send Back Remark (Required)'),
+                    reqd: 1
+                }
+            ],
+            function(values) {
+                frappe.call({
+                    method: 'audit_management.audit_management.doctype.djp_case.djp_case.send_back_case',
+                    args: {
+                        docname: frm.doc.name,
+                        remark: values.remark
+                    },
+                    freeze: true,
+                    freeze_message: __('Sending back case...'),
+                    callback: function(r) {
+                        if (!r.exc && r.message) {
+                            frappe.show_alert({
+                                message: r.message.message || __('Case sent back successfully!'),
+                                indicator: 'orange'
+                            });
+                            frm.reload_doc();
+                        }
+                    }
+                });
+            },
+            __('Send Back to Creator'),
+            __('Send Back')
+        );
     },
 
     submit_stage_response: function(frm) {
