@@ -10,17 +10,18 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_case_details",
+  "is_multiple_accused",
   "employee",
   "employee_name",
   "designation",
   "emp_branch",
   "emp_division",
+  "additional_accused_employees",
   "column_break_1",
   "department_alignment",
   "misconduct_type",
   "severity",
   "occurrence",
-  "case_attachment",
   "section_break_cmg",
   "cmg_code",
   "cmg_recommended_outcome",
@@ -40,7 +41,8 @@
   "section_break_final",
   "final_decision",
   "final_justification",
-  "governance_notes"
+  "governance_notes",
+  "case_attachment"
  ],
  "fields": [
   {
@@ -49,13 +51,21 @@
    "label": "Case Details"
   },
   {
+   "fieldname": "is_multiple_accused",
+   "fieldtype": "Check",
+   "label": "Multiple Accused Employees?",
+   "default": "0"
+  },
+  {
    "fieldname": "employee",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Employee",
    "options": "Employee",
-   "reqd": 1
+   "reqd": 0,
+   "depends_on": "eval:!doc.is_multiple_accused",
+   "mandatory_depends_on": "eval:!doc.is_multiple_accused"
   },
   {
    "fetch_from": "employee.employee_name",
@@ -63,14 +73,16 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Employee Name",
-   "read_only": 1
+   "read_only": 1,
+   "depends_on": "eval:!doc.is_multiple_accused"
   },
   {
    "fetch_from": "employee.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
    "label": "Designation",
-   "read_only": 1
+   "read_only": 1,
+   "depends_on": "eval:!doc.is_multiple_accused"
   },
   {
    "fetch_from": "employee.branch",
@@ -78,7 +90,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Branch",
-   "reqd": 1
+   "reqd": 1,
+   "depends_on": "eval:!doc.is_multiple_accused"
   },
   {
    "fetch_from": "employee.custom_division",
@@ -86,7 +99,16 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Division",
-   "reqd": 1
+   "reqd": 1,
+   "depends_on": "eval:!doc.is_multiple_accused"
+  },
+  {
+   "fieldname": "additional_accused_employees",
+   "fieldtype": "Table",
+   "label": "Additional Accused",
+   "options": "DJP Additional Accused",
+   "depends_on": "eval:doc.is_multiple_accused",
+   "mandatory_depends_on": "eval:doc.is_multiple_accused"
   },
   {
    "fieldname": "column_break_1",

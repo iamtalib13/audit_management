@@ -9,6 +9,14 @@ frappe.ui.form.on('DJP Case', {
             };
         });
 
+        frm.set_query('employee', 'additional_accused_employees', function() {
+            return {
+                filters: {
+                    'user_id': ['!=', frappe.session.user]
+                }
+            };
+        });
+
         // Prevent user from selecting Accused Employee or themselves as a Stage Reviewer
         frm.set_query('employee', 'djp_case_stages', function(doc, cdt, cdn) {
             return {
@@ -240,6 +248,15 @@ frappe.ui.form.on('DJP Case', {
     // Triggers dynamic filtering of Severity options when Misconduct Type changes
     misconduct_type: function(frm) {
         frm.events.update_severity_options(frm);
+    },
+
+    is_multiple_accused: function(frm) {
+        if (frm.doc.is_multiple_accused && frm.doc.additional_accused_employees && frm.doc.additional_accused_employees.length > 0) {
+            frm.set_value('employee', frm.doc.additional_accused_employees[0].employee);
+        } else if (!frm.doc.is_multiple_accused) {
+            frm.clear_table('additional_accused_employees');
+            frm.refresh_field('additional_accused_employees');
+        }
     },
 
     // Triggers dynamic filtering of Occurrence options when Severity changes
@@ -929,6 +946,14 @@ frappe.ui.form.on('DJP Case Stage', {
             frappe.db.get_doc('DJP Stage', row.stage_name).then(doc => {
                 frappe.model.set_value(cdt, cdn, 'dc_level', doc.dc_level);
             });
+        }
+    }
+});
+
+frappe.ui.form.on('DJP Additional Accused', {
+    employee: function(frm, cdt, cdn) {
+        if (frm.doc.is_multiple_accused && frm.doc.additional_accused_employees && frm.doc.additional_accused_employees.length > 0) {
+            frm.set_value('employee', frm.doc.additional_accused_employees[0].employee);
         }
     }
 });
