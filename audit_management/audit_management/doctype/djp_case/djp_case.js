@@ -51,6 +51,8 @@ frappe.ui.form.on('DJP Case', {
 
             // Lock attachment field specifically
             frm.set_df_property("case_attachment", "read_only", 1);
+            frm.set_df_property("is_multiple_accused", "read_only", 1);
+            frm.set_df_property("additional_accused_employees", "read_only", 1);
             
             // Hide Frappe sidebar attachment delete buttons for stage users
             setTimeout(() => {
