@@ -6,7 +6,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now_datetime, add_days, getdate
 
-
+# DJP Case Document Class
 class DJPCase(Document):
     def autoname(self):
         """Generate custom nomenclature: DJP-{Branch}-{Year}-{Number} (e.g. DJP-MUM-2026-00001)"""
@@ -16,11 +16,11 @@ class DJPCase(Document):
         prefix = f"DJP-{branch_code}-{year}-"
         self.name = frappe.model.naming.make_autoname(f"{prefix}.#####")
 
-
-
+    # Validation to prevent attachment removal by stage users
     def validate(self):
         self.validate_attachment_removal()
 
+    #self.validate_final_decision_justification()
     def validate_attachment_removal(self):
         if self.is_new():
             return
@@ -44,7 +44,6 @@ class DJPCase(Document):
             frappe.throw(frappe._("Stage users cannot remove attachments. Only Case Creator or Audit Managers can delete attachments."))
 
 # Dynamically fetches valid Severity and Occurrence options from CMG Grid settings
-
 @frappe.whitelist()
 def get_cmg_options(misconduct_type=None, severity=None):
     """Fetch allowed severity and occurrence options from CMG Grid in Audit Management Settings"""
@@ -71,7 +70,6 @@ def get_cmg_options(misconduct_type=None, severity=None):
         "occurrences": sorted(list(occurrences))
     }
 
-
 # Fetches auto-populated CMG Code and Recommended Outcome based on Misconduct, Severity & Occurrence
 @frappe.whitelist()
 def get_cmg_mapping(misconduct_type, severity, occurrence):
@@ -91,7 +89,6 @@ def get_cmg_mapping(misconduct_type, severity, occurrence):
                 }
 
     return None
-
 
 # Calculates and returns DJP Stage rows for auto-population based on CMG Code and Branch
 @frappe.whitelist()
@@ -144,7 +141,7 @@ def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
 
     return stage_rows
 
-
+# Return max TAT days based on BRD rules for CMG Code
 def get_total_tat_for_cmg(cmg_code):
     """Return max TAT days based on BRD rules"""
     tat_map = {
@@ -157,7 +154,7 @@ def get_total_tat_for_cmg(cmg_code):
     }
     return tat_map.get(cmg_code, 15)
 
-
+# Populate DJP Case stages based on CMG Code and branch, clearing existing stages for re-population
 @frappe.whitelist()
 def populate_djp_stages(docname, cmg_code, emp_branch):
     """Populate DJP Case stages based on CMG Code and branch"""
@@ -212,7 +209,7 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
 
     return {"success": True}
 
-
+# Return list of DC levels based on CMG Code
 def get_dc_levels_for_cmg(cmg_code):
     """Return list of DC levels based on CMG Code"""
     if cmg_code in ["C0", "C1", "C2"]:
@@ -223,7 +220,7 @@ def get_dc_levels_for_cmg(cmg_code):
         return ["Zonal DC", "National DC", "Management Centre Core Committee"]
     return ["Zonal DC"]
 
-
+# Get employee for committee level and branch, excluding accused employee
 def get_committee_employee(dc_level, emp_branch, committee, accused_employee=None):
     """Get employee for committee level and branch, excluding accused employee"""
     roles = [r.strip() for r in committee.member_roles.split(",")] if hasattr(committee, 'member_roles') and committee.member_roles else []
@@ -248,12 +245,12 @@ def get_committee_employee(dc_level, emp_branch, committee, accused_employee=Non
         limit=1)
     return employees[0] if employees else None
 
-
+# Calculate TAT for a specific stage based on CMG Code and stage number
 def get_stage_tat(cmg_code, stage_num, total_stages):
     """Return full TAT for all stages without distributing"""
     return {"C0": 7, "C1": 7, "C2": 15, "C3": 15, "C4": 15, "C5": 45}.get(cmg_code, 15)
 
-
+# Send notification to current stage reviewer and update stage status
 @frappe.whitelist()
 def send_to_current_stage(docname):
     """Send notification to current stage reviewer and update stage status"""
@@ -276,7 +273,7 @@ def send_to_current_stage(docname):
 
     return {"success": True}
 
-
+# Send notification and assign ToDo to ALL stage reviewers simultaneously with the same TAT
 @frappe.whitelist()
 def send_to_all_reviewers(docname):
     """Send notification and assign ToDo to ALL stage reviewers simultaneously with the same TAT"""
@@ -336,7 +333,7 @@ def send_to_all_reviewers(docname):
 
     return {"success": True, "message": _("Case successfully sent to all reviewers with TAT of {0} days").format(total_tat_days)}
 
-
+# Submit response for active stage reviewer
 @frappe.whitelist()
 def submit_stage_response(docname, response, attachment=None):
     """Submit response for active stage reviewer"""
@@ -376,7 +373,7 @@ def submit_stage_response(docname, response, attachment=None):
     dc_title = current_row.dc_level or current_row.stage_name
     return {"success": True, "message": _("Response successfully submitted by {0} ({1})").format(reviewer_name, dc_title)}
 
-
+# Send back the case to the creator for clarification or further action
 @frappe.whitelist()
 def send_back_case(docname, remark):
     """Send back the case to the creator for clarification or further action"""
@@ -413,7 +410,7 @@ def send_back_case(docname, remark):
     dc_title = current_row.dc_level or current_row.stage_name
     return {"success": True, "message": _("Case sent back to creator by {0} ({1})").format(reviewer_name, dc_title)}
 
-
+# Fetch DJP cases accessible by user for interactive dashboard table filtering
 @frappe.whitelist()
 def get_user_djp_cases(filter_type=None):
     """Fetch DJP cases accessible by user for interactive dashboard table filtering"""
@@ -450,7 +447,7 @@ def get_user_djp_cases(filter_type=None):
 
     return cases
 
-
+# Fetch DJP dashboard analytics for Case Creators, Admins & Stage Reviewers
 @frappe.whitelist()
 def get_djp_dashboard_data():
     """Return dashboard analytics for DJP Cases tailored for Case Creators, Admins & Stage Reviewers"""
@@ -512,7 +509,7 @@ def get_djp_dashboard_data():
         "is_admin": is_admin_or_manager
     }
 
-
+# Permission query condition for DJP Case list view & reports
 def get_permission_query_conditions(user=None):
     """Permission query condition for DJP Case list view & reports.
     Ensures Stage Reviewers see ONLY cases where a stage has been sent to them or they own/have share access.
@@ -541,7 +538,7 @@ def get_permission_query_conditions(user=None):
 
     return conditions
 
-
+# Document permission validation for DJP Case form view & API access
 def has_permission(doc, ptype="read", user=None):
     """Document permission validation for DJP Case form view & API access"""
     if not user:
@@ -573,7 +570,7 @@ def has_permission(doc, ptype="read", user=None):
 
     return False
 
-
+# Send email notification for stage action
 def send_stage_notification(doc, stage_row, action):
     """Send email notification for stage action"""
     try:
@@ -607,7 +604,7 @@ def send_stage_notification(doc, stage_row, action):
     except Exception as e:
         frappe.log_error(f"DJP Case notification failed: {e}")
 
-
+# Escalate case to next DC level with justification
 @frappe.whitelist()
 def escalate_case(docname, justification):
     """Escalate case to next DC level"""
@@ -636,7 +633,7 @@ def escalate_case(docname, justification):
 
     return {"success": True}
 
-
+# Close DJP case with restriction for authorized employee IDs and admin roles
 @frappe.whitelist()
 def close_case(docname, final_decision=None, justification=None, governance_notes=None, outcome=None):
     """Close case with final decision and required justification"""
@@ -675,6 +672,7 @@ def close_case(docname, final_decision=None, justification=None, governance_note
 
     return {"success": True}
 
+# Check governance rules based on final decision and misconduct type, and update case status accordingly
 def check_governance_rules(doc):
     """Check and apply governance rules"""
     notes = []
@@ -703,7 +701,7 @@ def check_governance_rules(doc):
         doc.governance_notes = existing + "\n" + "\n".join(notes) if existing else "\n".join(notes)
         doc.save()
 
-
+# Count Black Marks (C2, C3) for employee
 def get_employee_black_mark_count(employee):
     """Count Black Marks (C2, C3) for employee"""
     count = frappe.db.count("DJP Case", {
@@ -713,7 +711,7 @@ def get_employee_black_mark_count(employee):
     })
     return count
 
-
+# Check and update overdue TAT for active DJP Case Stages
 @frappe.whitelist()
 def check_djp_pending_tat():
     """Check and update overdue TAT for active DJP Case Stages"""
@@ -742,6 +740,7 @@ def check_djp_pending_tat():
         "overdue_stages": overdue_stages
     }
 
+# Reopen a closed case with justification
 @frappe.whitelist()                                                                                                
 def reopen_case(docname, reason):                                                                                  
         """Reopen a closed case with justification"""                                                                  

@@ -252,6 +252,7 @@ frappe.ui.form.on('DJP Case', {
         frm.events.update_severity_options(frm);
     },
 
+    // Handle multiple accused employee selection and cleanup
     is_multiple_accused: function(frm) {
         if (frm.doc.is_multiple_accused && frm.doc.additional_accused_employees && frm.doc.additional_accused_employees.length > 0) {
             frm.set_value('employee', frm.doc.additional_accused_employees[0].employee);
@@ -408,6 +409,7 @@ frappe.ui.form.on('DJP Case', {
         });
     },
 
+    // Calculate and update TAT deadline based on CMG Code
     set_tat_deadline: function(frm) {
         if (!frm.doc.cmg_code || !frm.doc.created_on) return;
 
@@ -431,6 +433,7 @@ frappe.ui.form.on('DJP Case', {
         }
     },
 
+    // Populate stage reviewers from backend
     populate_stages: function(frm) {
         frappe.call({
             method: 'audit_management.audit_management.doctype.djp_case.djp_case.populate_djp_stages',
@@ -448,6 +451,7 @@ frappe.ui.form.on('DJP Case', {
         });
     },
 
+    // Send case to all stage reviewers simultaneously
     send_to_all_reviewers: function(frm) {
         if (!frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0) {
             frappe.msgprint(__('Please populate stages first using "Populate Stages" button.'));
@@ -470,6 +474,7 @@ frappe.ui.form.on('DJP Case', {
         });
     },
 
+    // Open escalation dialog and submit to next stage
     escalate_case: function(frm) {
         const d = new frappe.ui.Dialog({
             title: __('Escalate Case'),
@@ -502,6 +507,7 @@ frappe.ui.form.on('DJP Case', {
         d.show();
     },
 
+    // Open closure dialog with decision and justification
     close_case: function(frm) {
         const d = new frappe.ui.Dialog({
             title: __('Close Case'),
@@ -556,6 +562,7 @@ frappe.ui.form.on('DJP Case', {
         d.show();
     },
 
+    // Prompt for remark and send case back to creator
     send_back_case: function(frm) {
         frappe.prompt(
             [
@@ -591,6 +598,7 @@ frappe.ui.form.on('DJP Case', {
         );
     },
 
+    // Submit stage review response with supporting attachments
     submit_stage_response: function(frm) {
         let uploaded_files = []; // Array of { name: '...', url: '...' }
 
@@ -942,6 +950,7 @@ frappe.ui.form.on('DJP Case', {
 
 // DJP Case Stage events
 frappe.ui.form.on('DJP Case Stage', {
+    // Sync DC Level with selected stage name
     stage_name: function(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
         if (row.stage_name) {
@@ -953,6 +962,7 @@ frappe.ui.form.on('DJP Case Stage', {
 });
 
 frappe.ui.form.on('DJP Additional Accused', {
+    // Sync main employee field with first additional accused employee
     employee: function(frm, cdt, cdn) {
         if (frm.doc.is_multiple_accused && frm.doc.additional_accused_employees && frm.doc.additional_accused_employees.length > 0) {
             frm.set_value('employee', frm.doc.additional_accused_employees[0].employee);
