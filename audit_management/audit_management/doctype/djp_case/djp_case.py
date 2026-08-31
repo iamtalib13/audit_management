@@ -640,6 +640,17 @@ def escalate_case(docname, justification):
 @frappe.whitelist()
 def close_case(docname, final_decision=None, justification=None, governance_notes=None, outcome=None):
     """Close case with final decision and required justification"""
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_admin = user == "Administrator" or "System Manager" in roles
+
+    allowed_emp_ids = ["8751", "1754", "447"]
+    emp = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_number"], as_dict=True)
+    emp_id = (emp.name if emp else None) or (emp.employee_number if emp else None)
+
+    if not is_admin and (not emp_id or str(emp_id).strip() not in allowed_emp_ids):
+        frappe.throw(_("Only authorized Employee ID 'Chandrkant Sir(447)' can close DJP Cases."))
+
     doc = frappe.get_doc("DJP Case", docname)
 
     decision = final_decision or outcome
@@ -663,7 +674,6 @@ def close_case(docname, final_decision=None, justification=None, governance_note
     check_governance_rules(doc)
 
     return {"success": True}
-
 
 def check_governance_rules(doc):
     """Check and apply governance rules"""
