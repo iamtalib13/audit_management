@@ -125,15 +125,17 @@ def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
 
         tat_deadline = str(add_days(base_time, stage_days))
 
+        emp_info = get_committee_employee(dc_level, emp_branch, committee, accused_employee) if committee else None
+
         stage_rows.append({
             "stage": stage_sequence,
             "stage_name": stage_doc or dc_level,
             "dc_level": dc_level,
-            "employee": "",
-            "user_id": "",
-            "employee_name": "",
-            "designation": "",
-            "email": "",
+            "employee": emp_info.name if emp_info else "",
+            "user_id": emp_info.user_id if emp_info else "",
+            "employee_name": emp_info.employee_name if emp_info else "",
+            "designation": emp_info.designation if emp_info else "",
+            "email": (emp_info.company_email or emp_info.prefered_email) if emp_info else "",
             "status": "Not Sent",
             "tat_deadline": tat_deadline
         })
@@ -154,7 +156,7 @@ def get_total_tat_for_cmg(cmg_code):
     }
     return tat_map.get(cmg_code, 15)
 
-# Populate DJP Case stages based on CMG Code and branch, clearing existing stages for re-population
+# Populate stage reviewers from backend
 @frappe.whitelist()
 def populate_djp_stages(docname, cmg_code, emp_branch):
     """Populate DJP Case stages based on CMG Code and branch"""
@@ -187,15 +189,17 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
         stage_tat = get_stage_tat(cmg_code, stage_sequence, len(dc_levels))
         tat_deadline = add_days(doc.created_on or now_datetime(), stage_tat)
 
+        emp_info = get_committee_employee(dc_level, emp_branch or doc.emp_branch, committee, doc.employee)
+
         doc.append("djp_case_stages", {
             "stage": stage_sequence,
             "stage_name": stage_doc,
             "dc_level": dc_level,
-            "employee": "",
-            "user_id": "",
-            "employee_name": "",
-            "designation": "",
-            "email": "",
+            "employee": emp_info.name if emp_info else "",
+            "user_id": emp_info.user_id if emp_info else "",
+            "employee_name": emp_info.employee_name if emp_info else "",
+            "designation": emp_info.designation if emp_info else "",
+            "email": (emp_info.company_email or emp_info.prefered_email) if emp_info else "",
             "status": "Not Sent",
             "pending_time": None,
             "tat_deadline": tat_deadline
@@ -205,7 +209,8 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
     doc.current_stage = 1
     doc.current_dc_level = dc_levels[0] if dc_levels else ""
     doc.status = "Draft"
-    doc.save()
+    doc.flags.ignore_mandatory = True
+    doc.save(ignore_permissions=True)
 
     return {"success": True}
 

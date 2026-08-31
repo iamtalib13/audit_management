@@ -433,8 +433,14 @@ frappe.ui.form.on('DJP Case', {
         }
     },
 
-    // Populate stage reviewers from backend
+    // Populate stage reviewers from backend and allow editing
     populate_stages: function(frm) {
+        if (frm.doc.__islocal) {
+            frm.events.auto_populate_stage_rows(frm);
+            frappe.show_alert({message: __('Stages populated. You can edit stage reviewers and sequence.'), indicator: 'green'});
+            return;
+        }
+
         frappe.call({
             method: 'audit_management.audit_management.doctype.djp_case.djp_case.populate_djp_stages',
             args: {
@@ -442,10 +448,12 @@ frappe.ui.form.on('DJP Case', {
                 cmg_code: frm.doc.cmg_code,
                 emp_branch: frm.doc.emp_branch
             },
+            freeze: true,
+            freeze_message: __('Populating DJP stages...'),
             callback: function(r) {
                 if (r.message) {
                     frm.reload_doc();
-                    frappe.show_alert({message: __('Stages populated successfully'), indicator: 'green'});
+                    frappe.show_alert({message: __('Stages populated successfully. You can edit stage reviewers and sequence.'), indicator: 'green'});
                 }
             }
         });
