@@ -516,6 +516,16 @@ def send_stage_notification(doc, stage_row, action="assign"):
             if current_email != to_email and current_email not in cc_list:
                 cc_list.append(current_email)
 
+        # Add Case Creator (Generator) to CC
+        creator_email = (doc.query_generated_by_mail or "").strip().lower()
+        if not creator_email and doc.owner:
+            owner_email = frappe.db.get_value("User", doc.owner, "email")
+            if owner_email:
+                creator_email = owner_email.strip().lower()
+
+        if creator_email and creator_email != to_email and creator_email not in cc_list:
+            cc_list.append(creator_email)
+
     # Add Settings CC emails
     static_cc = settings.query_cc_emails if action == "assign" else settings.response_cc_emails
     if static_cc:
