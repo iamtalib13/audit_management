@@ -1,5 +1,10 @@
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 class AuditManagementSettings(Document):
-	pass
+	def validate(self):
+		if self.has_value_changed("enable_djp_module"):
+			if frappe.session.user != "Administrator":
+				frappe.throw(_("Only Administrator can enable or disable the DJP Module."))
+
