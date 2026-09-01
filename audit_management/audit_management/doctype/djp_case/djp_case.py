@@ -550,7 +550,7 @@ def get_permission_query_conditions(user=None):
         return "1=0"
 
     user_roles = frappe.get_roles(user)
-    if user == "Administrator" or "System Manager" in user_roles or "Audit Manager" in user_roles or "Audit Member" in user_roles:
+    if user == "Administrator" or "System Manager" in user_roles or "Audit Manager" in user_roles or "Audit Member" in user_roles or "HR Manager" in user_roles:
         return ""
 
     user_escaped = frappe.db.escape(user)
@@ -578,9 +578,8 @@ def has_permission(doc, ptype="read", user=None):
     if user != "Administrator" and not is_djp_module_enabled():
         return False
 
-
     user_roles = frappe.get_roles(user)
-    if user == "Administrator" or "System Manager" in user_roles or "Audit Manager" in user_roles or "Audit Member" in user_roles:
+    if user == "Administrator" or "System Manager" in user_roles or "Audit Manager" in user_roles or "Audit Member" in user_roles or "HR Manager" in user_roles:
         return True
 
     doc_owner = doc.owner if hasattr(doc, "owner") else getattr(doc, "owner", None)
@@ -801,33 +800,3 @@ def reopen_case(docname, reason):
                                                                                                                        
         doc.save(ignore_permissions=True)                                                                              
         return {"message": "Case Reopened Successfully"}
-
-@frappe.whitelist()
-def custom_search_widget(txt, doctype=None, searchfield=None, start=0, page_len=50, filters=None, as_dict=False):
-	import frappe.desk.search
-	results = frappe.desk.search.search_widget(txt, doctype, searchfield, start, page_len, filters, as_dict)
-	if not is_djp_module_enabled():
-		filtered = []
-		for r in results:
-			val = str(r.get("value") if isinstance(r, dict) else r[0] if isinstance(r, (list, tuple)) else r)
-			desc = str(r.get("description") if isinstance(r, dict) else (r[1] if isinstance(r, (list, tuple)) and len(r) > 1 else ""))
-			if "DJP" in val.upper() or "DJP" in desc.upper():
-				continue
-			filtered.append(r)
-		return filtered
-	return results
-
-@frappe.whitelist()
-def custom_global_search(text, start=0, limit=20, doctype=None):
-	import frappe.desk.search
-	results = frappe.desk.search.global_search(text, start, limit, doctype)
-	if not is_djp_module_enabled():
-		filtered = []
-		for r in results:
-			dt = str(r.get("doctype", ""))
-			txt_val = str(r.get("content", "")) or str(r.get("title", "")) or str(r.get("name", ""))
-			if "DJP" in dt.upper() or "DJP" in txt_val.upper():
-				continue
-			filtered.append(r)
-		return filtered
-	return results
