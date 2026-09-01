@@ -6,6 +6,21 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now_datetime, add_days, getdate
 
+def is_djp_module_enabled():
+    """Check if DJP module is enabled in Audit Management Settings"""
+    val = frappe.db.get_single_value("Audit Management Settings", "enable_djp_module")
+    return val if val is not None else 1
+
+def boot_session(bootinfo):
+    """Filter out DJP DocTypes from bootinfo when DJP module is disabled for non-Administrator users"""
+    user = frappe.session.user
+    if user != "Administrator" and not is_djp_module_enabled():
+        djp_doctypes = {"DJP Case", "DJP Stage", "DJP Stage Assignment", "DJP Additional Accused"}
+        if hasattr(bootinfo, "user") and isinstance(bootinfo.user, dict):
+            for key in ["can_read", "can_create", "can_write", "can_search", "can_get_doctypes", "single_doctypes"]:
+                if key in bootinfo.user and isinstance(bootinfo.user[key], (list, set, tuple)):
+                    bootinfo.user[key] = [dt for dt in bootinfo.user[key] if dt not in djp_doctypes]
+
 # DJP Case Document Class
 class DJPCase(Document):
     def autoname(self):
@@ -16,9 +31,13 @@ class DJPCase(Document):
         prefix = f"DJP-{branch_code}-{year}-"
         self.name = frappe.model.naming.make_autoname(f"{prefix}.#####")
 
-    # Validation to prevent attachment removal by stage users
+    # Validation to prevent attachment removal by stage users and check module status
     def validate(self):
+        user = frappe.session.user
+        if user != "Administrator" and not is_djp_module_enabled():
+            frappe.throw(_("DJP Module is currently disabled in Audit Management Settings."))
         self.validate_attachment_removal()
+
 
     #self.validate_final_decision_justification()
     def validate_attachment_removal(self):
@@ -419,6 +438,9 @@ def send_back_case(docname, remark):
 @frappe.whitelist()
 def get_user_djp_cases(filter_type=None):
     """Fetch DJP cases accessible by user for interactive dashboard table filtering"""
+    if not is_djp_module_enabled():
+        return []
+
     user = frappe.session.user
     if not user or user == "Guest":
         return []
@@ -456,6 +478,9 @@ def get_user_djp_cases(filter_type=None):
 @frappe.whitelist()
 def get_djp_dashboard_data():
     """Return dashboard analytics for DJP Cases tailored for Case Creators, Admins & Stage Reviewers"""
+    if not is_djp_module_enabled():
+        return {"enabled": False, "total_count": 0, "draft_count": 0, "under_review_count": 0, "closed_count": 0}
+
     user = frappe.session.user
     if not user or user == "Guest":
         return {}
@@ -511,17 +536,18 @@ def get_djp_dashboard_data():
         "role_type": role_type,
         "cmg_counts": cmg_counts,
         "dc_counts": dc_counts,
-        "is_admin": is_admin_or_manager
+        "is_admin": is_admin_or_manager,
+        "enabled": True
     }
 
 # Permission query condition for DJP Case list view & reports
 def get_permission_query_conditions(user=None):
-    """Permission query condition for DJP Case list view & reports.
-    Ensures Stage Reviewers see ONLY cases where a stage has been sent to them or they own/have share access.
-    Unsent stages ('Not Sent') remain hidden from stage reviewers.
-    """
+    """Permission query condition for DJP Case list view & reports."""
     if not user:
         user = frappe.session.user
+
+    if user != "Administrator" and not is_djp_module_enabled():
+        return "1=0"
 
     user_roles = frappe.get_roles(user)
     if user == "Administrator" or "System Manager" in user_roles or "Audit Manager" in user_roles or "Audit Member" in user_roles:
@@ -548,6 +574,10 @@ def has_permission(doc, ptype="read", user=None):
     """Document permission validation for DJP Case form view & API access"""
     if not user:
         user = frappe.session.user
+
+    if user != "Administrator" and not is_djp_module_enabled():
+        return False
+
 
     user_roles = frappe.get_roles(user)
     if user == "Administrator" or "System Manager" in user_roles or "Audit Manager" in user_roles or "Audit Member" in user_roles:
@@ -771,3 +801,33 @@ def reopen_case(docname, reason):
                                                                                                                        
         doc.save(ignore_permissions=True)                                                                              
         return {"message": "Case Reopened Successfully"}
+
+@frappe.whitelist()
+def custom_search_widget(txt, doctype=None, searchfield=None, start=0, page_len=50, filters=None, as_dict=False):
+	import frappe.desk.search
+	results = frappe.desk.search.search_widget(txt, doctype, searchfield, start, page_len, filters, as_dict)
+	if not is_djp_module_enabled():
+		filtered = []
+		for r in results:
+			val = str(r.get("value") if isinstance(r, dict) else r[0] if isinstance(r, (list, tuple)) else r)
+			desc = str(r.get("description") if isinstance(r, dict) else (r[1] if isinstance(r, (list, tuple)) and len(r) > 1 else ""))
+			if "DJP" in val.upper() or "DJP" in desc.upper():
+				continue
+			filtered.append(r)
+		return filtered
+	return results
+
+@frappe.whitelist()
+def custom_global_search(text, start=0, limit=20, doctype=None):
+	import frappe.desk.search
+	results = frappe.desk.search.global_search(text, start, limit, doctype)
+	if not is_djp_module_enabled():
+		filtered = []
+		for r in results:
+			dt = str(r.get("doctype", ""))
+			txt_val = str(r.get("content", "")) or str(r.get("title", "")) or str(r.get("name", ""))
+			if "DJP" in dt.upper() or "DJP" in txt_val.upper():
+				continue
+			filtered.append(r)
+		return filtered
+	return results
