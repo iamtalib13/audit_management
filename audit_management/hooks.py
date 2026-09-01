@@ -5,6 +5,9 @@ app_description = "this app is used for Audit Management"
 app_email = "audit.sahayog@gmail.com"
 app_license = "xyz"
 
+boot_session = "audit_management.audit_management.doctype.djp_case.djp_case.boot_session"
+
+
 # Includes in <head>
 # ------------------
 
@@ -154,7 +157,9 @@ scheduler_events = {
 #
 override_whitelisted_methods = {
 	"frappe.desk.form.load.getdoc": "audit_management.audit_management.doctype.my_audits.my_audits.filtered_getdoc",
-	"frappe.desk.form.load.get_docinfo": "audit_management.audit_management.doctype.my_audits.my_audits.get_filtered_docinfo"
+	"frappe.desk.form.load.get_docinfo": "audit_management.audit_management.doctype.my_audits.my_audits.get_filtered_docinfo",
+	"frappe.desk.search.search_widget": "audit_management.audit_management.doctype.djp_case.djp_case.custom_search_widget",
+	"frappe.desk.search.global_search": "audit_management.audit_management.doctype.djp_case.djp_case.custom_global_search"
 }
 #
 # each overriding function accepts a `data` argument;
