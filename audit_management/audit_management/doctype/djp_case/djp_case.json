@@ -206,10 +206,9 @@
   },
   {
    "fieldname": "current_dc_level",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Current DC Level",
-   "options": "Zonal DC\nNational DC\nManagement Centre Core Committee",
    "read_only": 1
   },
   {
