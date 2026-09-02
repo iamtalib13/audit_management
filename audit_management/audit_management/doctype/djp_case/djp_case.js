@@ -274,6 +274,26 @@ frappe.ui.form.on('DJP Case', {
         }
     },
 
+    // Auto-update stage rows when Accused Employee or Branch changes
+    employee: function(frm) {
+        if (frm.doc.employee) {
+            frappe.db.get_value('Employee', frm.doc.employee, 'branch', (r) => {
+                if (r && r.branch) {
+                    frm.set_value('emp_branch', r.branch);
+                    if (frm.doc.cmg_code && frm.doc.__islocal) {
+                        frm.events.auto_populate_stage_rows(frm);
+                    }
+                }
+            });
+        }
+    },
+
+    emp_branch: function(frm) {
+        if (frm.doc.cmg_code && frm.doc.__islocal) {
+            frm.events.auto_populate_stage_rows(frm);
+        }
+    },
+
     // Fetches valid Severity options from backend and auto-selects if single option available
     update_severity_options: function(frm) {
         if (!frm.doc.misconduct_type) {

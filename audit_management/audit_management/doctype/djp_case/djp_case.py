@@ -116,6 +116,9 @@ def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
     if not cmg_code:
         return []
 
+    if not emp_branch and accused_employee:
+        emp_branch = frappe.db.get_value("Employee", accused_employee, "branch")
+
     dc_levels = get_dc_levels_for_cmg(cmg_code)
     settings = frappe.get_single("Audit Management Settings")
     dc_structure = settings.get("disciplinary_committee", [])
@@ -144,11 +147,12 @@ def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
 
         tat_deadline = str(add_days(base_time, stage_days))
 
-        emp_info = get_committee_employee(dc_level, emp_branch, committee, accused_employee) if committee else None
+        display_stage_name = "Branch Manager" if stage_sequence == 1 else (stage_doc or dc_level)
+        emp_info = get_committee_employee(dc_level, emp_branch, committee, accused_employee)
 
         stage_rows.append({
             "stage": stage_sequence,
-            "stage_name": stage_doc or dc_level,
+            "stage_name": display_stage_name,
             "dc_level": dc_level,
             "employee": emp_info.name if emp_info else "",
             "user_id": emp_info.user_id if emp_info else "",
@@ -184,6 +188,10 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
     if not cmg_code:
         frappe.throw(_("CMG Code is required to populate stages"))
 
+    branch_to_use = emp_branch or doc.emp_branch
+    if not branch_to_use and doc.employee:
+        branch_to_use = frappe.db.get_value("Employee", doc.employee, "branch")
+
     # Clear existing stages to allow re-populating/editing
     doc.set("djp_case_stages", [])
 
@@ -195,24 +203,20 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
     stage_sequence = 1
     for dc_level in dc_levels:
         committee = next((c for c in dc_structure if c.dc_level == dc_level and getattr(c, 'is_active', 1)), None)
-        if not committee:
-            continue
 
         stage_doc = frappe.db.get_value("DJP Stage",
             {"dc_level": dc_level, "is_active": 1},
             ["name"], order_by="sequence asc")
 
-        if not stage_doc:
-            continue
-
+        display_stage_name = "Branch Manager" if stage_sequence == 1 else (stage_doc or dc_level)
         stage_tat = get_stage_tat(cmg_code, stage_sequence, len(dc_levels))
         tat_deadline = add_days(doc.created_on or now_datetime(), stage_tat)
 
-        emp_info = get_committee_employee(dc_level, emp_branch or doc.emp_branch, committee, doc.employee)
+        emp_info = get_committee_employee(dc_level, branch_to_use, committee, doc.employee)
 
         doc.append("djp_case_stages", {
             "stage": stage_sequence,
-            "stage_name": stage_doc,
+            "stage_name": display_stage_name,
             "dc_level": dc_level,
             "employee": emp_info.name if emp_info else "",
             "user_id": emp_info.user_id if emp_info else "",
@@ -244,9 +248,52 @@ def get_dc_levels_for_cmg(cmg_code):
         return ["Zonal DC", "National DC", "Management Centre Core Committee"]
     return ["Zonal DC"]
 
+# Find active Branch Manager for given branch, excluding accused employee if applicable
+def get_branch_manager(emp_branch, accused_employee=None):
+    """Find active Branch Manager for given branch, excluding accused employee if applicable"""
+    if not emp_branch:
+        return None
+
+    emp_branch_clean = str(emp_branch).strip()
+
+    base_filters = {"branch": emp_branch_clean, "status": "Active"}
+    if accused_employee:
+        base_filters["name"] = ["!=", accused_employee]
+
+    # 1. Primary: Exact match for Branch Manager designations
+    primary_designations = [
+        "BRANCH MANAGER", "Branch Manager", "Branch Head", "BM",
+        "BRANCH SALES MANAGER", "Branch Operation Manager", "Asst. Branch Manager"
+    ]
+
+    primary_filters = {**base_filters, "designation": ["in", primary_designations]}
+    employees = frappe.get_all("Employee",
+        filters=primary_filters,
+        fields=["name", "employee_name", "designation", "user_id", "company_email", "prefered_email"],
+        limit=1)
+    if employees:
+        return employees[0]
+
+    # 2. Fallback: Like search for Branch Manager / Manager in branch
+    for pattern in ["%Branch Manager%", "%BRANCH MANAGER%", "%Branch%", "%Manager%"]:
+        like_filters = {**base_filters, "designation": ["like", pattern]}
+        employees = frappe.get_all("Employee",
+            filters=like_filters,
+            fields=["name", "employee_name", "designation", "user_id", "company_email", "prefered_email"],
+            limit=1)
+        if employees:
+            return employees[0]
+
+    return None
+
 # Get employee for committee level and branch, excluding accused employee
 def get_committee_employee(dc_level, emp_branch, committee, accused_employee=None):
     """Get employee for committee level and branch, excluding accused employee"""
+    if dc_level == "Zonal DC":
+        bm_info = get_branch_manager(emp_branch, accused_employee)
+        if bm_info:
+            return bm_info
+
     roles = [r.strip() for r in committee.member_roles.split(",")] if hasattr(committee, 'member_roles') and committee.member_roles else []
 
     base_filters = {"branch": emp_branch, "status": "Active"}
