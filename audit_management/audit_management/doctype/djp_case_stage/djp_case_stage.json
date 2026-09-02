@@ -41,10 +41,9 @@
   },
   {
    "fieldname": "dc_level",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "DC Level",
-   "options": "Zonal DC\nNational DC\nManagement Centre Core Committee"
+   "label": "DC Level"
   },
   {
    "fieldname": "employee",
@@ -56,7 +55,6 @@
    "reqd": 0
   },
   {
-   "fetch_from": "employee.user_id",
    "fieldname": "user_id",
    "fieldtype": "Data",
    "label": "User ID",
@@ -64,7 +62,6 @@
   },
   {
    "columns": 1,
-   "fetch_from": "employee.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "label": "Employee Name",
@@ -72,7 +69,6 @@
   },
   {
    "columns": 1,
-   "fetch_from": "employee.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
    "label": "Designation",
@@ -80,7 +76,6 @@
   },
   {
    "columns": 2,
-   "fetch_from": "employee.company_email",
    "fieldname": "email",
    "fieldtype": "Data",
    "in_list_view": 1,
