@@ -76,7 +76,10 @@ frappe.ui.form.on('DJP Case', {
         }
 
         if (frm.doc.misconduct_type) {
-            frm.events.update_severity_options(frm);
+            frm.events.update_severity_options(frm, false);
+        }
+        if (frm.doc.misconduct_type && frm.doc.severity) {
+            frm.events.update_occurrence_options(frm, false);
         }
 
         // Inject attractive custom styling for DJP Action buttons and hide Connections section
@@ -249,7 +252,7 @@ frappe.ui.form.on('DJP Case', {
 
     // Triggers dynamic filtering of Severity options when Misconduct Type changes
     misconduct_type: function(frm) {
-        frm.events.update_severity_options(frm);
+        frm.events.update_severity_options(frm, true);
     },
 
     // Handle multiple accused employee selection and cleanup
@@ -264,13 +267,13 @@ frappe.ui.form.on('DJP Case', {
 
     // Triggers dynamic filtering of Occurrence options when Severity changes
     severity: function(frm) {
-        frm.events.update_occurrence_options(frm);
+        frm.events.update_occurrence_options(frm, true);
     },
 
     // Triggers auto-population of CMG Code & Outcome when Occurrence is selected
     occurrence: function(frm) {
         if (frm.doc.misconduct_type && frm.doc.severity && frm.doc.occurrence) {
-            frm.events.fetch_cmg_mapping(frm);
+            frm.events.fetch_cmg_mapping(frm, true);
         }
     },
 
@@ -279,6 +282,7 @@ frappe.ui.form.on('DJP Case', {
         if (frm.doc.employee) {
             frappe.db.get_value('Employee', frm.doc.employee, ['branch', 'employee_name', 'designation', 'custom_division'], (r) => {
                 if (r) {
+                    const branch_changed = frm.doc.emp_branch !== r.branch;
                     if (r.branch) {
                         frm.set_value('emp_branch', r.branch);
                     }
@@ -291,8 +295,33 @@ frappe.ui.form.on('DJP Case', {
                     if (r.custom_division) {
                         frm.set_value('emp_division', r.custom_division);
                     }
+
+                    const no_stages = !frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0;
                     if (frm.doc.cmg_code && (frm.is_new() || frm.doc.status === 'Draft')) {
-                        frm.events.auto_populate_stage_rows(frm);
+                        if (no_stages) {
+                            frm.events.auto_populate_stage_rows(frm);
+                        } else if (branch_changed) {
+                            frappe.call({
+                                method: 'audit_management.audit_management.doctype.djp_case.djp_case.get_branch_manager',
+                                args: {
+                                    emp_branch: r.branch,
+                                    accused_employee: frm.doc.employee
+                                },
+                                callback: function(res) {
+                                    if (res.message && frm.doc.djp_case_stages && frm.doc.djp_case_stages.length > 0) {
+                                        let bm_stage = frm.doc.djp_case_stages.find(s => s.stage_name === 'Branch Manager' || s.stage == 1);
+                                        if (bm_stage) {
+                                            frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'employee', res.message.name || '');
+                                            frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'employee_name', res.message.employee_name || '');
+                                            frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'designation', res.message.designation || '');
+                                            frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'user_id', res.message.user_id || '');
+                                            frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'email', res.message.company_email || res.message.prefered_email || '');
+                                            frm.refresh_field('djp_case_stages');
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     }
                 }
             });
@@ -300,13 +329,16 @@ frappe.ui.form.on('DJP Case', {
     },
 
     emp_branch: function(frm) {
+        const no_stages = !frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0;
         if (frm.doc.cmg_code && (frm.is_new() || frm.doc.status === 'Draft')) {
-            frm.events.auto_populate_stage_rows(frm);
+            if (no_stages) {
+                frm.events.auto_populate_stage_rows(frm);
+            }
         }
     },
 
-    // Fetches valid Severity options from backend and auto-selects if single option available
-    update_severity_options: function(frm) {
+    // Fetches valid Severity options from backend and sets options in dropdown
+    update_severity_options: function(frm, trigger_change = false) {
         if (!frm.doc.misconduct_type) {
             set_field_options('severity', ["", "Minor", "Major"]);
             frm.set_df_property('severity', 'options', ["", "Minor", "Major"].join('\n'));
@@ -328,26 +360,28 @@ frappe.ui.form.on('DJP Case', {
                     frm.set_df_property('severity', 'options', options.join('\n'));
                     frm.refresh_field('severity');
 
-                    const is_editable = frm.is_new() || frm.doc.status === 'Draft';
+                    if (trigger_change) {
+                        const is_editable = frm.is_new() || frm.doc.status === 'Draft';
 
-                    if (is_editable && valid_severities.length === 1 && !frm.doc.severity) {
-                        frm.set_value('severity', valid_severities[0]);
-                        frm.events.update_occurrence_options(frm);
-                    } else if (is_editable && frm.doc.severity && !valid_severities.includes(frm.doc.severity)) {
-                        frm.set_value('severity', '');
-                        frm.set_value('occurrence', '');
-                        frm.set_value('cmg_code', '');
-                        frm.set_value('cmg_recommended_outcome', '');
-                    } else if (frm.doc.severity) {
-                        frm.events.update_occurrence_options(frm);
+                        if (is_editable && valid_severities.length === 1 && !frm.doc.severity) {
+                            frm.set_value('severity', valid_severities[0]);
+                            frm.events.update_occurrence_options(frm, true);
+                        } else if (is_editable && frm.doc.severity && !valid_severities.includes(frm.doc.severity)) {
+                            frm.set_value('severity', '');
+                            frm.set_value('occurrence', '');
+                            frm.set_value('cmg_code', '');
+                            frm.set_value('cmg_recommended_outcome', '');
+                        } else if (frm.doc.severity) {
+                            frm.events.update_occurrence_options(frm, true);
+                        }
                     }
                 }
             }
         });
     },
 
-    // Fetches valid Occurrence options from backend and auto-selects if single option available
-    update_occurrence_options: function(frm) {
+    // Fetches valid Occurrence options from backend and sets options in dropdown
+    update_occurrence_options: function(frm, trigger_change = false) {
         if (!frm.doc.misconduct_type || !frm.doc.severity) {
             set_field_options('occurrence', ["", "First", "Repeat", "Any"]);
             frm.set_df_property('occurrence', 'options', ["", "First", "Repeat", "Any"].join('\n'));
@@ -370,17 +404,19 @@ frappe.ui.form.on('DJP Case', {
                     frm.set_df_property('occurrence', 'options', options.join('\n'));
                     frm.refresh_field('occurrence');
 
-                    const is_editable = frm.is_new() || frm.doc.status === 'Draft';
+                    if (trigger_change) {
+                        const is_editable = frm.is_new() || frm.doc.status === 'Draft';
 
-                    if (is_editable && valid_occurrences.length === 1 && !frm.doc.occurrence) {
-                        frm.set_value('occurrence', valid_occurrences[0]);
-                        frm.events.fetch_cmg_mapping(frm);
-                    } else if (is_editable && frm.doc.occurrence && !valid_occurrences.includes(frm.doc.occurrence) && !valid_occurrences.includes('Any')) {
-                        frm.set_value('occurrence', '');
-                        frm.set_value('cmg_code', '');
-                        frm.set_value('cmg_recommended_outcome', '');
-                    } else if (frm.doc.occurrence) {
-                        frm.events.fetch_cmg_mapping(frm);
+                        if (is_editable && valid_occurrences.length === 1 && !frm.doc.occurrence) {
+                            frm.set_value('occurrence', valid_occurrences[0]);
+                            frm.events.fetch_cmg_mapping(frm, true);
+                        } else if (is_editable && frm.doc.occurrence && !valid_occurrences.includes(frm.doc.occurrence) && !valid_occurrences.includes('Any')) {
+                            frm.set_value('occurrence', '');
+                            frm.set_value('cmg_code', '');
+                            frm.set_value('cmg_recommended_outcome', '');
+                        } else if (frm.doc.occurrence) {
+                            frm.events.fetch_cmg_mapping(frm, true);
+                        }
                     }
                 }
             }
@@ -388,7 +424,7 @@ frappe.ui.form.on('DJP Case', {
     },
 
     // Auto-populates read-only CMG Code and CMG Recommended Outcome fields
-    fetch_cmg_mapping: function(frm) {
+    fetch_cmg_mapping: function(frm, force_populate_stages = false) {
         if (!frm.doc.misconduct_type || !frm.doc.severity || !frm.doc.occurrence) return;
 
         frappe.call({
@@ -400,7 +436,8 @@ frappe.ui.form.on('DJP Case', {
             },
             callback: function(r) {
                 if (r.message) {
-                    if (frm.doc.cmg_code !== r.message.cmg_code) {
+                    const cmg_changed = frm.doc.cmg_code !== r.message.cmg_code;
+                    if (cmg_changed) {
                         frm.set_value('cmg_code', r.message.cmg_code);
                     }
                     if (frm.doc.cmg_recommended_outcome !== r.message.cmg_recommended_outcome) {
@@ -410,8 +447,8 @@ frappe.ui.form.on('DJP Case', {
                     frm.refresh_field('cmg_recommended_outcome');
                     frm.events.set_tat_deadline(frm);
 
-                    // Auto-populate DJP Case stages based on BRD rules if new or Draft
-                    if (frm.is_new() || frm.doc.status === 'Draft') {
+                    const no_stages = !frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0;
+                    if ((cmg_changed || force_populate_stages || no_stages) && (frm.is_new() || frm.doc.status === 'Draft')) {
                         frm.events.auto_populate_stage_rows(frm);
                     }
                 }
