@@ -124,9 +124,9 @@ def get_stage_definitions_for_cmg(cmg_code):
         ("Functional Head", "National DC"),
     ]
     management_stages = [
-        ("Group CHRO", "Management Centre Core Committee"),
-        ("Group CFO", "Management Centre Core Committee"),
-        ("Group COO", "Management Centre Core Committee"),
+        ("Group CHRO", "Management DC"),
+        ("Group CFO", "Management DC"),
+        ("Group COO", "Management DC"),
     ]
 
     if cmg_code in ["C0", "C1", "C2"]:
@@ -243,10 +243,11 @@ def get_dc_levels_for_cmg(cmg_code):
     elif cmg_code in ["C3", "C4"]:
         return ["Zonal DC", "National DC"]
     elif cmg_code == "C5":
-        return ["Zonal DC", "National DC", "Management Centre Core Committee"]
+        return ["Zonal DC", "National DC", "Management DC"]
     return ["Zonal DC"]
 
 # Find active Branch Manager for given branch, excluding accused employee if applicable
+@frappe.whitelist()
 def get_branch_manager(emp_branch, accused_employee=None):
     """Find active Branch Manager for given branch, excluding accused employee if applicable"""
     if not emp_branch:
