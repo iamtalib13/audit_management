@@ -277,10 +277,21 @@ frappe.ui.form.on('DJP Case', {
     // Auto-update stage rows when Accused Employee or Branch changes
     employee: function(frm) {
         if (frm.doc.employee) {
-            frappe.db.get_value('Employee', frm.doc.employee, 'branch', (r) => {
-                if (r && r.branch) {
-                    frm.set_value('emp_branch', r.branch);
-                    if (frm.doc.cmg_code && frm.doc.__islocal) {
+            frappe.db.get_value('Employee', frm.doc.employee, ['branch', 'employee_name', 'designation', 'custom_division'], (r) => {
+                if (r) {
+                    if (r.branch) {
+                        frm.set_value('emp_branch', r.branch);
+                    }
+                    if (r.employee_name) {
+                        frm.set_value('employee_name', r.employee_name);
+                    }
+                    if (r.designation) {
+                        frm.set_value('designation', r.designation);
+                    }
+                    if (r.custom_division) {
+                        frm.set_value('emp_division', r.custom_division);
+                    }
+                    if (frm.doc.cmg_code && (frm.is_new() || frm.doc.status === 'Draft')) {
                         frm.events.auto_populate_stage_rows(frm);
                     }
                 }
@@ -289,7 +300,7 @@ frappe.ui.form.on('DJP Case', {
     },
 
     emp_branch: function(frm) {
-        if (frm.doc.cmg_code && frm.doc.__islocal) {
+        if (frm.doc.cmg_code && (frm.is_new() || frm.doc.status === 'Draft')) {
             frm.events.auto_populate_stage_rows(frm);
         }
     },
@@ -317,10 +328,12 @@ frappe.ui.form.on('DJP Case', {
                     frm.set_df_property('severity', 'options', options.join('\n'));
                     frm.refresh_field('severity');
 
-                    if (frm.doc.__islocal && valid_severities.length === 1 && !frm.doc.severity) {
+                    const is_editable = frm.is_new() || frm.doc.status === 'Draft';
+
+                    if (is_editable && valid_severities.length === 1 && !frm.doc.severity) {
                         frm.set_value('severity', valid_severities[0]);
                         frm.events.update_occurrence_options(frm);
-                    } else if (frm.doc.__islocal && frm.doc.severity && !valid_severities.includes(frm.doc.severity)) {
+                    } else if (is_editable && frm.doc.severity && !valid_severities.includes(frm.doc.severity)) {
                         frm.set_value('severity', '');
                         frm.set_value('occurrence', '');
                         frm.set_value('cmg_code', '');
@@ -357,14 +370,16 @@ frappe.ui.form.on('DJP Case', {
                     frm.set_df_property('occurrence', 'options', options.join('\n'));
                     frm.refresh_field('occurrence');
 
-                    if (frm.doc.__islocal && valid_occurrences.length === 1 && !frm.doc.occurrence) {
+                    const is_editable = frm.is_new() || frm.doc.status === 'Draft';
+
+                    if (is_editable && valid_occurrences.length === 1 && !frm.doc.occurrence) {
                         frm.set_value('occurrence', valid_occurrences[0]);
                         frm.events.fetch_cmg_mapping(frm);
-                    } else if (frm.doc.__islocal && frm.doc.occurrence && !valid_occurrences.includes(frm.doc.occurrence) && !valid_occurrences.includes('Any')) {
+                    } else if (is_editable && frm.doc.occurrence && !valid_occurrences.includes(frm.doc.occurrence) && !valid_occurrences.includes('Any')) {
                         frm.set_value('occurrence', '');
                         frm.set_value('cmg_code', '');
                         frm.set_value('cmg_recommended_outcome', '');
-                    } else if (frm.doc.occurrence && frm.doc.__islocal) {
+                    } else if (frm.doc.occurrence) {
                         frm.events.fetch_cmg_mapping(frm);
                     }
                 }
@@ -395,8 +410,8 @@ frappe.ui.form.on('DJP Case', {
                     frm.refresh_field('cmg_recommended_outcome');
                     frm.events.set_tat_deadline(frm);
 
-                    // Auto-populate DJP Case stages based on BRD rules if local form
-                    if (frm.doc.__islocal) {
+                    // Auto-populate DJP Case stages based on BRD rules if new or Draft
+                    if (frm.is_new() || frm.doc.status === 'Draft') {
                         frm.events.auto_populate_stage_rows(frm);
                     }
                 }
@@ -455,9 +470,9 @@ frappe.ui.form.on('DJP Case', {
 
     // Populate stage reviewers from backend and allow editing
     populate_stages: function(frm) {
-        if (frm.doc.__islocal) {
+        if (frm.is_new() || frm.doc.status === 'Draft') {
             frm.events.auto_populate_stage_rows(frm);
-            frappe.show_alert({message: __('Stages populated. You can edit stage reviewers and sequence.'), indicator: 'green'});
+            frappe.show_alert({message: __('Stages populated. Stage 1 is Branch Manager and Committee members are ready for selection.'), indicator: 'green'});
             return;
         }
 
@@ -473,7 +488,7 @@ frappe.ui.form.on('DJP Case', {
             callback: function(r) {
                 if (r.message) {
                     frm.reload_doc();
-                    frappe.show_alert({message: __('Stages populated successfully. You can edit stage reviewers and sequence.'), indicator: 'green'});
+                    frappe.show_alert({message: __('Stages populated successfully. Stage 1 is Branch Manager and Committee members are ready for selection.'), indicator: 'green'});
                 }
             }
         });
@@ -978,13 +993,22 @@ frappe.ui.form.on('DJP Case', {
 
 // DJP Case Stage events
 frappe.ui.form.on('DJP Case Stage', {
-    // Sync DC Level with selected stage name
-    stage_name: function(frm, cdt, cdn) {
+    employee: function(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
-        if (row.stage_name) {
-            frappe.db.get_doc('DJP Stage', row.stage_name).then(doc => {
-                frappe.model.set_value(cdt, cdn, 'dc_level', doc.dc_level);
+        if (row.employee) {
+            frappe.db.get_value('Employee', row.employee, ['employee_name', 'designation', 'user_id', 'company_email', 'prefered_email'], (r) => {
+                if (r) {
+                    frappe.model.set_value(cdt, cdn, 'employee_name', r.employee_name || '');
+                    frappe.model.set_value(cdt, cdn, 'designation', r.designation || '');
+                    frappe.model.set_value(cdt, cdn, 'user_id', r.user_id || '');
+                    frappe.model.set_value(cdt, cdn, 'email', r.company_email || r.prefered_email || '');
+                }
             });
+        } else {
+            frappe.model.set_value(cdt, cdn, 'employee_name', '');
+            frappe.model.set_value(cdt, cdn, 'designation', '');
+            frappe.model.set_value(cdt, cdn, 'user_id', '');
+            frappe.model.set_value(cdt, cdn, 'email', '');
         }
     }
 });
