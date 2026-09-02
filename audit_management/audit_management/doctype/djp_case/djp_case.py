@@ -109,50 +109,58 @@ def get_cmg_mapping(misconduct_type, severity, occurrence):
 
     return None
 
-# Calculates and returns DJP Stage rows for auto-population based on CMG Code and Branch
+def get_stage_definitions_for_cmg(cmg_code):
+    """Return ordered list of (stage_name, dc_level) for given CMG code based on BRD committee hierarchy"""
+    zonal_stages = [
+        ("Branch Manager", "Zonal DC"),
+        ("Zonal Business Head", "Zonal DC"),
+        ("Zonal HR", "Zonal DC"),
+        ("Zonal Operations", "Zonal DC"),
+    ]
+    national_stages = [
+        ("Business Head", "National DC"),
+        ("VP HR", "National DC"),
+        ("HODs", "National DC"),
+        ("Functional Head", "National DC"),
+    ]
+    management_stages = [
+        ("Group CHRO", "Management Centre Core Committee"),
+        ("Group CFO", "Management Centre Core Committee"),
+        ("Group COO", "Management Centre Core Committee"),
+    ]
+
+    if cmg_code in ["C0", "C1", "C2"]:
+        return zonal_stages
+    elif cmg_code in ["C3", "C4"]:
+        return zonal_stages + national_stages
+    elif cmg_code == "C5":
+        return zonal_stages + national_stages + management_stages
+    return zonal_stages
+
+# Calculates and returns DJP Stage rows for auto-population based on CMG Code
 @frappe.whitelist()
 def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_employee=None):
-    """Return DJP stage rows for UI auto-population"""
+    """Return DJP stage rows for UI auto-population based on CMG Code hierarchy: Stage 1 = BM from branch, rest are blank"""
     if not cmg_code:
         return []
 
     if not emp_branch and accused_employee:
         emp_branch = frappe.db.get_value("Employee", accused_employee, "branch")
 
-    dc_levels = get_dc_levels_for_cmg(cmg_code)
-    settings = frappe.get_single("Audit Management Settings")
-    dc_structure = settings.get("disciplinary_committee", [])
-
+    stage_defs = get_stage_definitions_for_cmg(cmg_code)
     base_time = getdate(created_on) if created_on else getdate(now_datetime())
-    total_tat = get_total_tat_for_cmg(cmg_code)
-    total_stages = len(dc_levels)
+    total_tat_days = get_total_tat_for_cmg(cmg_code)
+    tat_deadline = str(add_days(base_time, total_tat_days))
+
+    bm_info = get_branch_manager(emp_branch, accused_employee)
 
     stage_rows = []
-    stage_sequence = 1
-
-    for dc_level in dc_levels:
-        committee = next((c for c in dc_structure if c.dc_level == dc_level and getattr(c, 'is_active', 1)), None)
-
-        stage_doc = frappe.db.get_value("DJP Stage",
-            {"dc_level": dc_level, "is_active": 1},
-            ["name"], order_by="sequence asc")
-
-        if total_stages == 1:
-            stage_days = total_tat
-        elif stage_sequence == 1:
-            stage_days = max(1, int(total_tat * 0.4))
-        else:
-            rem_days = total_tat - max(1, int(total_tat * 0.4))
-            stage_days = max(1, int(rem_days / (total_stages - 1)))
-
-        tat_deadline = str(add_days(base_time, stage_days))
-
-        display_stage_name = "Branch Manager" if stage_sequence == 1 else (stage_doc or dc_level)
-        emp_info = get_committee_employee(dc_level, emp_branch, committee, accused_employee)
+    for idx, (stage_name, dc_level) in enumerate(stage_defs, start=1):
+        emp_info = bm_info if stage_name == "Branch Manager" else None
 
         stage_rows.append({
-            "stage": stage_sequence,
-            "stage_name": display_stage_name,
+            "stage": str(idx),
+            "stage_name": stage_name,
             "dc_level": dc_level,
             "employee": emp_info.name if emp_info else "",
             "user_id": emp_info.user_id if emp_info else "",
@@ -162,7 +170,6 @@ def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
             "status": "Not Sent",
             "tat_deadline": tat_deadline
         })
-        stage_sequence += 1
 
     return stage_rows
 
@@ -181,42 +188,34 @@ def get_total_tat_for_cmg(cmg_code):
 
 # Populate stage reviewers from backend
 @frappe.whitelist()
-def populate_djp_stages(docname, cmg_code, emp_branch):
-    """Populate DJP Case stages based on CMG Code and branch"""
+def populate_djp_stages(docname, cmg_code=None, emp_branch=None):
+    """Populate DJP Case stages based on CMG Code hierarchy: Stage 1 = BM from branch, rest are blank"""
     doc = frappe.get_doc("DJP Case", docname)
+    code_to_use = cmg_code or doc.cmg_code
 
-    if not cmg_code:
+    if not code_to_use:
         frappe.throw(_("CMG Code is required to populate stages"))
 
     branch_to_use = emp_branch or doc.emp_branch
     if not branch_to_use and doc.employee:
         branch_to_use = frappe.db.get_value("Employee", doc.employee, "branch")
 
+    stage_defs = get_stage_definitions_for_cmg(code_to_use)
+    base_time = getdate(doc.created_on) if doc.created_on else getdate(now_datetime())
+    total_tat_days = get_total_tat_for_cmg(code_to_use)
+    tat_deadline = str(add_days(base_time, total_tat_days))
+
+    bm_info = get_branch_manager(branch_to_use, doc.employee)
+
     # Clear existing stages to allow re-populating/editing
     doc.set("djp_case_stages", [])
 
-    dc_levels = get_dc_levels_for_cmg(cmg_code)
-
-    settings = frappe.get_single("Audit Management Settings")
-    dc_structure = settings.get("disciplinary_committee", [])
-
-    stage_sequence = 1
-    for dc_level in dc_levels:
-        committee = next((c for c in dc_structure if c.dc_level == dc_level and getattr(c, 'is_active', 1)), None)
-
-        stage_doc = frappe.db.get_value("DJP Stage",
-            {"dc_level": dc_level, "is_active": 1},
-            ["name"], order_by="sequence asc")
-
-        display_stage_name = "Branch Manager" if stage_sequence == 1 else (stage_doc or dc_level)
-        stage_tat = get_stage_tat(cmg_code, stage_sequence, len(dc_levels))
-        tat_deadline = add_days(doc.created_on or now_datetime(), stage_tat)
-
-        emp_info = get_committee_employee(dc_level, branch_to_use, committee, doc.employee)
+    for idx, (stage_name, dc_level) in enumerate(stage_defs, start=1):
+        emp_info = bm_info if stage_name == "Branch Manager" else None
 
         doc.append("djp_case_stages", {
-            "stage": stage_sequence,
-            "stage_name": display_stage_name,
+            "stage": str(idx),
+            "stage_name": stage_name,
             "dc_level": dc_level,
             "employee": emp_info.name if emp_info else "",
             "user_id": emp_info.user_id if emp_info else "",
@@ -227,10 +226,9 @@ def populate_djp_stages(docname, cmg_code, emp_branch):
             "pending_time": None,
             "tat_deadline": tat_deadline
         })
-        stage_sequence += 1
 
     doc.current_stage = 1
-    doc.current_dc_level = dc_levels[0] if dc_levels else ""
+    doc.current_dc_level = "Zonal DC"
     doc.status = "Draft"
     doc.flags.ignore_mandatory = True
     doc.save(ignore_permissions=True)
@@ -260,22 +258,20 @@ def get_branch_manager(emp_branch, accused_employee=None):
     if accused_employee:
         base_filters["name"] = ["!=", accused_employee]
 
-    # 1. Primary: Exact match for Branch Manager designations
-    primary_designations = [
-        "BRANCH MANAGER", "Branch Manager", "Branch Head", "BM",
-        "BRANCH SALES MANAGER", "Branch Operation Manager", "Asst. Branch Manager"
-    ]
-
-    primary_filters = {**base_filters, "designation": ["in", primary_designations]}
-    employees = frappe.get_all("Employee",
-        filters=primary_filters,
-        fields=["name", "employee_name", "designation", "user_id", "company_email", "prefered_email"],
-        limit=1)
-    if employees:
-        return employees[0]
+    # 1. Primary: Exact match for Branch Manager / Branch Head in priority order
+    for desig_group in [
+        ["BRANCH MANAGER", "Branch Manager", "Branch Head", "BM"],
+        ["BRANCH SALES MANAGER", "Branch Operation Manager", "Asst. Branch Manager", "Assistant Branch Manager"]
+    ]:
+        employees = frappe.get_all("Employee",
+            filters={**base_filters, "designation": ["in", desig_group]},
+            fields=["name", "employee_name", "designation", "user_id", "company_email", "prefered_email"],
+            limit=1)
+        if employees:
+            return employees[0]
 
     # 2. Fallback: Like search for Branch Manager / Manager in branch
-    for pattern in ["%Branch Manager%", "%BRANCH MANAGER%", "%Branch%", "%Manager%"]:
+    for pattern in ["%Branch Manager%", "%BRANCH MANAGER%", "%Branch Head%", "%Branch Operation Manager%", "%Branch%"]:
         like_filters = {**base_filters, "designation": ["like", pattern]}
         employees = frappe.get_all("Employee",
             filters=like_filters,
@@ -289,14 +285,9 @@ def get_branch_manager(emp_branch, accused_employee=None):
 # Get employee for committee level and branch, excluding accused employee
 def get_committee_employee(dc_level, emp_branch, committee, accused_employee=None):
     """Get employee for committee level and branch, excluding accused employee"""
-    if dc_level == "Zonal DC":
-        bm_info = get_branch_manager(emp_branch, accused_employee)
-        if bm_info:
-            return bm_info
+    roles = [r.strip() for r in committee.member_roles.split(",")] if committee and hasattr(committee, 'member_roles') and committee.member_roles else []
 
-    roles = [r.strip() for r in committee.member_roles.split(",")] if hasattr(committee, 'member_roles') and committee.member_roles else []
-
-    base_filters = {"branch": emp_branch, "status": "Active"}
+    base_filters = {"branch": emp_branch, "status": "Active"} if emp_branch else {"status": "Active"}
     if accused_employee:
         base_filters["name"] = ["!=", accused_employee]
 
@@ -352,6 +343,14 @@ def send_to_all_reviewers(docname):
 
     if not doc.djp_case_stages:
         frappe.throw(_("No stages to send"))
+
+    unassigned_stages = [
+        f"Stage {r.stage} ({r.stage_name})"
+        for r in doc.djp_case_stages
+        if not r.employee
+    ]
+    if unassigned_stages:
+        frappe.throw(_("Please select an Employee for all stages before sending: {0}").format(", ".join(unassigned_stages)))
 
     now_dt = now_datetime()
     today_date = getdate(now_dt)
