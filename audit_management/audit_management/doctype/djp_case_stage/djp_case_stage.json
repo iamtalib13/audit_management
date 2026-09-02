@@ -29,15 +29,14 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Stage",
-   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15",
    "reqd": 1
   },
   {
    "fieldname": "stage_name",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Stage Name",
-   "options": "DJP Stage",
+   "label": "Stage / Committee Role",
    "reqd": 1
   },
   {
@@ -54,7 +53,7 @@
    "in_list_view": 1,
    "label": "Employee ID",
    "options": "Employee",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fetch_from": "employee.user_id",
