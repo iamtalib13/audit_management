@@ -18,7 +18,7 @@ frappe.ui.form.on('DJP Case', {
         });
 
         // Prevent user from selecting Accused Employee or themselves as a Stage Reviewer
-        frm.set_query('employee', 'djp_case_stages', function(doc, cdt, cdn) {
+        frm.set_query('reviewer_employee', 'djp_case_stages', function(doc, cdt, cdn) {
             return {
                 filters: {
                     'name': ['!=', doc.employee],
@@ -311,6 +311,7 @@ frappe.ui.form.on('DJP Case', {
                                     if (res.message && frm.doc.djp_case_stages && frm.doc.djp_case_stages.length > 0) {
                                         let bm_stage = frm.doc.djp_case_stages.find(s => s.stage_name === 'Branch Manager' || s.stage == 1);
                                         if (bm_stage) {
+                                            frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'reviewer_employee', res.message.name || '');
                                             frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'employee', res.message.name || '');
                                             frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'employee_name', res.message.employee_name || '');
                                             frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'designation', res.message.designation || '');
@@ -1030,10 +1031,11 @@ frappe.ui.form.on('DJP Case', {
 
 // DJP Case Stage events
 frappe.ui.form.on('DJP Case Stage', {
-    employee: function(frm, cdt, cdn) {
+    reviewer_employee: function(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
-        if (row.employee) {
-            frappe.db.get_value('Employee', row.employee, ['employee_name', 'designation', 'user_id', 'company_email', 'prefered_email'], (r) => {
+        const emp_id = row.reviewer_employee;
+        if (emp_id) {
+            frappe.db.get_value('Employee', emp_id, ['employee_name', 'designation', 'user_id', 'company_email', 'prefered_email'], (r) => {
                 if (r) {
                     frappe.model.set_value(cdt, cdn, 'employee_name', r.employee_name || '');
                     frappe.model.set_value(cdt, cdn, 'designation', r.designation || '');
