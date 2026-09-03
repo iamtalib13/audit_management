@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class DJPAdditionalAccused(Document):
+class DGPAdditionalAccused(Document):
 	pass
