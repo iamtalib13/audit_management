@@ -13,11 +13,11 @@
     "response_cc_emails",
     "division_permissions_section",
     "division_permissions",
-    "djp_settings_sb",
-    "enable_djp_module",
+    "dgp_settings_sb",
+    "enable_dgp_module",
     "cmg_grid",
     "disciplinary_committee",
-    "djp_stages"
+    "dgp_stages"
   ],
   "fields": [
     {
@@ -61,15 +61,15 @@
       "description": "CC recipients for when a response is submitted (comma separated)."
     },
     {
-      "fieldname": "djp_settings_sb",
+      "fieldname": "dgp_settings_sb",
       "fieldtype": "Section Break",
-      "label": "DJP Case Settings"
+      "label": "DGP Case Settings"
     },
     {
       "default": "1",
-      "fieldname": "enable_djp_module",
+      "fieldname": "enable_dgp_module",
       "fieldtype": "Check",
-      "label": "Enable DJP Module"
+      "label": "Enable DGP Module"
     },
     {
       "fieldname": "cmg_grid",
@@ -84,10 +84,10 @@
       "options": "Disciplinary Committee"
     },
     {
-      "fieldname": "djp_stages",
+      "fieldname": "dgp_stages",
       "fieldtype": "Table",
-      "label": "DJP Stages (Branch-wise Stage Assignment)",
-      "options": "DJP Stage Assignment"
+      "label": "DGP Stages (Branch-wise Stage Assignment)",
+      "options": "DGP Stage Assignment"
     }
   ],
   "index_web_pages_for_search": 1,
