@@ -29,7 +29,7 @@
   "case_subject",
   "case_description",
   "section_break_stages",
-  "djp_case_stages",
+  "dgp_case_stages",
   "section_break_tracking",
   "current_stage",
   "current_dc_level",
@@ -106,7 +106,7 @@
    "fieldname": "additional_accused_employees",
    "fieldtype": "Table",
    "label": "Additional Accused",
-   "options": "DJP Additional Accused",
+   "options": "DGP Additional Accused",
    "depends_on": "eval:doc.is_multiple_accused",
    "mandatory_depends_on": "eval:doc.is_multiple_accused"
   },
@@ -187,10 +187,10 @@
    "label": "Disciplinary Committee Stages"
   },
   {
-   "fieldname": "djp_case_stages",
+   "fieldname": "dgp_case_stages",
    "fieldtype": "Table",
-   "label": "DJP Case Stages",
-   "options": "DJP Case Stage"
+   "label": "DGP Case Stages",
+   "options": "DGP Case Stage"
   },
   {
    "fieldname": "section_break_tracking",
@@ -279,7 +279,7 @@
  "index_web_pages_for_search": 1,
  "links": [
   {
-   "group": "DJP Case",
+   "group": "DGP Case",
    "link_doctype": "Employee",
    "link_fieldname": "employee"
   }
@@ -287,7 +287,7 @@
  "modified": "2026-08-25 11:13:13.336045",
  "modified_by": "Administrator",
  "module": "Audit Management",
- "name": "DJP Case",
+ "name": "DGP Case",
  "naming_rule": "By script",
  "owner": "Administrator",
  "permissions": [

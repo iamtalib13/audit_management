@@ -1,4 +1,4 @@
-frappe.ui.form.on('DJP Case', {
+frappe.ui.form.on('DGP Case', {
     setup: function(frm) {
         // Prevent user from selecting themselves as the Accused Employee
         frm.set_query('employee', function() {
@@ -18,7 +18,7 @@ frappe.ui.form.on('DJP Case', {
         });
 
         // Prevent user from selecting Accused Employee or themselves as a Stage Reviewer
-        frm.set_query('reviewer_employee', 'djp_case_stages', function(doc, cdt, cdn) {
+        frm.set_query('reviewer_employee', 'dgp_case_stages', function(doc, cdt, cdn) {
             return {
                 filters: {
                     'name': ['!=', doc.employee],
@@ -41,11 +41,11 @@ frappe.ui.form.on('DJP Case', {
 
         if (!is_admin_or_creator && !frm.is_new()) {
             frm.set_read_only();
-            if (!$('#djp-reviewer-readonly-style').length) {
-                $('<style id="djp-reviewer-readonly-style">\
-                    [data-doctype="DJP Case"] .form-section { pointer-events: none !important; opacity: 0.9 !important; user-select: text !important; }\
-                    [data-doctype="DJP Case"] .grid-row, [data-doctype="DJP Case"] .grid-add-row, [data-doctype="DJP Case"] .grid-remove-rows { pointer-events: none !important; }\
-                    [data-doctype="DJP Case"] .page-actions, [data-doctype="DJP Case"] .djp-stage-tracker-container { pointer-events: auto !important; }\
+            if (!$('#dgp-reviewer-readonly-style').length) {
+                $('<style id="dgp-reviewer-readonly-style">\
+                    [data-doctype="DGP Case"] .form-section { pointer-events: none !important; opacity: 0.9 !important; user-select: text !important; }\
+                    [data-doctype="DGP Case"] .grid-row, [data-doctype="DGP Case"] .grid-add-row, [data-doctype="DGP Case"] .grid-remove-rows { pointer-events: none !important; }\
+                    [data-doctype="DGP Case"] .page-actions, [data-doctype="DGP Case"] .dgp-stage-tracker-container { pointer-events: auto !important; }\
                 </style>').appendTo('head');
             }
 
@@ -71,7 +71,7 @@ frappe.ui.form.on('DJP Case', {
             }
 
         } else {
-            $('#djp-reviewer-readonly-style').remove();
+            $('#dgp-reviewer-readonly-style').remove();
             frm.set_df_property("case_attachment", "read_only", 0);
         }
 
@@ -82,18 +82,18 @@ frappe.ui.form.on('DJP Case', {
             frm.events.update_occurrence_options(frm, false);
         }
 
-        // Inject attractive custom styling for DJP Action buttons and hide Connections section
-        if (!$('#djp-case-custom-css').length) {
-            $('<style id="djp-case-custom-css">\
-                .djp-btn-populate { background-color: #4f46e5 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
-                .djp-btn-populate:hover { background-color: #4338ca !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3) !important; color: #ffffff !important; }\
-                .djp-btn-send { background-color: #0d9488 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
-                .djp-btn-send:hover { background-color: #0f766e !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3) !important; color: #ffffff !important; }\
-                .djp-btn-escalate { background-color: #d97706 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
-                .djp-btn-escalate:hover { background-color: #b45309 !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.3) !important; color: #ffffff !important; }\
-                .djp-btn-close { background-color: #16a34a !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
-                .djp-btn-close:hover { background-color: #15803d !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3) !important; color: #ffffff !important; }\
-                [data-doctype="DJP Case"] .form-links, [data-doctype="DJP Case"] .form-documents, [data-doctype="DJP Case"] .form-dashboard-section { display: none !important; }\
+        // Inject attractive custom styling for DGP Action buttons and hide Connections section
+        if (!$('#dgp-case-custom-css').length) {
+            $('<style id="dgp-case-custom-css">\
+                .dgp-btn-populate { background-color: #4f46e5 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
+                .dgp-btn-populate:hover { background-color: #4338ca !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3) !important; color: #ffffff !important; }\
+                .dgp-btn-send { background-color: #0d9488 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
+                .dgp-btn-send:hover { background-color: #0f766e !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3) !important; color: #ffffff !important; }\
+                .dgp-btn-escalate { background-color: #d97706 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
+                .dgp-btn-escalate:hover { background-color: #b45309 !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.3) !important; color: #ffffff !important; }\
+                .dgp-btn-close { background-color: #16a34a !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
+                .dgp-btn-close:hover { background-color: #15803d !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3) !important; color: #ffffff !important; }\
+                [data-doctype="DGP Case"] .form-links, [data-doctype="DGP Case"] .form-documents, [data-doctype="DGP Case"] .form-dashboard-section { display: none !important; }\
             </style>').appendTo('head');
         }
 
@@ -114,7 +114,7 @@ frappe.ui.form.on('DJP Case', {
                 let b1 = frm.add_custom_button(__('Populate Stages'), function() {
                     frm.events.populate_stages(frm);
                 });
-                b1.addClass('djp-btn-populate').find('i, svg').remove();
+                b1.addClass('dgp-btn-populate').find('i, svg').remove();
                 b1.prepend('<i class="fa fa-sitemap mr-1"></i> ');
             }
 
@@ -123,12 +123,12 @@ frappe.ui.form.on('DJP Case', {
                 let b2 = frm.add_custom_button(__('Send to All Reviewers'), function() {
                     frm.events.send_to_all_reviewers(frm);
                 });
-                b2.addClass('djp-btn-send').find('i, svg').remove();
+                b2.addClass('dgp-btn-send').find('i, svg').remove();
                 b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
             }
 
             // 3. Submit Response (Stage Reviewer & Admin - visible before & after response)
-            const is_assigned_stage_reviewer = frm.doc.djp_case_stages && frm.doc.djp_case_stages.some(s => s.user_id === frappe.session.user);
+            const is_assigned_stage_reviewer = frm.doc.dgp_case_stages && frm.doc.dgp_case_stages.some(s => s.user_id === frappe.session.user);
             const is_stage_reviewer = is_assigned_stage_reviewer || is_admin;
 
             if (is_stage_reviewer) {
@@ -138,7 +138,7 @@ frappe.ui.form.on('DJP Case', {
                 b3.addClass('btn-primary').find('i, svg').remove();
                 b3.prepend('<i class="fa fa-reply mr-1"></i> ');
 
-                const is_pending = frm.doc.djp_case_stages && frm.doc.djp_case_stages.some(s => s.user_id === frappe.session.user && s.status === 'Pending');
+                const is_pending = frm.doc.dgp_case_stages && frm.doc.dgp_case_stages.some(s => s.user_id === frappe.session.user && s.status === 'Pending');
                 if (is_pending || is_admin) {
                     let b_send_back = frm.add_custom_button(__('Send Back'), function() {
                         frm.events.send_back_case(frm);
@@ -153,7 +153,7 @@ frappe.ui.form.on('DJP Case', {
                 let b4 = frm.add_custom_button(__('Close Case'), function() {
                     frm.events.close_case(frm);
                 });
-                b4.addClass('djp-btn-close').find('i, svg').remove();
+                b4.addClass('dgp-btn-close').find('i, svg').remove();
                 b4.prepend('<i class="fa fa-check-circle mr-1"></i> ');
             }
         }
@@ -174,7 +174,7 @@ frappe.ui.form.on('DJP Case', {
 
         // Render Stage & Escalation Tracker UI
         if (!frm.is_new()) {
-            frm.events.render_djp_stage_tracker(frm);
+            frm.events.render_dgp_stage_tracker(frm);
         }
 
         // Hide unnecessary connections section at bottom
@@ -206,7 +206,7 @@ frappe.ui.form.on('DJP Case', {
                             primary_action_label: __('Reopen'),                                                        
                             primary_action: function(values) {                                                         
                                 frappe.call({                                                                          
-                                    method: 'audit_management.audit_management.doctype.djp_case.djp_case.reopen_case', 
+                                    method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.reopen_case', 
                                     args: {                                                                            
                                         docname: frm.doc.name,                                                         
                                         reason: values.reason                                                          
@@ -296,20 +296,20 @@ frappe.ui.form.on('DJP Case', {
                         frm.set_value('emp_division', r.custom_division);
                     }
 
-                    const no_stages = !frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0;
+                    const no_stages = !frm.doc.dgp_case_stages || frm.doc.dgp_case_stages.length === 0;
                     if (frm.doc.cmg_code && (frm.is_new() || frm.doc.status === 'Draft')) {
                         if (no_stages) {
                             frm.events.auto_populate_stage_rows(frm);
                         } else if (branch_changed) {
                             frappe.call({
-                                method: 'audit_management.audit_management.doctype.djp_case.djp_case.get_branch_manager',
+                                method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.get_branch_manager',
                                 args: {
                                     emp_branch: r.branch,
                                     accused_employee: frm.doc.employee
                                 },
                                 callback: function(res) {
-                                    if (res.message && frm.doc.djp_case_stages && frm.doc.djp_case_stages.length > 0) {
-                                        let bm_stage = frm.doc.djp_case_stages.find(s => s.stage_name === 'Branch Manager' || s.stage == 1);
+                                    if (res.message && frm.doc.dgp_case_stages && frm.doc.dgp_case_stages.length > 0) {
+                                        let bm_stage = frm.doc.dgp_case_stages.find(s => s.stage_name === 'Branch Manager' || s.stage == 1);
                                         if (bm_stage) {
                                             frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'reviewer_employee', res.message.name || '');
                                             frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'employee', res.message.name || '');
@@ -317,7 +317,7 @@ frappe.ui.form.on('DJP Case', {
                                             frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'designation', res.message.designation || '');
                                             frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'user_id', res.message.user_id || '');
                                             frappe.model.set_value(bm_stage.doctype, bm_stage.name, 'email', res.message.company_email || res.message.prefered_email || '');
-                                            frm.refresh_field('djp_case_stages');
+                                            frm.refresh_field('dgp_case_stages');
                                         }
                                     }
                                 }
@@ -330,7 +330,7 @@ frappe.ui.form.on('DJP Case', {
     },
 
     emp_branch: function(frm) {
-        const no_stages = !frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0;
+        const no_stages = !frm.doc.dgp_case_stages || frm.doc.dgp_case_stages.length === 0;
         if (frm.doc.cmg_code && (frm.is_new() || frm.doc.status === 'Draft')) {
             if (no_stages) {
                 frm.events.auto_populate_stage_rows(frm);
@@ -348,7 +348,7 @@ frappe.ui.form.on('DJP Case', {
         }
 
         frappe.call({
-            method: 'audit_management.audit_management.doctype.djp_case.djp_case.get_cmg_options',
+            method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.get_cmg_options',
             args: {
                 misconduct_type: frm.doc.misconduct_type
             },
@@ -391,7 +391,7 @@ frappe.ui.form.on('DJP Case', {
         }
 
         frappe.call({
-            method: 'audit_management.audit_management.doctype.djp_case.djp_case.get_cmg_options',
+            method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.get_cmg_options',
             args: {
                 misconduct_type: frm.doc.misconduct_type,
                 severity: frm.doc.severity
@@ -429,7 +429,7 @@ frappe.ui.form.on('DJP Case', {
         if (!frm.doc.misconduct_type || !frm.doc.severity || !frm.doc.occurrence) return;
 
         frappe.call({
-            method: 'audit_management.audit_management.doctype.djp_case.djp_case.get_cmg_mapping',
+            method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.get_cmg_mapping',
             args: {
                 misconduct_type: frm.doc.misconduct_type,
                 severity: frm.doc.severity,
@@ -448,7 +448,7 @@ frappe.ui.form.on('DJP Case', {
                     frm.refresh_field('cmg_recommended_outcome');
                     frm.events.set_tat_deadline(frm);
 
-                    const no_stages = !frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0;
+                    const no_stages = !frm.doc.dgp_case_stages || frm.doc.dgp_case_stages.length === 0;
                     if ((cmg_changed || force_populate_stages || no_stages) && (frm.is_new() || frm.doc.status === 'Draft')) {
                         frm.events.auto_populate_stage_rows(frm);
                     }
@@ -462,7 +462,7 @@ frappe.ui.form.on('DJP Case', {
         if (!frm.doc.cmg_code) return;
 
         frappe.call({
-            method: 'audit_management.audit_management.doctype.djp_case.djp_case.fetch_auto_djp_stages',
+            method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.fetch_auto_dgp_stages',
             args: {
                 cmg_code: frm.doc.cmg_code,
                 emp_branch: frm.doc.emp_branch,
@@ -471,12 +471,12 @@ frappe.ui.form.on('DJP Case', {
             },
             callback: function(r) {
                 if (r.message && Array.isArray(r.message)) {
-                    frm.clear_table('djp_case_stages');
+                    frm.clear_table('dgp_case_stages');
                     r.message.forEach(row => {
-                        let child = frm.add_child('djp_case_stages');
+                        let child = frm.add_child('dgp_case_stages');
                         Object.assign(child, row);
                     });
-                    frm.refresh_field('djp_case_stages');
+                    frm.refresh_field('dgp_case_stages');
                 }
             }
         });
@@ -515,14 +515,14 @@ frappe.ui.form.on('DJP Case', {
         }
 
         frappe.call({
-            method: 'audit_management.audit_management.doctype.djp_case.djp_case.populate_djp_stages',
+            method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.populate_dgp_stages',
             args: {
                 docname: frm.doc.name,
                 cmg_code: frm.doc.cmg_code,
                 emp_branch: frm.doc.emp_branch
             },
             freeze: true,
-            freeze_message: __('Populating DJP stages...'),
+            freeze_message: __('Populating DGP stages...'),
             callback: function(r) {
                 if (r.message) {
                     frm.reload_doc();
@@ -534,14 +534,14 @@ frappe.ui.form.on('DJP Case', {
 
     // Send case to all stage reviewers simultaneously
     send_to_all_reviewers: function(frm) {
-        if (!frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0) {
+        if (!frm.doc.dgp_case_stages || frm.doc.dgp_case_stages.length === 0) {
             frappe.msgprint(__('Please populate stages first using "Populate Stages" button.'));
             return;
         }
 
         frappe.confirm(__('Are you sure you want to send this case to ALL reviewers simultaneously? They will all share the same TAT deadline.'), function() {
             frappe.call({
-                method: 'audit_management.audit_management.doctype.djp_case.djp_case.send_to_all_reviewers',
+                method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.send_to_all_reviewers',
                 args: { docname: frm.doc.name },
                 freeze: true,
                 freeze_message: __('Sending to all reviewers...'),
@@ -570,7 +570,7 @@ frappe.ui.form.on('DJP Case', {
             primary_action_label: __('Escalate'),
             primary_action: function(values) {
                 frappe.call({
-                    method: 'audit_management.audit_management.doctype.djp_case.djp_case.escalate_case',
+                    method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.escalate_case',
                     args: {
                         docname: frm.doc.name,
                         justification: values.justification
@@ -621,7 +621,7 @@ frappe.ui.form.on('DJP Case', {
                 }
 
                 frappe.call({
-                    method: 'audit_management.audit_management.doctype.djp_case.djp_case.close_case',
+                    method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.close_case',
                     args: {
                         docname: frm.doc.name,
                         final_decision: values.final_decision,
@@ -629,7 +629,7 @@ frappe.ui.form.on('DJP Case', {
                         governance_notes: values.governance_notes
                     },
                     freeze: true,
-                    freeze_message: __('Closing DJP Case...'),
+                    freeze_message: __('Closing DGP Case...'),
                     callback: function(r) {
                         if (!r.exc && r.message) {
                             d.hide();
@@ -656,7 +656,7 @@ frappe.ui.form.on('DJP Case', {
             ],
             function(values) {
                 frappe.call({
-                    method: 'audit_management.audit_management.doctype.djp_case.djp_case.send_back_case',
+                    method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.send_back_case',
                     args: {
                         docname: frm.doc.name,
                         remark: values.remark
@@ -703,7 +703,7 @@ frappe.ui.form.on('DJP Case', {
                 let attachment_urls = uploaded_files.map(f => f.url).join(', ');
 
                 frappe.call({
-                    method: 'audit_management.audit_management.doctype.djp_case.djp_case.submit_stage_response',
+                    method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.submit_stage_response',
                     args: {
                         docname: frm.doc.name,
                         response: values.response,
@@ -739,45 +739,45 @@ frappe.ui.form.on('DJP Case', {
                     <div style="display: inline-flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 4px; font-size: 11px; margin-top: 4px;">
                         <i class="fa fa-paperclip" style="color: #2563eb;"></i>
                         <a href="${f.url}" target="_blank" style="color: #0f172a; text-decoration: none; font-weight: 600;">${f.name}</a>
-                        <i class="fa fa-times text-danger djp-remove-file" data-idx="${i}" style="cursor: pointer; margin-left: 4px;" title="Remove"></i>
+                        <i class="fa fa-times text-danger dgp-remove-file" data-idx="${i}" style="cursor: pointer; margin-left: 4px;" title="Remove"></i>
                     </div>
                 `).join(' ');
             }
-            $upload_wrapper.find('#djp_file_list_container').html(list_html);
+            $upload_wrapper.find('#dgp_file_list_container').html(list_html);
         }
 
         $upload_wrapper.html(`
             <div style="margin-top: 10px; padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px;">
                 <label style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block;">Upload Supporting Documents (Multiple Allowed)</label>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <input type="file" id="djp_direct_file_input" multiple style="display: none;">
-                    <button type="button" class="btn btn-default btn-xs" id="djp_btn_select_file" style="font-weight: 600; background: #ffffff; border: 1px solid #cbd5e1;">
+                    <input type="file" id="dgp_direct_file_input" multiple style="display: none;">
+                    <button type="button" class="btn btn-default btn-xs" id="dgp_btn_select_file" style="font-weight: 600; background: #ffffff; border: 1px solid #cbd5e1;">
                         <i class="fa fa-plus mr-1" style="color: #2563eb;"></i> Attach Files
                     </button>
-                    <span id="djp_upload_status" style="font-size: 11px; color: #64748b;"></span>
+                    <span id="dgp_upload_status" style="font-size: 11px; color: #64748b;"></span>
                 </div>
-                <div id="djp_file_list_container" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                <div id="dgp_file_list_container" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
             </div>
         `);
 
         render_file_list();
 
-        $upload_wrapper.find('#djp_btn_select_file').on('click', function() {
-            $upload_wrapper.find('#djp_direct_file_input').click();
+        $upload_wrapper.find('#dgp_btn_select_file').on('click', function() {
+            $upload_wrapper.find('#dgp_direct_file_input').click();
         });
 
-        $upload_wrapper.find('#djp_file_list_container').on('click', '.djp-remove-file', function() {
+        $upload_wrapper.find('#dgp_file_list_container').on('click', '.dgp-remove-file', function() {
             let idx = $(this).data('idx');
             uploaded_files.splice(idx, 1);
             render_file_list();
         });
 
-        $upload_wrapper.find('#djp_direct_file_input').on('change', function(e) {
+        $upload_wrapper.find('#dgp_direct_file_input').on('change', function(e) {
             let files = Array.from(e.target.files);
             if (files.length === 0) return;
 
             let remaining = files.length;
-            $upload_wrapper.find('#djp_upload_status').html('<span style="color: #2563eb;"><i class="fa fa-spinner fa-spin mr-1"></i> Uploading ' + files.length + ' file(s)...</span>');
+            $upload_wrapper.find('#dgp_upload_status').html('<span style="color: #2563eb;"><i class="fa fa-spinner fa-spin mr-1"></i> Uploading ' + files.length + ' file(s)...</span>');
 
             files.forEach(file => {
                 let formdata = new FormData();
@@ -803,9 +803,9 @@ frappe.ui.form.on('DJP Case', {
                     complete: function() {
                         remaining--;
                         if (remaining <= 0) {
-                            $upload_wrapper.find('#djp_upload_status').html('<span style="color: #16a34a; font-weight: 600;"><i class="fa fa-check-circle mr-1"></i> Uploaded!</span>');
+                            $upload_wrapper.find('#dgp_upload_status').html('<span style="color: #16a34a; font-weight: 600;"><i class="fa fa-check-circle mr-1"></i> Uploaded!</span>');
                             render_file_list();
-                            setTimeout(() => { $upload_wrapper.find('#djp_upload_status').empty(); }, 2000);
+                            setTimeout(() => { $upload_wrapper.find('#dgp_upload_status').empty(); }, 2000);
                         }
                     }
                 });
@@ -814,57 +814,57 @@ frappe.ui.form.on('DJP Case', {
     },
 
     // Render visual stage & escalation progress tracker UI
-    render_djp_stage_tracker: function(frm) {
-        if (!frm.doc.djp_case_stages || frm.doc.djp_case_stages.length === 0) {
-            frm.page.wrapper.find('.djp-stage-tracker-container').remove();
+    render_dgp_stage_tracker: function(frm) {
+        if (!frm.doc.dgp_case_stages || frm.doc.dgp_case_stages.length === 0) {
+            frm.page.wrapper.find('.dgp-stage-tracker-container').remove();
             return;
         }
 
-        frm.page.wrapper.find('.djp-stage-tracker-container').remove();
+        frm.page.wrapper.find('.dgp-stage-tracker-container').remove();
 
-        if (!$('#djp-tracker-style').length) {
-            $('<style id="djp-tracker-style">\
-                .djp-stage-tracker-container { margin-top: 8px; margin-bottom: 12px; padding: 10px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); position: relative; overflow: visible !important; }\
-                .djp-tracker-header { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }\
-                .djp-tracker-flow { display: flex; align-items: flex-start; justify-content: flex-start !important; width: 100%; overflow: visible !important; padding: 4px 0; }\
-                .djp-tracker-step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 0 0 auto !important; min-width: 145px; max-width: 220px; overflow: visible !important; margin-right: 12px; }\
-                .djp-step-top-row { display: flex; align-items: center; width: 100%; position: relative; }\
-                .djp-step-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; transition: all 0.2s ease; position: relative; cursor: pointer; white-space: nowrap; }\
-                .djp-step-pill:hover { transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.08); }\
-                .djp-pill-active { background: #dbeafe !important; color: #1d4ed8 !important; border-color: #3b82f6 !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important; }\
-                .djp-pill-responded { background: #dcfce7 !important; color: #15803d !important; border-color: #22c55e !important; }\
-                .djp-pill-overdue { background: #fee2e2 !important; color: #b91c1c !important; border-color: #ef4444 !important; }\
-                .djp-pill-escalated { background: #fef3c7 !important; color: #b45309 !important; border-color: #f59e0b !important; }\
-                .djp-pill-skipped { background: #f8fafc !important; color: #94a3b8 !important; border-color: #e2e8f0 !important; }\
-                .djp-step-num { width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.08); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }\
-                .djp-pill-active .djp-step-num { background: #2563eb; color: #ffffff; }\
-                .djp-pill-responded .djp-step-num { background: #16a34a; color: #ffffff; }\
-                .djp-pill-overdue .djp-step-num { background: #dc2626; color: #ffffff; }\
-                .djp-pill-escalated .djp-step-num { background: #d97706; color: #ffffff; }\
-                .djp-step-connector { flex: 1; height: 2px; background: #e2e8f0; margin: 0 8px; }\
-                .djp-conn-completed { background: #22c55e; }\
-                .djp-conn-escalated { background: #f59e0b; }\
-                .djp-step-status-subtext { margin-top: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; text-align: center; white-space: nowrap; }\
-                .djp-status-pending { color: #64748b; }\
-                .djp-status-active { color: #2563eb; }\
-                .djp-status-responded { color: #16a34a; }\
-                .djp-status-overdue { color: #dc2626; }\
-                .djp-status-escalated { color: #d97706; }\
-                .djp-status-skipped { color: #94a3b8; }\
-                .djp-pill-wrapper .djp-tooltip {\
+        if (!$('#dgp-tracker-style').length) {
+            $('<style id="dgp-tracker-style">\
+                .dgp-stage-tracker-container { margin-top: 8px; margin-bottom: 12px; padding: 10px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); position: relative; overflow: visible !important; }\
+                .dgp-tracker-header { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }\
+                .dgp-tracker-flow { display: flex; align-items: flex-start; justify-content: flex-start !important; width: 100%; overflow: visible !important; padding: 4px 0; }\
+                .dgp-tracker-step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 0 0 auto !important; min-width: 145px; max-width: 220px; overflow: visible !important; margin-right: 12px; }\
+                .dgp-step-top-row { display: flex; align-items: center; width: 100%; position: relative; }\
+                .dgp-step-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; transition: all 0.2s ease; position: relative; cursor: pointer; white-space: nowrap; }\
+                .dgp-step-pill:hover { transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.08); }\
+                .dgp-pill-active { background: #dbeafe !important; color: #1d4ed8 !important; border-color: #3b82f6 !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important; }\
+                .dgp-pill-responded { background: #dcfce7 !important; color: #15803d !important; border-color: #22c55e !important; }\
+                .dgp-pill-overdue { background: #fee2e2 !important; color: #b91c1c !important; border-color: #ef4444 !important; }\
+                .dgp-pill-escalated { background: #fef3c7 !important; color: #b45309 !important; border-color: #f59e0b !important; }\
+                .dgp-pill-skipped { background: #f8fafc !important; color: #94a3b8 !important; border-color: #e2e8f0 !important; }\
+                .dgp-step-num { width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.08); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }\
+                .dgp-pill-active .dgp-step-num { background: #2563eb; color: #ffffff; }\
+                .dgp-pill-responded .dgp-step-num { background: #16a34a; color: #ffffff; }\
+                .dgp-pill-overdue .dgp-step-num { background: #dc2626; color: #ffffff; }\
+                .dgp-pill-escalated .dgp-step-num { background: #d97706; color: #ffffff; }\
+                .dgp-step-connector { flex: 1; height: 2px; background: #e2e8f0; margin: 0 8px; }\
+                .dgp-conn-completed { background: #22c55e; }\
+                .dgp-conn-escalated { background: #f59e0b; }\
+                .dgp-step-status-subtext { margin-top: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; text-align: center; white-space: nowrap; }\
+                .dgp-status-pending { color: #64748b; }\
+                .dgp-status-active { color: #2563eb; }\
+                .dgp-status-responded { color: #16a34a; }\
+                .dgp-status-overdue { color: #dc2626; }\
+                .dgp-status-escalated { color: #d97706; }\
+                .dgp-status-skipped { color: #94a3b8; }\
+                .dgp-pill-wrapper .dgp-tooltip {\
                     visibility: hidden; opacity: 0; position: absolute; top: 100%; bottom: auto; left: 50%; transform: translateX(-50%); margin-top: 38px;\
                     background-color: #0f172a; color: #ffffff; text-align: left; padding: 8px 12px; border-radius: 8px;\
                     font-size: 11px; font-weight: 400; line-height: 1.5; white-space: nowrap; z-index: 999999 !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);\
                     transition: opacity 0.2s ease, visibility 0.2s ease; pointer-events: none;\
                 }\
-                .djp-pill-wrapper .djp-tooltip::after {\
+                .dgp-pill-wrapper .dgp-tooltip::after {\
                     content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: transparent transparent #0f172a transparent;\
                 }\
-                .djp-pill-wrapper:hover .djp-tooltip, .djp-step-pill:hover .djp-tooltip { visibility: visible !important; opacity: 1 !important; }\
+                .dgp-pill-wrapper:hover .dgp-tooltip, .dgp-step-pill:hover .dgp-tooltip { visibility: visible !important; opacity: 1 !important; }\
             </style>').appendTo('head');
         }
 
-        const stages = frm.doc.djp_case_stages;
+        const stages = frm.doc.dgp_case_stages;
         const current_stage = frm.doc.current_stage || 1;
 
         let hasAnySentStage = stages.some(s => s.status && s.status !== 'Not Sent');
@@ -873,13 +873,13 @@ frappe.ui.form.on('DJP Case', {
             currentBadgeHtml = `<span class="badge badge-info" style="font-size: 10px; font-weight: 600;">Current Stage: ${frm.doc.current_dc_level || 'Stage ' + current_stage}</span>`;
         }
 
-        let html = '<div class="djp-stage-tracker-container">';
-        html += '<div class="djp-tracker-header">';
+        let html = '<div class="dgp-stage-tracker-container">';
+        html += '<div class="dgp-tracker-header">';
         html += '<span><i class="fa fa-tasks mr-1"></i> Stage Tracker</span>';
         html += currentBadgeHtml;
         html += '</div>';
 
-        html += '<div class="djp-tracker-flow">';
+        html += '<div class="dgp-tracker-flow">';
 
         stages.forEach((stg, idx) => {
             const isLast = idx === stages.length - 1;
@@ -896,33 +896,33 @@ frappe.ui.form.on('DJP Case', {
             let pillClass = '';
             let connClass = '';
             let statusText = stg.status || 'Not Sent';
-            let statusTextClass = 'djp-status-pending';
+            let statusTextClass = 'dgp-status-pending';
 
             if (stg.status === 'Responded') {
-                pillClass = 'djp-pill-responded';
-                connClass = 'djp-conn-completed';
+                pillClass = 'dgp-pill-responded';
+                connClass = 'dgp-conn-completed';
                 statusText = '✓ Responded';
-                statusTextClass = 'djp-status-responded';
+                statusTextClass = 'dgp-status-responded';
             } else if (stg.status === 'No Responded') {
-                pillClass = 'djp-pill-escalated';
-                connClass = 'djp-conn-escalated';
+                pillClass = 'dgp-pill-escalated';
+                connClass = 'dgp-conn-escalated';
                 statusText = '⨂ No Responded';
-                statusTextClass = 'djp-status-escalated';
+                statusTextClass = 'dgp-status-escalated';
             } else if (stg.status === 'Overdue' || isOverdue) {
-                pillClass = 'djp-pill-overdue';
+                pillClass = 'dgp-pill-overdue';
                 statusText = '⚠ Overdue';
-                statusTextClass = 'djp-status-overdue';
+                statusTextClass = 'dgp-status-overdue';
             } else if (stg.status === 'Pending') {
-                pillClass = 'djp-pill-active';
+                pillClass = 'dgp-pill-active';
                 statusText = '⚡ Pending (Under Review)';
-                statusTextClass = 'djp-status-active';
+                statusTextClass = 'dgp-status-active';
             } else if (stg.status === 'Skipped') {
-                pillClass = 'djp-pill-skipped';
+                pillClass = 'dgp-pill-skipped';
                 statusText = 'Skipped';
-                statusTextClass = 'djp-status-skipped';
+                statusTextClass = 'dgp-status-skipped';
             } else {
                 statusText = 'Not Sent';
-                statusTextClass = 'djp-status-pending';
+                statusTextClass = 'dgp-status-pending';
             }
 
             let remainingDaysInfo = '';
@@ -969,12 +969,12 @@ frappe.ui.form.on('DJP Case', {
                 }
             }
 
-            html += '<div class="djp-tracker-step">';
+            html += '<div class="dgp-tracker-step">';
             
             // Pill Wrapper (Pill + Status directly below)
-            html += '<div class="djp-pill-wrapper" style="display: flex; flex-direction: column; align-items: center; position: relative;">';
-            html += `<div class="djp-step-pill ${pillClass}">`;
-            html += `<span class="djp-step-num">${iconHtml}</span>`;
+            html += '<div class="dgp-pill-wrapper" style="display: flex; flex-direction: column; align-items: center; position: relative;">';
+            html += `<div class="dgp-step-pill ${pillClass}">`;
+            html += `<span class="dgp-step-num">${iconHtml}</span>`;
             html += `<span>${stg.dc_level || stg.stage_name}</span>`;
             
             let respInfo = stg.response ? `<div style="margin-top:4px; border-top:1px solid #334155; padding-top:4px; color:#38bdf8;"><strong>Response:</strong> ${stg.response}</div>` : '';
@@ -989,7 +989,7 @@ frappe.ui.form.on('DJP Case', {
             }
 
             // Hover Tooltip (Floating Outside)
-            html += `<div class="djp-tooltip">`;
+            html += `<div class="dgp-tooltip">`;
             html += `<div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">${stg.dc_level || stg.stage_name}</div>`;
             html += `<div><strong>Assigned To:</strong> ${empName}${empDesig}</div>`;
             html += `<div><strong>Status:</strong> ${stg.status || 'Not Sent'}</div>`;
@@ -999,26 +999,26 @@ frappe.ui.form.on('DJP Case', {
             html += attachInfo;
             html += `</div>`;
 
-            html += `</div>`; // .djp-step-pill
+            html += `</div>`; // .dgp-step-pill
 
             // Subtext directly under card (Status + Remaining Days)
-            html += `<div class="djp-step-status-subtext ${statusTextClass}">`;
+            html += `<div class="dgp-step-status-subtext ${statusTextClass}">`;
             html += `<div>${statusText}</div>`;
             if (remainingDaysInfo) {
                 html += `<div style="font-size: 9px; margin-top: 2px; opacity: 0.9; font-weight: 600;">${remainingDaysInfo}</div>`;
             }
             html += `</div>`;
 
-            html += '</div>'; // .djp-pill-wrapper
+            html += '</div>'; // .dgp-pill-wrapper
 
             if (!isLast) {
-                html += `<div class="djp-step-connector ${connClass}" style="margin-top: 14px;"></div>`;
+                html += `<div class="dgp-step-connector ${connClass}" style="margin-top: 14px;"></div>`;
             }
-            html += '</div>'; // .djp-tracker-step
+            html += '</div>'; // .dgp-tracker-step
         });
 
-        html += '</div>'; // .djp-tracker-flow
-        html += '</div>'; // .djp-stage-tracker-container
+        html += '</div>'; // .dgp-tracker-flow
+        html += '</div>'; // .dgp-stage-tracker-container
 
         let $formContainer = frm.page.wrapper.find('.form-message-container');
         if ($formContainer.length) {
@@ -1029,8 +1029,8 @@ frappe.ui.form.on('DJP Case', {
     }
 });
 
-// DJP Case Stage events
-frappe.ui.form.on('DJP Case Stage', {
+// DGP Case Stage events
+frappe.ui.form.on('DGP Case Stage', {
     reviewer_employee: function(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
         const emp_id = row.reviewer_employee;
@@ -1052,7 +1052,7 @@ frappe.ui.form.on('DJP Case Stage', {
     }
 });
 
-frappe.ui.form.on('DJP Additional Accused', {
+frappe.ui.form.on('DGP Additional Accused', {
     // Sync main employee field with first additional accused employee
     employee: function(frm, cdt, cdn) {
         if (frm.doc.is_multiple_accused && frm.doc.additional_accused_employees && frm.doc.additional_accused_employees.length > 0) {

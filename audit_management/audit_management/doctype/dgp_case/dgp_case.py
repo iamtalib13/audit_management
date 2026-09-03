@@ -6,36 +6,36 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import now_datetime, add_days, getdate
 
-def is_djp_module_enabled():
-    """Check if DJP module is enabled in Audit Management Settings"""
-    val = frappe.db.get_single_value("Audit Management Settings", "enable_djp_module")
+def is_dgp_module_enabled():
+    """Check if DGP module is enabled in Audit Management Settings"""
+    val = frappe.db.get_single_value("Audit Management Settings", "enable_dgp_module")
     return val if val is not None else 1
 
 def boot_session(bootinfo):
-    """Filter out DJP DocTypes from bootinfo when DJP module is disabled for non-Administrator users"""
+    """Filter out DGP DocTypes from bootinfo when DGP module is disabled for non-Administrator users"""
     user = frappe.session.user
-    if user != "Administrator" and not is_djp_module_enabled():
-        djp_doctypes = {"DJP Case", "DJP Stage", "DJP Stage Assignment", "DJP Additional Accused"}
+    if user != "Administrator" and not is_dgp_module_enabled():
+        dgp_doctypes = {"DGP Case", "DGP Stage", "DGP Stage Assignment", "DGP Additional Accused"}
         if hasattr(bootinfo, "user") and isinstance(bootinfo.user, dict):
             for key in ["can_read", "can_create", "can_write", "can_search", "can_get_doctypes", "single_doctypes"]:
                 if key in bootinfo.user and isinstance(bootinfo.user[key], (list, set, tuple)):
-                    bootinfo.user[key] = [dt for dt in bootinfo.user[key] if dt not in djp_doctypes]
+                    bootinfo.user[key] = [dt for dt in bootinfo.user[key] if dt not in dgp_doctypes]
 
-# DJP Case Document Class
-class DJPCase(Document):
+# DGP Case Document Class
+class DGPCase(Document):
     def autoname(self):
-        """Generate custom nomenclature: DJP-{Branch}-{Year}-{Number} (e.g. DJP-MUM-2026-00001)"""
+        """Generate custom nomenclature: DGP-{Branch}-{Year}-{Number} (e.g. DGP-MUM-2026-00001)"""
         branch = (self.emp_branch or "GEN").strip().upper()
         branch_code = "".join(e for e in branch if e.isalnum()) or "GEN"
         year = now_datetime().strftime("%Y")
-        prefix = f"DJP-{branch_code}-{year}-"
+        prefix = f"DGP-{branch_code}-{year}-"
         self.name = frappe.model.naming.make_autoname(f"{prefix}.#####")
 
     # Validation to prevent attachment removal by stage users and check module status
     def validate(self):
         user = frappe.session.user
-        if user != "Administrator" and not is_djp_module_enabled():
-            frappe.throw(_("DJP Module is currently disabled in Audit Management Settings."))
+        if user != "Administrator" and not is_dgp_module_enabled():
+            frappe.throw(_("DGP Module is currently disabled in Audit Management Settings."))
         self.validate_attachment_removal()
 
 
@@ -137,10 +137,10 @@ def get_stage_definitions_for_cmg(cmg_code):
         return zonal_stages + national_stages + management_stages
     return zonal_stages
 
-# Calculates and returns DJP Stage rows for auto-population based on CMG Code
+# Calculates and returns DGP Stage rows for auto-population based on CMG Code
 @frappe.whitelist()
-def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_employee=None):
-    """Return DJP stage rows for UI auto-population based on CMG Code hierarchy: Stage 1 = BM from branch, rest are blank"""
+def fetch_auto_dgp_stages(cmg_code, emp_branch=None, created_on=None, accused_employee=None):
+    """Return DGP stage rows for UI auto-population based on CMG Code hierarchy: Stage 1 = BM from branch, rest are blank"""
     if not cmg_code:
         return []
 
@@ -188,9 +188,9 @@ def get_total_tat_for_cmg(cmg_code):
 
 # Populate stage reviewers from backend
 @frappe.whitelist()
-def populate_djp_stages(docname, cmg_code=None, emp_branch=None):
-    """Populate DJP Case stages based on CMG Code hierarchy: Stage 1 = BM from branch, rest are blank"""
-    doc = frappe.get_doc("DJP Case", docname)
+def populate_dgp_stages(docname, cmg_code=None, emp_branch=None):
+    """Populate DGP Case stages based on CMG Code hierarchy: Stage 1 = BM from branch, rest are blank"""
+    doc = frappe.get_doc("DGP Case", docname)
     code_to_use = cmg_code or doc.cmg_code
 
     if not code_to_use:
@@ -208,12 +208,12 @@ def populate_djp_stages(docname, cmg_code=None, emp_branch=None):
     bm_info = get_branch_manager(branch_to_use, doc.employee)
 
     # Clear existing stages to allow re-populating/editing
-    doc.set("djp_case_stages", [])
+    doc.set("dgp_case_stages", [])
 
     for idx, (stage_name, dc_level) in enumerate(stage_defs, start=1):
         emp_info = bm_info if stage_name == "Branch Manager" else None
 
-        doc.append("djp_case_stages", {
+        doc.append("dgp_case_stages", {
             "stage": str(idx),
             "stage_name": stage_name,
             "dc_level": dc_level,
@@ -317,12 +317,12 @@ def get_stage_tat(cmg_code, stage_num, total_stages):
 @frappe.whitelist()
 def send_to_current_stage(docname):
     """Send notification to current stage reviewer and update stage status"""
-    doc = frappe.get_doc("DJP Case", docname)
+    doc = frappe.get_doc("DGP Case", docname)
 
-    if doc.current_stage > len(doc.djp_case_stages):
+    if doc.current_stage > len(doc.dgp_case_stages):
         frappe.throw(_("No more stages to send"))
 
-    current_stage_row = doc.djp_case_stages[doc.current_stage - 1]
+    current_stage_row = doc.dgp_case_stages[doc.current_stage - 1]
 
     if current_stage_row.status not in ["Pending", "Draft"]:
         frappe.throw(_("Current stage is already sent or processed"))
@@ -340,14 +340,14 @@ def send_to_current_stage(docname):
 @frappe.whitelist()
 def send_to_all_reviewers(docname):
     """Send notification and assign ToDo to ALL stage reviewers simultaneously with the same TAT"""
-    doc = frappe.get_doc("DJP Case", docname)
+    doc = frappe.get_doc("DGP Case", docname)
 
-    if not doc.djp_case_stages:
+    if not doc.dgp_case_stages:
         frappe.throw(_("No stages to send"))
 
     unassigned_stages = [
         f"Stage {r.stage} ({r.stage_name})"
-        for r in doc.djp_case_stages
+        for r in doc.dgp_case_stages
         if not (getattr(r, 'reviewer_employee', None) or getattr(r, 'employee', None))
     ]
     if unassigned_stages:
@@ -361,7 +361,7 @@ def send_to_all_reviewers(docname):
     
     from frappe.desk.form.assign_to import add as add_assignment
 
-    for row in doc.djp_case_stages:
+    for row in doc.dgp_case_stages:
         if not (getattr(row, 'reviewer_employee', None) or getattr(row, 'employee', None)):
             continue
 
@@ -371,12 +371,12 @@ def send_to_all_reviewers(docname):
 
         if row.user_id:
             try:
-                frappe.share.add("DJP Case", doc.name, row.user_id, read=1, write=1, share=0)
+                frappe.share.add("DGP Case", doc.name, row.user_id, read=1, write=1, share=0)
             except Exception:
                 pass
 
             existing_todos = frappe.get_all("ToDo", filters={
-                "reference_type": "DJP Case",
+                "reference_type": "DGP Case",
                 "reference_name": doc.name,
                 "allocated_to": row.user_id,
                 "status": "Open"
@@ -387,13 +387,13 @@ def send_to_all_reviewers(docname):
             try:
                 add_assignment({
                     "assign_to": [row.user_id],
-                    "doctype": "DJP Case",
+                    "doctype": "DGP Case",
                     "name": doc.name,
-                    "description": f"DJP Case Review assigned for {doc.employee_name or doc.employee} ({row.dc_level or row.stage_name})",
+                    "description": f"DGP Case Review assigned for {doc.employee_name or doc.employee} ({row.dc_level or row.stage_name})",
                     "date": tat_deadline_str
                 })
             except Exception as e:
-                frappe.log_error(f"DJP Case assignment failed: {e}")
+                frappe.log_error(f"DGP Case assignment failed: {e}")
 
         send_stage_notification(doc, row, "assign")
 
@@ -408,15 +408,15 @@ def send_to_all_reviewers(docname):
 @frappe.whitelist()
 def submit_stage_response(docname, response, attachment=None):
     """Submit response for active stage reviewer"""
-    doc = frappe.get_doc("DJP Case", docname)
+    doc = frappe.get_doc("DGP Case", docname)
 
     if doc.status in ["Closed", "Cessation"]:
         frappe.throw(_("Case is already closed"))
 
-    if doc.current_stage < 1 or doc.current_stage > len(doc.djp_case_stages):
+    if doc.current_stage < 1 or doc.current_stage > len(doc.dgp_case_stages):
         frappe.throw(_("Invalid current stage"))
 
-    current_row = doc.djp_case_stages[doc.current_stage - 1]
+    current_row = doc.dgp_case_stages[doc.current_stage - 1]
 
     current_row.response = response
     if attachment:
@@ -448,15 +448,15 @@ def submit_stage_response(docname, response, attachment=None):
 @frappe.whitelist()
 def send_back_case(docname, remark):
     """Send back the case to the creator for clarification or further action"""
-    doc = frappe.get_doc("DJP Case", docname)
+    doc = frappe.get_doc("DGP Case", docname)
 
     if doc.status in ["Closed", "Cessation"]:
         frappe.throw(_("Case is already closed"))
 
-    if doc.current_stage < 1 or doc.current_stage > len(doc.djp_case_stages):
+    if doc.current_stage < 1 or doc.current_stage > len(doc.dgp_case_stages):
         frappe.throw(_("Invalid current stage"))
 
-    current_row = doc.djp_case_stages[doc.current_stage - 1]
+    current_row = doc.dgp_case_stages[doc.current_stage - 1]
 
     # Save the remark and mark the stage as Sent Back
     current_row.response = f"Sent Back Remark: {remark}"
@@ -469,7 +469,7 @@ def send_back_case(docname, remark):
 
     # Close existing open ToDo for this stage reviewer
     existing_todos = frappe.get_all("ToDo", filters={
-        "reference_type": "DJP Case",
+        "reference_type": "DGP Case",
         "reference_name": doc.name,
         "allocated_to": current_row.user_id,
         "status": "Open"
@@ -481,11 +481,11 @@ def send_back_case(docname, remark):
     dc_title = current_row.dc_level or current_row.stage_name
     return {"success": True, "message": _("Case sent back to creator by {0} ({1})").format(reviewer_name, dc_title)}
 
-# Fetch DJP cases accessible by user for interactive dashboard table filtering
+# Fetch DGP cases accessible by user for interactive dashboard table filtering
 @frappe.whitelist()
-def get_user_djp_cases(filter_type=None):
-    """Fetch DJP cases accessible by user for interactive dashboard table filtering"""
-    if not is_djp_module_enabled():
+def get_user_dgp_cases(filter_type=None):
+    """Fetch DGP cases accessible by user for interactive dashboard table filtering"""
+    if not is_dgp_module_enabled():
         return []
 
     user = frappe.session.user
@@ -499,15 +499,15 @@ def get_user_djp_cases(filter_type=None):
     if is_admin_or_manager:
         filters = {}
     else:
-        shared_names = frappe.share.get_shared("DJP Case", user) or []
-        stage_cases = frappe.get_all("DJP Case Stage", filters={"user_id": user}, pluck="parent") or []
-        user_cases = frappe.get_all("DJP Case", filters={"owner": user}, pluck="name") or []
+        shared_names = frappe.share.get_shared("DGP Case", user) or []
+        stage_cases = frappe.get_all("DGP Case Stage", filters={"user_id": user}, pluck="parent") or []
+        user_cases = frappe.get_all("DGP Case", filters={"owner": user}, pluck="name") or []
         all_allowed = list(set(shared_names + stage_cases + user_cases))
         if not all_allowed:
             return []
         filters = {"name": ["in", all_allowed]}
 
-    cases = frappe.get_all("DJP Case",
+    cases = frappe.get_all("DGP Case",
         filters=filters,
         fields=["name", "employee", "employee_name", "designation", "emp_branch",
                 "misconduct_type", "severity", "cmg_code", "cmg_recommended_outcome",
@@ -516,16 +516,16 @@ def get_user_djp_cases(filter_type=None):
 
     for c in cases:
         # Check user specific stage status
-        stg_status = frappe.db.get_value("DJP Case Stage", {"parent": c.name, "user_id": user}, "status")
+        stg_status = frappe.db.get_value("DGP Case Stage", {"parent": c.name, "user_id": user}, "status")
         c["user_stage_status"] = stg_status or "Not Sent"
 
     return cases
 
-# Fetch DJP dashboard analytics for Case Creators, Admins & Stage Reviewers
+# Fetch DGP dashboard analytics for Case Creators, Admins & Stage Reviewers
 @frappe.whitelist()
-def get_djp_dashboard_data():
-    """Return dashboard analytics for DJP Cases tailored for Case Creators, Admins & Stage Reviewers"""
-    if not is_djp_module_enabled():
+def get_dgp_dashboard_data():
+    """Return dashboard analytics for DGP Cases tailored for Case Creators, Admins & Stage Reviewers"""
+    if not is_dgp_module_enabled():
         return {"enabled": False, "total_count": 0, "draft_count": 0, "under_review_count": 0, "closed_count": 0}
 
     user = frappe.session.user
@@ -543,33 +543,33 @@ def get_djp_dashboard_data():
     if is_admin_or_manager:
         base_filters = {}
     else:
-        shared_names = frappe.share.get_shared("DJP Case", user) or []
-        stage_cases = frappe.get_all("DJP Case Stage", filters={"user_id": user}, pluck="parent") or []
-        user_cases = frappe.get_all("DJP Case", filters={"owner": user}, pluck="name") or []
+        shared_names = frappe.share.get_shared("DGP Case", user) or []
+        stage_cases = frappe.get_all("DGP Case Stage", filters={"user_id": user}, pluck="parent") or []
+        user_cases = frappe.get_all("DGP Case", filters={"owner": user}, pluck="name") or []
         all_allowed = list(set(shared_names + stage_cases + user_cases))
         base_filters = {"name": ["in", all_allowed]} if all_allowed else {"name": "NONE"}
 
-    total_count = frappe.db.count("DJP Case", base_filters)
-    draft_count = frappe.db.count("DJP Case", {**base_filters, "status": "Draft"})
-    under_review_count = frappe.db.count("DJP Case", {**base_filters, "status": "Under Review"})
-    closed_count = frappe.db.count("DJP Case", {**base_filters, "status": ["in", ["Closed", "Cessation"]]})
+    total_count = frappe.db.count("DGP Case", base_filters)
+    draft_count = frappe.db.count("DGP Case", {**base_filters, "status": "Draft"})
+    under_review_count = frappe.db.count("DGP Case", {**base_filters, "status": "Under Review"})
+    closed_count = frappe.db.count("DGP Case", {**base_filters, "status": ["in", ["Closed", "Cessation"]]})
 
     pending_for_me_count = frappe.db.sql(
-        "SELECT COUNT(DISTINCT parent) FROM `tabDJP Case Stage` WHERE user_id = %s AND status = 'Pending'", (user,)
+        "SELECT COUNT(DISTINCT parent) FROM `tabDGP Case Stage` WHERE user_id = %s AND status = 'Pending'", (user,)
     )[0][0]
 
     responded_by_me_count = frappe.db.sql(
-        "SELECT COUNT(DISTINCT parent) FROM `tabDJP Case Stage` WHERE user_id = %s AND status = 'Responded'", (user,)
+        "SELECT COUNT(DISTINCT parent) FROM `tabDGP Case Stage` WHERE user_id = %s AND status = 'Responded'", (user,)
     )[0][0]
 
     no_response_by_me_count = frappe.db.sql(
-        "SELECT COUNT(DISTINCT parent) FROM `tabDJP Case Stage` WHERE user_id = %s AND status = 'No Responded'", (user,)
+        "SELECT COUNT(DISTINCT parent) FROM `tabDGP Case Stage` WHERE user_id = %s AND status = 'No Responded'", (user,)
     )[0][0]
 
-    cmg_counts_data = frappe.db.get_all("DJP Case", filters=base_filters, fields=["cmg_code", "count(name) as count"], group_by="cmg_code")
+    cmg_counts_data = frappe.db.get_all("DGP Case", filters=base_filters, fields=["cmg_code", "count(name) as count"], group_by="cmg_code")
     cmg_counts = {d.cmg_code or "Unassigned": d.count for d in cmg_counts_data}
 
-    dc_counts_data = frappe.db.get_all("DJP Case", filters=base_filters, fields=["current_dc_level", "count(name) as count"], group_by="current_dc_level")
+    dc_counts_data = frappe.db.get_all("DGP Case", filters=base_filters, fields=["current_dc_level", "count(name) as count"], group_by="current_dc_level")
     dc_counts = {d.current_dc_level or "Unassigned": d.count for d in dc_counts_data}
 
     return {
@@ -587,13 +587,13 @@ def get_djp_dashboard_data():
         "enabled": True
     }
 
-# Permission query condition for DJP Case list view & reports
+# Permission query condition for DGP Case list view & reports
 def get_permission_query_conditions(user=None):
-    """Permission query condition for DJP Case list view & reports."""
+    """Permission query condition for DGP Case list view & reports."""
     if not user:
         user = frappe.session.user
 
-    if user != "Administrator" and not is_djp_module_enabled():
+    if user != "Administrator" and not is_dgp_module_enabled():
         return "1=0"
 
     user_roles = frappe.get_roles(user)
@@ -603,26 +603,26 @@ def get_permission_query_conditions(user=None):
     user_escaped = frappe.db.escape(user)
 
     conditions = f"""(
-        `tabDJP Case`.`owner` = {user_escaped}
-        OR `tabDJP Case`.`name` IN (
+        `tabDGP Case`.`owner` = {user_escaped}
+        OR `tabDGP Case`.`name` IN (
             SELECT share_name FROM `tabDocShare` 
-            WHERE share_doctype = 'DJP Case' AND user = {user_escaped}
+            WHERE share_doctype = 'DGP Case' AND user = {user_escaped}
         )
-        OR `tabDJP Case`.`name` IN (
-            SELECT parent FROM `tabDJP Case Stage` 
+        OR `tabDGP Case`.`name` IN (
+            SELECT parent FROM `tabDGP Case Stage` 
             WHERE user_id = {user_escaped} AND status IN ('Pending', 'Responded', 'No Responded', 'Overdue')
         )
     )"""
 
     return conditions
 
-# Document permission validation for DJP Case form view & API access
+# Document permission validation for DGP Case form view & API access
 def has_permission(doc, ptype="read", user=None):
-    """Document permission validation for DJP Case form view & API access"""
+    """Document permission validation for DGP Case form view & API access"""
     if not user:
         user = frappe.session.user
 
-    if user != "Administrator" and not is_djp_module_enabled():
+    if user != "Administrator" and not is_dgp_module_enabled():
         return False
 
     user_roles = frappe.get_roles(user)
@@ -637,10 +637,10 @@ def has_permission(doc, ptype="read", user=None):
     if not doc_name:
         return True
 
-    if frappe.db.exists("DocShare", {"share_doctype": "DJP Case", "share_name": doc_name, "user": user}):
+    if frappe.db.exists("DocShare", {"share_doctype": "DGP Case", "share_name": doc_name, "user": user}):
         return True
 
-    active_stage = frappe.db.exists("DJP Case Stage", {
+    active_stage = frappe.db.exists("DGP Case Stage", {
         "parent": doc_name,
         "user_id": user,
         "status": ["in", ["Pending", "Responded", "No Responded", "Overdue"]]
@@ -656,20 +656,20 @@ def send_stage_notification(doc, stage_row, action):
     """Send email notification for stage action"""
     try:
         template = frappe.db.get_value("Email Template",
-            {"name": "DJP Case Stage Notification"}, "name")
+            {"name": "DGP Case Stage Notification"}, "name")
 
         if not template:
             frappe.sendmail(
                 recipients=[stage_row.email],
-                subject=f"DJP Case {doc.name} - {action.title()} at {stage_row.dc_level}",
+                subject=f"DGP Case {doc.name} - {action.title()} at {stage_row.dc_level}",
                 message=f"""
                     <p>Dear {stage_row.employee_name},</p>
-                    <p>A DJP Case has been {action}ed to you for review.</p>
+                    <p>A DGP Case has been {action}ed to you for review.</p>
                     <p><b>Case:</b> {doc.name}</p>
                     <p><b>Employee:</b> {doc.employee_name} ({doc.designation})</p>
                     <p><b>CMG Code:</b> {doc.cmg_code} - {doc.cmg_recommended_outcome}</p>
                     <p><b>TAT Deadline:</b> {stage_row.tat_deadline}</p>
-                    <p>Please review and respond in the DJP Case Portal.</p>
+                    <p>Please review and respond in the DGP Case Portal.</p>
                 """
             )
         else:
@@ -683,24 +683,24 @@ def send_stage_notification(doc, stage_row, action):
                 }
             )
     except Exception as e:
-        frappe.log_error(f"DJP Case notification failed: {e}")
+        frappe.log_error(f"DGP Case notification failed: {e}")
 
 # Escalate case to next DC level with justification
 @frappe.whitelist()
 def escalate_case(docname, justification):
     """Escalate case to next DC level"""
-    doc = frappe.get_doc("DJP Case", docname)
+    doc = frappe.get_doc("DGP Case", docname)
 
-    if doc.current_stage >= len(doc.djp_case_stages):
+    if doc.current_stage >= len(doc.dgp_case_stages):
         frappe.throw(_("Already at final stage"))
 
-    current_row = doc.djp_case_stages[doc.current_stage - 1]
+    current_row = doc.dgp_case_stages[doc.current_stage - 1]
     current_row.status = "Escalated"
     current_row.escalation_justification = justification
     current_row.response_time = now_datetime()
 
     doc.current_stage += 1
-    next_row = doc.djp_case_stages[doc.current_stage - 1]
+    next_row = doc.dgp_case_stages[doc.current_stage - 1]
     doc.current_dc_level = next_row.dc_level
     next_row.status = "Pending"
     next_row.pending_time = now_datetime()
@@ -714,7 +714,7 @@ def escalate_case(docname, justification):
 
     return {"success": True}
 
-# Close DJP case with restriction for authorized employee IDs and admin roles
+# Close DGP case with restriction for authorized employee IDs and admin roles
 @frappe.whitelist()
 def close_case(docname, final_decision=None, justification=None, governance_notes=None, outcome=None):
     """Close case with final decision and required justification"""
@@ -727,9 +727,9 @@ def close_case(docname, final_decision=None, justification=None, governance_note
     emp_id = (emp.name if emp else None) or (emp.employee_number if emp else None)
 
     if not is_admin and (not emp_id or str(emp_id).strip() not in allowed_emp_ids):
-        frappe.throw(_("Only authorized Employee ID 'Chandrkant Sir(447)' can close DJP Cases."))
+        frappe.throw(_("Only authorized Employee ID 'Chandrkant Sir(447)' can close DGP Cases."))
 
-    doc = frappe.get_doc("DJP Case", docname)
+    doc = frappe.get_doc("DGP Case", docname)
 
     decision = final_decision or outcome
     if not decision:
@@ -744,7 +744,7 @@ def close_case(docname, final_decision=None, justification=None, governance_note
         doc.governance_notes = (doc.governance_notes or "") + "\n" + governance_notes
     doc.status = "Closed"
 
-    for row in doc.djp_case_stages:
+    for row in doc.dgp_case_stages:
         if row.status == "Pending":
             row.status = "Skipped"
 
@@ -785,20 +785,20 @@ def check_governance_rules(doc):
 # Count Black Marks (C2, C3) for employee
 def get_employee_black_mark_count(employee):
     """Count Black Marks (C2, C3) for employee"""
-    count = frappe.db.count("DJP Case", {
+    count = frappe.db.count("DGP Case", {
         "employee": employee,
         "final_decision": ["like", "%Black Mark%"],
         "status": ["in", ["Closed", "Cessation"]]
     })
     return count
 
-# Check and update overdue TAT for active DJP Case Stages
+# Check and update overdue TAT for active DGP Case Stages
 @frappe.whitelist()
-def check_djp_pending_tat():
-    """Check and update overdue TAT for active DJP Case Stages"""
+def check_dgp_pending_tat():
+    """Check and update overdue TAT for active DGP Case Stages"""
     now = now_datetime()
     overdue_stages = frappe.get_all(
-        "DJP Case Stage",
+        "DGP Case Stage",
         filters={
             "status": "Pending",
             "tat_deadline": ["<", now]
@@ -808,7 +808,7 @@ def check_djp_pending_tat():
 
     updated_count = 0
     for stage in overdue_stages:
-        frappe.db.set_value("DJP Case Stage", stage.name, "status", "No Responded")
+        frappe.db.set_value("DGP Case Stage", stage.name, "status", "No Responded")
         updated_count += 1
 
     if updated_count > 0:
@@ -825,7 +825,7 @@ def check_djp_pending_tat():
 @frappe.whitelist()                                                                                                
 def reopen_case(docname, reason):                                                                                  
         """Reopen a closed case with justification"""                                                                  
-        doc = frappe.get_doc("DJP Case", docname)                                                                      
+        doc = frappe.get_doc("DGP Case", docname)                                                                      
                                                                                                                        
         if doc.status != "Closed":                                                                                     
             frappe.throw(_("Only closed cases can be reopened."))                                                      
