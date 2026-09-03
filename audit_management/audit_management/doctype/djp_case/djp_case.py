@@ -162,7 +162,7 @@ def fetch_auto_djp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
             "stage": str(idx),
             "stage_name": stage_name,
             "dc_level": dc_level,
-            "employee": emp_info.name if emp_info else "",
+            "reviewer_employee": emp_info.name if emp_info else "",
             "user_id": emp_info.user_id if emp_info else "",
             "employee_name": emp_info.employee_name if emp_info else "",
             "designation": emp_info.designation if emp_info else "",
@@ -217,7 +217,7 @@ def populate_djp_stages(docname, cmg_code=None, emp_branch=None):
             "stage": str(idx),
             "stage_name": stage_name,
             "dc_level": dc_level,
-            "employee": emp_info.name if emp_info else "",
+            "reviewer_employee": emp_info.name if emp_info else "",
             "user_id": emp_info.user_id if emp_info else "",
             "employee_name": emp_info.employee_name if emp_info else "",
             "designation": emp_info.designation if emp_info else "",
@@ -348,7 +348,7 @@ def send_to_all_reviewers(docname):
     unassigned_stages = [
         f"Stage {r.stage} ({r.stage_name})"
         for r in doc.djp_case_stages
-        if not r.employee
+        if not (getattr(r, 'reviewer_employee', None) or getattr(r, 'employee', None))
     ]
     if unassigned_stages:
         frappe.throw(_("Please select an Employee for all stages before sending: {0}").format(", ".join(unassigned_stages)))
@@ -362,7 +362,7 @@ def send_to_all_reviewers(docname):
     from frappe.desk.form.assign_to import add as add_assignment
 
     for row in doc.djp_case_stages:
-        if not row.employee:
+        if not (getattr(row, 'reviewer_employee', None) or getattr(row, 'employee', None)):
             continue
 
         row.status = "Pending"
