@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class DJPCaseStage(Document):
+class DGPCaseStage(Document):
 	pass
