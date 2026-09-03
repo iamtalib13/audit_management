@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class DJPStageAssignment(Document):
+class DGPStageAssignment(Document):
 	pass
