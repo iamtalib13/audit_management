@@ -178,11 +178,11 @@
 		.count-pending { background-color: #ed8936; color: #fff; }
 		.count-completed { background-color: #48bb78; color: #fff; }
 		.count-overdue { background-color: #f56565; color: #fff; }
-		.count-djp-total { background-color: #8b0000; color: #fff; }
-		.count-djp-under { background-color: #ed8936; color: #fff; }
-		.count-djp-escalated { background-color: #f56565; color: #fff; }
-		.count-djp-closed { background-color: #48bb78; color: #fff; }
-		.count-djp-cessation { background-color: #c0392b; color: #fff; }
+		.count-dgp-total { background-color: #8b0000; color: #fff; }
+		.count-dgp-under { background-color: #ed8936; color: #fff; }
+		.count-dgp-escalated { background-color: #f56565; color: #fff; }
+		.count-dgp-closed { background-color: #48bb78; color: #fff; }
+		.count-dgp-cessation { background-color: #c0392b; color: #fff; }
 
 		/* Create Buttons */
 		.create-buttons {
@@ -216,19 +216,19 @@
 			box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 		}
 
-		.create-btn-djp {
+		.create-btn-dgp {
 			background: linear-gradient(135deg, #c0392b 0%, #8b0000 100%);
 		}
 
-		<!-- New Audit / DJP Case Buttons -->
-		<div v-if="canCreateAudit || canCreateDjp" style="margin: 0 20px 32px; display: flex; gap: 12px; flex-wrap: wrap;">
+		<!-- New Audit / DGP Case Buttons -->
+		<div v-if="canCreateAudit || canCreateDgp" style="margin: 0 20px 32px; display: flex; gap: 12px; flex-wrap: wrap;">
 			<button v-if="canCreateAudit" class="new-audit-btn" @click="openCreateModal('audit')">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
 				<span>New Audit</span>
 			</button>
-			<button v-if="canCreateDjp" class="new-audit-btn" style="background: linear-gradient(135deg, #c0392b 0%, #8b0000 100%);" @click="openCreateModal('djp')">
+			<button v-if="canCreateDgp" class="new-audit-btn" style="background: linear-gradient(135deg, #c0392b 0%, #8b0000 100%);" @click="openCreateModal('dgp')">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-				<span>New DJP Case</span>
+				<span>New DGP Case</span>
 			</button>
 		</div>
 
@@ -955,9 +955,9 @@
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
 					<span>New Audit</span>
 				</button>
-				<button v-if="canCreateDjp" class="create-btn create-btn-djp" @click="openCreateModal('djp')">
+				<button v-if="canCreateDgp" class="create-btn create-btn-dgp" @click="openCreateModal('dgp')">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-					<span>New DJP Case</span>
+					<span>New DGP Case</span>
 				</button>
 			</div>
 
@@ -1012,62 +1012,62 @@
 				</nav>
 			</div>
 
-			<div class="sidebar-section" v-if="djpNumberCards && djpNumberCards.length">
-				<h3 class="sidebar-section-title">DJP Cases Summary</h3>
+			<div class="sidebar-section" v-if="dgpNumberCards && dgpNumberCards.length">
+				<h3 class="sidebar-section-title">DGP Cases Summary</h3>
 				<nav>
 					<div class="nav-item summary-item" 
-						 :class="{ 'active': djpActiveFilter === 'total' }" 
-						 @click="filterDjpCases('total')">
+						 :class="{ 'active': dgpActiveFilter === 'total' }" 
+						 @click="filterDgpCases('total')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-							DJP Total
+							DGP Total
 						</div>
-						<span class="summary-count count-djp-total" v-text="djpNumberCards.find(c => c.key === 'djp_total')?.value || 0"></span>
+						<span class="summary-count count-dgp-total" v-text="dgpNumberCards.find(c => c.key === 'dgp_total')?.value || 0"></span>
 					</div>
 					<div class="nav-item summary-item" 
-						 :class="{ 'active': djpActiveFilter === 'draft' }" 
-						 @click="filterDjpCases('draft')">
+						 :class="{ 'active': dgpActiveFilter === 'draft' }" 
+						 @click="filterDgpCases('draft')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/></svg>
 							Draft
 						</div>
-						<span class="summary-count count-djp-total" v-text="djpNumberCards.find(c => c.key === 'djp_draft')?.value || 0"></span>
+						<span class="summary-count count-dgp-total" v-text="dgpNumberCards.find(c => c.key === 'dgp_draft')?.value || 0"></span>
 					</div>
 					<div class="nav-item summary-item" 
-						 :class="{ 'active': djpActiveFilter === 'under_review' }" 
-						 @click="filterDjpCases('under_review')">
+						 :class="{ 'active': dgpActiveFilter === 'under_review' }" 
+						 @click="filterDgpCases('under_review')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 							Under Review
 						</div>
-						<span class="summary-count count-djp-under" v-text="djpNumberCards.find(c => c.key === 'djp_under_review')?.value || 0"></span>
+						<span class="summary-count count-dgp-under" v-text="dgpNumberCards.find(c => c.key === 'dgp_under_review')?.value || 0"></span>
 					</div>
 					<div class="nav-item summary-item" 
-						 :class="{ 'active': djpActiveFilter === 'escalated' }" 
-						 @click="filterDjpCases('escalated')">
+						 :class="{ 'active': dgpActiveFilter === 'escalated' }" 
+						 @click="filterDgpCases('escalated')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
 							Escalated
 						</div>
-						<span class="summary-count count-djp-escalated" v-text="djpNumberCards.find(c => c.key === 'djp_escalated')?.value || 0"></span>
+						<span class="summary-count count-dgp-escalated" v-text="dgpNumberCards.find(c => c.key === 'dgp_escalated')?.value || 0"></span>
 					</div>
 					<div class="nav-item summary-item" 
-						 :class="{ 'active': djpActiveFilter === 'closed' }" 
-						 @click="filterDjpCases('closed')">
+						 :class="{ 'active': dgpActiveFilter === 'closed' }" 
+						 @click="filterDgpCases('closed')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg>
 							Closed
 						</div>
-						<span class="summary-count count-djp-closed" v-text="djpNumberCards.find(c => c.key === 'djp_closed')?.value || 0"></span>
+						<span class="summary-count count-dgp-closed" v-text="dgpNumberCards.find(c => c.key === 'dgp_closed')?.value || 0"></span>
 					</div>
 					<div class="nav-item summary-item" 
-						 :class="{ 'active': djpActiveFilter === 'cessation' }" 
-						 @click="filterDjpCases('cessation')">
+						 :class="{ 'active': dgpActiveFilter === 'cessation' }" 
+						 @click="filterDgpCases('cessation')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
 							Cessation
 						</div>
-						<span class="summary-count count-djp-cessation" v-text="djpNumberCards.find(c => c.key === 'djp_cessation')?.value || 0"></span>
+						<span class="summary-count count-dgp-cessation" v-text="dgpNumberCards.find(c => c.key === 'dgp_cessation')?.value || 0"></span>
 					</div>
 				</nav>
 			</div>
@@ -1428,7 +1428,7 @@
 				activeFilter: 'total',
 				user: boot.user || { name: 'User', role: 'User' },
 				canCreateAudit: boot.can_create_audit || false,
-				canCreateDjp: boot.can_create_djp || false,
+				canCreateDgp: boot.can_create_dgp || false,
 				numberCards: boot.number_cards?.number_cards || [
 					{ key: 'total', value: 0 },
 					{ key: 'draft', value: 0 },
@@ -1437,19 +1437,19 @@
 					{ key: 'overdue', value: 0 }
 				],
 				
-				// DJP Case properties
-				djpCases: [],
-				selectedDjpCase: null,
-				djpCollapsedGroups: [],
-				djpIsLoading: false,
-				djpHasMore: true,
-				djpStart: 0,
-				djpActiveFilter: 'total',
-				djpNumberCards: boot.number_cards?.djp_number_cards || [],
+				// DGP Case properties
+				dgpCases: [],
+				selectedDgpCase: null,
+				dgpCollapsedGroups: [],
+				dgpIsLoading: false,
+				dgpHasMore: true,
+				dgpStart: 0,
+				dgpActiveFilter: 'total',
+				dgpNumberCards: boot.number_cards?.dgp_number_cards || [],
 				
 				// UI state
 				activePane: 'detail',
-				activeListType: 'audit', // 'audit' or 'djp'
+				activeListType: 'audit', // 'audit' or 'dgp'
 				
 				// Audit create form
 				createForm: {
@@ -1471,8 +1471,8 @@
 				responseMessage: "",
 				responseLoading: false,
 				
-				// DJP create form
-				djpCreateForm: {
+				// DGP create form
+				dgpCreateForm: {
 					emp_branch: "",
 					employee: "",
 					misconduct_type: "",
@@ -1486,8 +1486,8 @@
 				severityOptions: boot.severity_options || [],
 				occurrenceOptions: boot.occurrence_options || [],
 				employeeOptions: [],
-				djpCreateLoading: false,
-				djpCreateError: "",
+				dgpCreateLoading: false,
+				dgpCreateError: "",
 				cmgPreview: null,
 
 				async mounted() {
@@ -1513,15 +1513,15 @@
 				},
 
 				async previewCmg() {
-					if (!this.djpCreateForm.misconduct_type || !this.djpCreateForm.severity || !this.djpCreateForm.occurrence) return;
+					if (!this.dgpCreateForm.misconduct_type || !this.dgpCreateForm.severity || !this.dgpCreateForm.occurrence) return;
 					try {
 						const res = await fetch('/api/method/audit_management.www.audit_dashboard.get_cmg_preview', {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF_TOKEN },
 							body: JSON.stringify({
-								misconduct_type: this.djpCreateForm.misconduct_type,
-								severity: this.djpCreateForm.severity,
-								occurrence: this.djpCreateForm.occurrence
+								misconduct_type: this.dgpCreateForm.misconduct_type,
+								severity: this.dgpCreateForm.severity,
+								occurrence: this.dgpCreateForm.occurrence
 							})
 						});
 						const data = await res.json();
@@ -1660,12 +1660,12 @@
 							audit_query_box: "",
 							audit_attach_box: "",
 						};
-					} else if (type === 'djp') {
+					} else if (type === 'dgp') {
 						this.activePane = 'create';
-						this.activeListType = 'djp';
-						this.djpCreateError = "";
+						this.activeListType = 'dgp';
+						this.dgpCreateError = "";
 						this.cmgPreview = null;
-						this.djpCreateForm = {
+						this.dgpCreateForm = {
 							emp_branch: "",
 							employee: "",
 							misconduct_type: "",
@@ -1728,31 +1728,31 @@
 					}
 				},
 
-				// DJP Case methods
-				async filterDjpCases(key) {
-					this.djpActiveFilter = key;
-					this.djpStart = 0;
-					this.djpCases = [];
-					this.djpHasMore = true;
-					this.selectedDjpCase = null;
-					await this.loadMoreDjpCases();
-					if (this.djpCases.length > 0) {
-						this.selectedDjpCase = this.djpCases[0];
+				// DGP Case methods
+				async filterDgpCases(key) {
+					this.dgpActiveFilter = key;
+					this.dgpStart = 0;
+					this.dgpCases = [];
+					this.dgpHasMore = true;
+					this.selectedDgpCase = null;
+					await this.loadMoreDgpCases();
+					if (this.dgpCases.length > 0) {
+						this.selectedDgpCase = this.dgpCases[0];
 					}
 				},
 
-				get groupedDjpCases() {
+				get groupedDgpCases() {
 					const groups = ["Today", "Yesterday", "This Week", "Last Week"];
 					return groups.map(g => ({
 						name: g,
-						items: this.djpCases.filter(c => c.dateGroup === g)
+						items: this.dgpCases.filter(c => c.dateGroup === g)
 					}));
 				},
 				
-				async loadMoreDjpCases() {
-					if (this.djpIsLoading || !this.djpHasMore) return;
+				async loadMoreDgpCases() {
+					if (this.dgpIsLoading || !this.dgpHasMore) return;
 					
-					this.djpIsLoading = true;
+					this.dgpIsLoading = true;
 					try {
 						const filters = {};
 						const statusMap = {
@@ -1762,9 +1762,9 @@
 							'closed': 'Closed',
 							'cessation': 'Cessation'
 						};
-						if (statusMap[this.djpActiveFilter]) filters.status = statusMap[this.djpActiveFilter];
+						if (statusMap[this.dgpActiveFilter]) filters.status = statusMap[this.dgpActiveFilter];
 
-						const response = await fetch(`/api/method/audit_management.www.audit_dashboard.get_djp_cases?start=${this.djpStart}&limit=${this.limit}&filters=${JSON.stringify(filters)}`, {
+						const response = await fetch(`/api/method/audit_management.www.audit_dashboard.get_dgp_cases?start=${this.dgpStart}&limit=${this.limit}&filters=${JSON.stringify(filters)}`, {
 							headers: { 'X-Frappe-CSRF-Token': CSRF_TOKEN }
 						});
 						const data = await response.json();
@@ -1774,15 +1774,15 @@
 						}));
 						
 						if (newCases.length < this.limit) {
-							this.djpHasMore = false;
+							this.dgpHasMore = false;
 						}
 						
-						this.djpCases = [...this.djpCases, ...newCases];
-						this.djpStart += this.limit;
+						this.dgpCases = [...this.dgpCases, ...newCases];
+						this.dgpStart += this.limit;
 					} catch (e) {
-						console.error("Failed to load DJP cases", e);
+						console.error("Failed to load DGP cases", e);
 					} finally {
-						this.djpIsLoading = false;
+						this.dgpIsLoading = false;
 					}
 				},
 
@@ -1795,69 +1795,69 @@
 					return 'This Week';
 				},
 
-				djpHandleScroll(e) {
+				dgpHandleScroll(e) {
 					const { scrollTop, scrollHeight, clientHeight } = e.target;
 					if (scrollTop + clientHeight >= scrollHeight - 50) {
-						this.loadMoreDjpCases();
+						this.loadMoreDgpCases();
 					}
 				},
 
-				djpToggleGroup(name) {
-					if (this.djpCollapsedGroups.includes(name)) {
-						this.djpCollapsedGroups = this.djpCollapsedGroups.filter(g => g !== name);
+				dgpToggleGroup(name) {
+					if (this.dgpCollapsedGroups.includes(name)) {
+						this.dgpCollapsedGroups = this.dgpCollapsedGroups.filter(g => g !== name);
 					} else {
-						this.djpCollapsedGroups.push(name);
+						this.dgpCollapsedGroups.push(name);
 					}
 				},
 				
-				djpIsCollapsed(name) {
-					return this.djpCollapsedGroups.includes(name);
+				dgpIsCollapsed(name) {
+					return this.dgpCollapsedGroups.includes(name);
 				},
 				
-				selectDjpCase(case_) {
-					this.selectedDjpCase = case_;
+				selectDgpCase(case_) {
+					this.selectedDgpCase = case_;
 					this.activePane = 'detail';
-					this.activeListType = 'djp';
+					this.activeListType = 'dgp';
 				},
 
-				async submitCreateDjpCase() {
+				async submitCreateDgpCase() {
 					const required = ['emp_branch', 'employee', 'misconduct_type', 'severity', 'occurrence', 'case_subject'];
 					for (const field of required) {
-						if (!this.djpCreateForm[field]) {
-							this.djpCreateError = `Please fill all mandatory fields (*). Missing: ${field}`;
+						if (!this.dgpCreateForm[field]) {
+							this.dgpCreateError = `Please fill all mandatory fields (*). Missing: ${field}`;
 							return;
 						}
 					}
 
-					this.djpCreateLoading = true;
-					this.djpCreateError = "";
+					this.dgpCreateLoading = true;
+					this.dgpCreateError = "";
 
 					try {
-						const response = await fetch('/api/method/audit_management.www.audit_dashboard.create_djp_case', {
+						const response = await fetch('/api/method/audit_management.www.audit_dashboard.create_dgp_case', {
 							method: 'POST',
 							headers: { 
 								'Content-Type': 'application/json',
 								'X-Frappe-CSRF-Token': CSRF_TOKEN 
 							},
-							body: JSON.stringify(this.djpCreateForm)
+							body: JSON.stringify(this.dgpCreateForm)
 						});
 
 						const data = await response.json();
 
 						if (data.message && (data.message.name || data.message.message)) {
-							this.djpStart = 0;
-							this.djpCases = [];
-							this.djpHasMore = true;
-							await this.loadMoreDjpCases();
+							this.dgpStart = 0;
+							this.dgpCases = [];
+							this.dgpHasMore = true;
+							await this.loadMoreDgpCases();
 							this.activePane = 'detail';
-							if (this.djpCases.length > 0) this.selectedDjpCase = this.djpCases[0];
+							if (this.dgpCases.length > 0) this.selectedDgpCase = this.dgpCases[0];
 						} else {
-							this.djpCreateError = (data._server_messages ? JSON.parse(data._server_messages)[0] : data.message) || "Failed to create DJP Case.";
+							this.dgpCreateError = (data._server_messages ? JSON.parse(data._server_messages)[0] : data.message) || "Failed to create DGP Case.";
 						}
 					} catch (e) {
-						this.djpCreateError = "An error occurred while creating the DJP Case.";
+						this.dgpCreateError = "An error occurred while creating the DGP Case.";
 					} finally {
-						this.djpCreateLoading = false;
+						this.dgpCreateLoading = false;
 					}
 				}			}
 		}
