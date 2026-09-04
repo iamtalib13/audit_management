@@ -118,7 +118,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Departmental & Product Alignment",
-   "options": "Audit Department"
+   "options": "Audit Department",
+   "reqd": 1
   },
   {
    "fieldname": "misconduct_type",
@@ -283,7 +284,7 @@
    "link_fieldname": "employee"
   }
  ],
- "modified": "2026-09-04 11:44:58.048631",
+ "modified": "2026-09-04 12:10:29.361301",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DGP Case",
