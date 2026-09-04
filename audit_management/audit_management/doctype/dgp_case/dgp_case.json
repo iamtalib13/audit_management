@@ -22,6 +22,7 @@
   "misconduct_type",
   "severity",
   "occurrence",
+  "dgp_attachment",
   "section_break_cmg",
   "cmg_code",
   "cmg_recommended_outcome",
@@ -41,8 +42,7 @@
   "section_break_final",
   "final_decision",
   "final_justification",
-  "governance_notes",
-  "case_attachment"
+  "governance_notes"
  ],
  "fields": [
   {
@@ -51,64 +51,63 @@
    "label": "Case Details"
   },
   {
+   "default": "0",
    "fieldname": "is_multiple_accused",
    "fieldtype": "Check",
-   "label": "Multiple Accused Employees?",
-   "default": "0"
+   "label": "Multiple Accused Employees?"
   },
   {
+   "depends_on": "eval:!doc.is_multiple_accused",
    "fieldname": "employee",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Employee",
-   "options": "Employee",
-   "reqd": 0,
-   "depends_on": "eval:!doc.is_multiple_accused",
-   "mandatory_depends_on": "eval:!doc.is_multiple_accused"
+   "mandatory_depends_on": "eval:!doc.is_multiple_accused",
+   "options": "Employee"
   },
   {
+   "depends_on": "eval:!doc.is_multiple_accused",
    "fetch_from": "employee.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Employee Name",
-   "read_only": 1,
-   "depends_on": "eval:!doc.is_multiple_accused"
+   "read_only": 1
   },
   {
+   "depends_on": "eval:!doc.is_multiple_accused",
    "fetch_from": "employee.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
    "label": "Designation",
-   "read_only": 1,
-   "depends_on": "eval:!doc.is_multiple_accused"
+   "read_only": 1
   },
   {
+   "depends_on": "eval:!doc.is_multiple_accused",
    "fetch_from": "employee.branch",
    "fieldname": "emp_branch",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Branch",
-   "reqd": 1,
-   "depends_on": "eval:!doc.is_multiple_accused"
+   "reqd": 1
   },
   {
+   "depends_on": "eval:!doc.is_multiple_accused",
    "fetch_from": "employee.custom_division",
    "fieldname": "emp_division",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Division",
-   "reqd": 1,
-   "depends_on": "eval:!doc.is_multiple_accused"
+   "reqd": 1
   },
   {
+   "depends_on": "eval:doc.is_multiple_accused",
    "fieldname": "additional_accused_employees",
    "fieldtype": "Table",
    "label": "Additional Accused",
-   "options": "DGP Additional Accused",
-   "depends_on": "eval:doc.is_multiple_accused",
-   "mandatory_depends_on": "eval:doc.is_multiple_accused"
+   "mandatory_depends_on": "eval:doc.is_multiple_accused",
+   "options": "DGP Additional Accused"
   },
   {
    "fieldname": "column_break_1",
@@ -270,9 +269,9 @@
    "label": "Governance Notes"
   },
   {
-   "fieldname": "case_attachment",
+   "fieldname": "dgp_attachment",
    "fieldtype": "Attach",
-   "label": "Case Attachment"
+   "label": "DGP Attachment"
   }
  ],
  "grid_page_length": 50,
@@ -284,7 +283,7 @@
    "link_fieldname": "employee"
   }
  ],
- "modified": "2026-08-25 11:13:13.336045",
+ "modified": "2026-09-04 11:44:58.048631",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DGP Case",

@@ -45,11 +45,12 @@ class DGPCase(Document):
             return
         
         user = frappe.session.user
+        user_roles = frappe.get_roles(user)
         is_admin_or_creator = (
             user == self.owner or 
-            "System Manager" in frappe.get_roles(user) or 
-            "Administrator" in frappe.get_roles(user) or 
-            "Audit Manager" in frappe.get_roles(user) or 
+            "System Manager" in user_roles or 
+            "Administrator" in user_roles or 
+            "Audit Manager" in user_roles or 
             user == "Administrator"
         )
         if is_admin_or_creator:
@@ -59,8 +60,13 @@ class DGPCase(Document):
         if not old_doc:
             return
 
-        if old_doc.case_attachment and not self.case_attachment:
+        old_attach = getattr(old_doc, "dgp_attachment", None) or getattr(old_doc, "case_attachment", None)
+        curr_attach = getattr(self, "dgp_attachment", None) or getattr(self, "case_attachment", None)
+
+        if old_attach and not curr_attach:
             frappe.throw(frappe._("Stage users cannot remove attachments. Only Case Creator or Audit Managers can delete attachments."))
+        if old_attach and curr_attach != old_attach:
+            frappe.throw(frappe._("Stage users cannot modify attachments. Only Case Creator or Audit Managers can edit attachments."))
 
 # Dynamically fetches valid Severity and Occurrence options from CMG Grid settings
 @frappe.whitelist()

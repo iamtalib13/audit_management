@@ -46,25 +46,40 @@ frappe.ui.form.on('DGP Case', {
                     [data-doctype="DGP Case"] .form-section { pointer-events: none !important; opacity: 0.9 !important; user-select: text !important; }\
                     [data-doctype="DGP Case"] .grid-row, [data-doctype="DGP Case"] .grid-add-row, [data-doctype="DGP Case"] .grid-remove-rows { pointer-events: none !important; }\
                     [data-doctype="DGP Case"] .page-actions, [data-doctype="DGP Case"] .dgp-stage-tracker-container { pointer-events: auto !important; }\
+                    [data-doctype="DGP Case"] [data-fieldname="dgp_attachment"] a, [data-doctype="DGP Case"] [data-fieldname="case_attachment"] a, [data-doctype="DGP Case"] .attachment-row a, [data-doctype="DGP Case"] .attached-file-link { pointer-events: auto !important; cursor: pointer !important; }\
+                    [data-doctype="DGP Case"] [data-fieldname="dgp_attachment"] .close-btn, [data-doctype="DGP Case"] [data-fieldname="dgp_attachment"] .btn-remove, [data-doctype="DGP Case"] [data-fieldname="dgp_attachment"] .remove-btn, [data-doctype="DGP Case"] [data-fieldname="dgp_attachment"] [data-action="clear"], [data-doctype="DGP Case"] [data-fieldname="case_attachment"] .close-btn, [data-doctype="DGP Case"] [data-fieldname="case_attachment"] .btn-remove, [data-doctype="DGP Case"] [data-fieldname="case_attachment"] .remove-btn, [data-doctype="DGP Case"] [data-fieldname="case_attachment"] [data-action="clear"], [data-doctype="DGP Case"] .attachment-row .btn-trash, [data-doctype="DGP Case"] .attachment-row .remove-btn, [data-doctype="DGP Case"] .attachment-row [data-action="remove"], [data-doctype="DGP Case"] .sidebar-actions .btn-trash, [data-doctype="DGP Case"] .sidebar-actions .add-attachment, [data-doctype="DGP Case"] .add-attachment-btn { display: none !important; pointer-events: none !important; }\
                 </style>').appendTo('head');
             }
 
             // Lock attachment field specifically
+            frm.set_df_property("dgp_attachment", "read_only", 1);
             frm.set_df_property("case_attachment", "read_only", 1);
             frm.set_df_property("is_multiple_accused", "read_only", 1);
             frm.set_df_property("additional_accused_employees", "read_only", 1);
             
-            // Hide Frappe sidebar attachment delete buttons for stage users
+            // Hide Frappe sidebar attachment delete buttons & clear buttons for stage users
             setTimeout(() => {
-                frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash").hide();
+                frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash, .sidebar-actions .add-attachment").hide();
                 frm.page.sidebar.find(".attachment-row").each(function () {
                     $(this).find("a, button, span").last().hide();
                 });
+                if (frm.fields_dict.dgp_attachment && frm.fields_dict.dgp_attachment.$wrapper) {
+                    frm.fields_dict.dgp_attachment.$wrapper.find('.close-btn, .btn-remove, [data-action="clear"], .remove-btn').hide();
+                }
+                if (frm.fields_dict.case_attachment && frm.fields_dict.case_attachment.$wrapper) {
+                    frm.fields_dict.case_attachment.$wrapper.find('.close-btn, .btn-remove, [data-action="clear"], .remove-btn').hide();
+                }
             }, 500);
             
             // Also re-apply on sidebar mutation
             const observer = new MutationObserver(() => {
-                frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash").hide();
+                frm.page.sidebar.find(".attachment-row .btn-trash, .attachment-row .remove-btn, .attachment-row [data-action='remove'], .sidebar-actions .btn-trash, .sidebar-actions .add-attachment").hide();
+                if (frm.fields_dict.dgp_attachment && frm.fields_dict.dgp_attachment.$wrapper) {
+                    frm.fields_dict.dgp_attachment.$wrapper.find('.close-btn, .btn-remove, [data-action="clear"], .remove-btn').hide();
+                }
+                if (frm.fields_dict.case_attachment && frm.fields_dict.case_attachment.$wrapper) {
+                    frm.fields_dict.case_attachment.$wrapper.find('.close-btn, .btn-remove, [data-action="clear"], .remove-btn').hide();
+                }
             });
             if (frm.page.sidebar.length) {
                 observer.observe(frm.page.sidebar[0], { childList: true, subtree: true });
@@ -72,6 +87,7 @@ frappe.ui.form.on('DGP Case', {
 
         } else {
             $('#dgp-reviewer-readonly-style').remove();
+            frm.set_df_property("dgp_attachment", "read_only", 0);
             frm.set_df_property("case_attachment", "read_only", 0);
         }
 
