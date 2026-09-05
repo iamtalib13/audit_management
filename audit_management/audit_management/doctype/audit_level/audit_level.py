@@ -21,12 +21,14 @@ class AuditLevel(Document):
 
     def validate_duplicate(self):
         """Prevents duplicate record creation for same branch + division combo."""
+        if not self.is_new():
+            return
+
         duplicate = frappe.db.exists(
             "Audit Level",
             {
                 "sahayog_branch": self.sahayog_branch,
-                "division": self.division,
-                "name": ["!=", self.name]
+                "division": self.division
             }
         )
         if duplicate:
