@@ -207,14 +207,17 @@ def get_permission_query_conditions(user=None):
     if "Administrator" in roles or "System Manager" in roles or "Audit Manager" in roles:
         return ""
 
+    # Check stage user assignment
+    stage_user_condition = f"`tabAudit Level`.`name` IN (SELECT parent FROM `tabAudit Items` WHERE `user_id` = {frappe.db.escape(user)})"
+
     # Division check
     allowed_divisions = get_user_allowed_divisions(user)
     if not allowed_divisions:
-        return "1=0"
+        return stage_user_condition
 
     divisions_sql = ", ".join([frappe.db.escape(d) for d in allowed_divisions])
 
-    return f"`tabAudit Level`.`division` IN ({divisions_sql})"
+    return f"(`tabAudit Level`.`division` IN ({divisions_sql}) OR {stage_user_condition})"
 
 
 def has_permission(doc, ptype, user=None):
@@ -227,16 +230,22 @@ def has_permission(doc, ptype, user=None):
     if "Administrator" in roles or "System Manager" in roles or "Audit Manager" in roles:
         return True
 
-    # 2. Get allowed divisions
+    # 2. CREATE check
+    if ptype == "create":
+        return "Audit Manager" in roles or "Audit Member" in roles
+
+    # 3. Check if user is assigned in audit_stages child table
+    if hasattr(doc, "audit_stages"):
+        for row in doc.audit_stages:
+            if row.get("user_id") == user:
+                return True
+
+    # 4. Get allowed divisions
     allowed_divisions = get_user_allowed_divisions(user)
     if not allowed_divisions:
         return False
 
-    # 3. CREATE check
-    if ptype == "create":
-        return "Audit Manager" in roles or "Audit Member" in roles
-
-    # 4. Division Check (Mandatory for everyone except Admins)
+    # 5. Division Check (Mandatory for everyone except Admins)
     doc_division = doc.get("division")
     # If doc is new and doesn't have a division yet, allow initialization if they have the role
     if not doc_division and doc.is_new():

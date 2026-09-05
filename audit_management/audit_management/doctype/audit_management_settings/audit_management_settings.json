@@ -1,94 +1,128 @@
 {
- "actions": [],
- "autoname": "Audit Management Settings",
- "creation": "2026-04-13 12:00:00.000000",
- "doctype": "DocType",
- "editable_grid": 1,
- "engine": "InnoDB",
- "field_order": [
-  "system_settings_sb",
-  "use_new_system",
-  "use_new_email_template",
-  "query_cc_emails",
-  "response_cc_emails",
-  "division_permissions_section",
-  "division_permissions"
- ],
- "fields": [
-  {
-   "fieldname": "division_permissions_section",
-   "fieldtype": "Section Break",
-   "label": "Division Permissions"
-  },
-  {
-   "fieldname": "division_permissions",
-   "fieldtype": "Table",
-   "label": "Division Permissions",
-   "options": "Audit Division Control"
-  },
-  {
-   "fieldname": "system_settings_sb",
-   "fieldtype": "Section Break",
-   "label": "System Settings"
-  },
-  {
-   "default": "0",
-   "fieldname": "use_new_system",
-   "fieldtype": "Check",
-   "label": "Use New System"
-  },
-  {
-   "fieldname": "use_new_email_template",
-   "fieldtype": "Link",
-   "label": "Default Email Template",
-   "options": "Email Template"
-  },
-  {
-   "fieldname": "query_cc_emails",
-   "fieldtype": "Small Text",
-   "label": "Query CC Emails",
-   "description": "CC recipients for when a new query is assigned (comma separated)."
-  },
-  {
-   "fieldname": "response_cc_emails",
-   "fieldtype": "Small Text",
-   "label": "Response CC Emails",
-   "description": "CC recipients for when a response is submitted (comma separated)."
-  }
- ],
- "index_web_pages_for_search": 1,
- "issingle": 1,
- "links": [],
- "modified": "2026-04-21 12:30:00.000000",
- "modified_by": "Administrator",
- "module": "Audit Management",
- "name": "Audit Management Settings",
- "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "read": 1,
-   "role": "Audit Manager"
-  },
-  {
-   "read": 1,
-   "role": "Audit Member"
-  },
-  {
-   "read": 1,
-   "role": "Employee"
-  }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+  "actions": [],
+  "autoname": "Audit Management Settings",
+  "creation": "2026-04-13 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "system_settings_sb",
+    "use_new_system",
+    "use_new_email_template",
+    "query_cc_emails",
+    "response_cc_emails",
+    "division_permissions_section",
+    "division_permissions",
+    "dgp_settings_sb",
+    "enable_dgp_module",
+    "cmg_grid",
+    "disciplinary_committee",
+    "dgp_stages"
+  ],
+  "fields": [
+    {
+      "fieldname": "division_permissions_section",
+      "fieldtype": "Section Break",
+      "label": "Division Permissions"
+    },
+    {
+      "fieldname": "division_permissions",
+      "fieldtype": "Table",
+      "label": "Division Permissions",
+      "options": "Audit Division Control"
+    },
+    {
+      "fieldname": "system_settings_sb",
+      "fieldtype": "Section Break",
+      "label": "System Settings"
+    },
+    {
+      "default": "0",
+      "fieldname": "use_new_system",
+      "fieldtype": "Check",
+      "label": "Use New System"
+    },
+    {
+      "fieldname": "use_new_email_template",
+      "fieldtype": "Link",
+      "label": "Default Email Template",
+      "options": "Email Template"
+    },
+    {
+      "fieldname": "query_cc_emails",
+      "fieldtype": "Small Text",
+      "label": "Query CC Emails",
+      "description": "CC recipients for when a new query is assigned (comma separated)."
+    },
+    {
+      "fieldname": "response_cc_emails",
+      "fieldtype": "Small Text",
+      "label": "Response CC Emails",
+      "description": "CC recipients for when a response is submitted (comma separated)."
+    },
+    {
+      "fieldname": "dgp_settings_sb",
+      "fieldtype": "Section Break",
+      "label": "DGP Case Settings"
+    },
+    {
+      "default": "1",
+      "fieldname": "enable_dgp_module",
+      "fieldtype": "Check",
+      "label": "Enable DGP Module"
+    },
+    {
+      "fieldname": "cmg_grid",
+      "fieldtype": "Table",
+      "label": "CMG Grid (Misconduct Type × Severity × Occurrence → CMG Code)",
+      "options": "CMG Grid"
+    },
+    {
+      "fieldname": "disciplinary_committee",
+      "fieldtype": "Table",
+      "label": "Disciplinary Committee Structure",
+      "options": "Disciplinary Committee"
+    },
+    {
+      "fieldname": "dgp_stages",
+      "fieldtype": "Table",
+      "label": "DGP Stages (Branch-wise Stage Assignment)",
+      "options": "DGP Stage Assignment"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "issingle": 1,
+  "links": [],
+  "modified": "2026-08-08 10:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Audit Management",
+  "name": "Audit Management Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "print": 1,
+      "read": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Audit Manager"
+    },
+    {
+      "read": 1,
+      "role": "Audit Member"
+    },
+    {
+      "read": 1,
+      "role": "Employee"
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
 }
