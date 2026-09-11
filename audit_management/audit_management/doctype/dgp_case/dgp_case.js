@@ -174,8 +174,49 @@ frappe.ui.form.on('DGP Case', {
             }
         }
 
-        // Highlight TAT breach
-        if (frm.doc.tat_deadline && frm.doc.status !== 'Closed' && frm.doc.status !== 'Cessation') {
+        // Highlight TAT breach or Late Reviewer Responses
+        let late_responses = [];
+        if (frm.doc.dgp_case_stages && frm.doc.dgp_case_stages.length > 0) {
+            frm.doc.dgp_case_stages.forEach(stg => {
+                if (stg.status === 'Responded' && stg.response_time && stg.tat_deadline) {
+                    const resp_dt = frappe.datetime.str_to_obj(stg.response_time);
+                    const tat_dt = frappe.datetime.str_to_obj(stg.tat_deadline);
+                    if (resp_dt && tat_dt && resp_dt > tat_dt) {
+                        const diffMs = resp_dt - tat_dt;
+                        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                        if (diffDays > 0) {
+                            late_responses.push({
+                                stage_name: stg.stage_name || stg.dc_level || `Stage ${stg.stage}`,
+                                employee_name: stg.employee_name || stg.employee || stg.user_id,
+                                response_time: stg.response_time,
+                                tat_deadline: stg.tat_deadline,
+                                diffDays: diffDays
+                            });
+                        }
+                    }
+                }
+            });
+        }
+
+        if (late_responses.length > 0) {
+            const late_info = late_responses.map(l => 
+                `<b>${l.employee_name} (${l.stage_name})</b> replied <b>${l.diffDays} day(s) LATE</b> (after TAT Deadline: ${frappe.datetime.str_to_user(l.tat_deadline)})`
+            ).join('<br>');
+
+            frm.dashboard.set_headline_alert(
+                `<i class="fa fa-exclamation-triangle mr-1"></i> <b>TAT Breach Notice:</b> ${late_info}`,
+                'orange'
+            );
+
+            if (!frm.doc._late_response_alert_shown) {
+                frm.doc._late_response_alert_shown = true;
+                frappe.msgprint({
+                    title: __('⚠️ TAT Breach Notice'),
+                    indicator: 'orange',
+                    message: __('Reviewer(s) responded after breaching TAT deadline:<br><br>{0}').format(late_info)
+                });
+            }
+        } else if (frm.doc.tat_deadline && frm.doc.status !== 'Closed' && frm.doc.status !== 'Cessation') {
             const deadline = frappe.datetime.str_to_obj(frm.doc.tat_deadline);
             const now = new Date();
             if (deadline < now) {
@@ -263,6 +304,22 @@ frappe.ui.form.on('DGP Case', {
     validate: function(frm) {
         if (frm.doc.cmg_code && !frm.doc.tat_deadline) {
             frm.events.set_tat_deadline(frm);
+        }
+
+        // Validate duplicate stage reviewer employees
+        if (frm.doc.dgp_case_stages && frm.doc.dgp_case_stages.length > 0) {
+            const seen = {};
+            for (let row of frm.doc.dgp_case_stages) {
+                if (row.reviewer_employee) {
+                    const emp = String(row.reviewer_employee).trim();
+                    if (seen[emp]) {
+                        frappe.msgprint(__("Employee <b>{0}</b> is assigned to multiple stages (Stage {1} and Stage {2}). An employee cannot be assigned to more than one stage.", [row.employee_name || emp, seen[emp], row.stage || row.idx]));
+                        frappe.validated = false;
+                        return false;
+                    }
+                    seen[emp] = row.stage || row.idx;
+                }
+            }
         }
     },
 
@@ -661,6 +718,7 @@ frappe.ui.form.on('DGP Case', {
 
     // Prompt for remark and send case back to creator
     send_back_case: function(frm) {
+        let user_stage = frm.doc.dgp_case_stages ? frm.doc.dgp_case_stages.find(s => s.user_id === frappe.session.user || s.email === frappe.session.user) : null;
         frappe.prompt(
             [
                 {
@@ -675,7 +733,8 @@ frappe.ui.form.on('DGP Case', {
                     method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.send_back_case',
                     args: {
                         docname: frm.doc.name,
-                        remark: values.remark
+                        remark: values.remark,
+                        stage_row_name: user_stage ? user_stage.name : null
                     },
                     freeze: true,
                     freeze_message: __('Sending back case...'),
@@ -698,6 +757,7 @@ frappe.ui.form.on('DGP Case', {
     // Submit stage review response with supporting attachments
     submit_stage_response: function(frm) {
         let uploaded_files = []; // Array of { name: '...', url: '...' }
+        let user_stage = frm.doc.dgp_case_stages ? frm.doc.dgp_case_stages.find(s => s.user_id === frappe.session.user || s.email === frappe.session.user) : null;
 
         const d = new frappe.ui.Dialog({
             title: __('Submit Review Response'),
@@ -723,7 +783,8 @@ frappe.ui.form.on('DGP Case', {
                     args: {
                         docname: frm.doc.name,
                         response: values.response,
-                        attachment: attachment_urls
+                        attachment: attachment_urls,
+                        stage_row_name: user_stage ? user_stage.name : null
                     },
                     freeze: true,
                     freeze_message: __('Submitting stage review response...'),
@@ -883,16 +944,9 @@ frappe.ui.form.on('DGP Case', {
         const stages = frm.doc.dgp_case_stages;
         const current_stage = frm.doc.current_stage || 1;
 
-        let hasAnySentStage = stages.some(s => s.status && s.status !== 'Not Sent');
-        let currentBadgeHtml = '';
-        if (hasAnySentStage && frm.doc.status !== 'Draft') {
-            currentBadgeHtml = `<span class="badge badge-info" style="font-size: 10px; font-weight: 600;">Current Stage: ${frm.doc.current_dc_level || 'Stage ' + current_stage}</span>`;
-        }
-
         let html = '<div class="dgp-stage-tracker-container">';
         html += '<div class="dgp-tracker-header">';
         html += '<span><i class="fa fa-tasks mr-1"></i> Stage Tracker</span>';
-        html += currentBadgeHtml;
         html += '</div>';
 
         html += '<div class="dgp-tracker-flow">';
@@ -909,16 +963,34 @@ frappe.ui.form.on('DGP Case', {
                 }
             }
 
+            let isLateResponded = false;
+            let lateDaysBreached = 0;
+            if (stg.status === 'Responded' && stg.response_time && stg.tat_deadline) {
+                const resp_dt = frappe.datetime.str_to_obj(stg.response_time);
+                const tat_dt = frappe.datetime.str_to_obj(stg.tat_deadline);
+                if (resp_dt && tat_dt && resp_dt > tat_dt) {
+                    isLateResponded = true;
+                    lateDaysBreached = Math.ceil((resp_dt - tat_dt) / (1000 * 60 * 60 * 24));
+                }
+            }
+
             let pillClass = '';
             let connClass = '';
             let statusText = stg.status || 'Not Sent';
             let statusTextClass = 'dgp-status-pending';
 
             if (stg.status === 'Responded') {
-                pillClass = 'dgp-pill-responded';
-                connClass = 'dgp-conn-completed';
-                statusText = '✓ Responded';
-                statusTextClass = 'dgp-status-responded';
+                if (isLateResponded && lateDaysBreached > 0) {
+                    pillClass = 'dgp-pill-escalated';
+                    connClass = 'dgp-conn-completed';
+                    statusText = `⚠️ Responded (${lateDaysBreached}d Late)`;
+                    statusTextClass = 'dgp-status-escalated';
+                } else {
+                    pillClass = 'dgp-pill-responded';
+                    connClass = 'dgp-conn-completed';
+                    statusText = '✓ Responded';
+                    statusTextClass = 'dgp-status-responded';
+                }
             } else if (stg.status === 'No Responded') {
                 pillClass = 'dgp-pill-escalated';
                 connClass = 'dgp-conn-escalated';
@@ -949,7 +1021,11 @@ frappe.ui.form.on('DGP Case', {
                     let diffMs = deadlineObj - now;
                     let diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
                     if (stg.status === 'Responded') {
-                        remainingDaysInfo = '✓ Completed';
+                        if (isLateResponded && lateDaysBreached > 0) {
+                            remainingDaysInfo = `⚠️ Responded ${lateDaysBreached}d After TAT`;
+                        } else {
+                            remainingDaysInfo = '✓ Completed in TAT';
+                        }
                     } else if (stg.status === 'No Responded') {
                         remainingDaysInfo = '⨂ No Response in TAT';
                     } else if (diffDays < 0 || stg.status === 'Overdue' || isOverdue) {
@@ -1051,6 +1127,15 @@ frappe.ui.form.on('DGP Case Stage', {
         const row = locals[cdt][cdn];
         const emp_id = row.reviewer_employee;
         if (emp_id) {
+            if (frm.doc.dgp_case_stages) {
+                for (let other_row of frm.doc.dgp_case_stages) {
+                    if (other_row.name !== row.name && other_row.reviewer_employee && String(other_row.reviewer_employee).trim() === String(emp_id).trim()) {
+                        frappe.msgprint(__("Employee <b>{0}</b> is already assigned to Stage {1}. Duplicate employee assignment is not allowed.", [emp_id, other_row.stage || other_row.idx]));
+                        frappe.model.set_value(cdt, cdn, 'reviewer_employee', '');
+                        return;
+                    }
+                }
+            }
             frappe.db.get_value('Employee', emp_id, ['employee_name', 'designation', 'user_id', 'company_email', 'prefered_email'], (r) => {
                 if (r) {
                     frappe.model.set_value(cdt, cdn, 'employee_name', r.employee_name || '');
