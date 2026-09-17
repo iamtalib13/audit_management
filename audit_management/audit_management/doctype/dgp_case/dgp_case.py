@@ -818,6 +818,8 @@ def send_stage_notification(doc, stage_row, action, response_text=None):
                     <p><b>CMG Code:</b> {doc.cmg_code or 'N/A'}</p>
                     <p><b>Reviewer Response:</b><br>{response_text or stage_row.response or 'N/A'}</p>
                     <p>Please log in to the DGP Case Portal for detailed review.</p>
+                    <p>Please click below link to review: <br>
+                    <a href="http://mysahayog.com/app/dgp-case/{doc.name}">http://mysahayog.com/app/dgp-case/{doc.name}</a></p>
                 """
 
             frappe.sendmail(
@@ -860,6 +862,8 @@ def send_stage_notification(doc, stage_row, action, response_text=None):
                 <p><b>CMG Code:</b> {doc.cmg_code or 'N/A'} - {doc.cmg_recommended_outcome or 'N/A'}</p>
                 <p><b>TAT Deadline:</b> {stage_row.tat_deadline or doc.tat_deadline or 'N/A'}</p>
                 <p>Please review and submit your response in the DGP Case Portal.</p>
+                <p>Please click below link to review: <br>
+                <a href="http://mysahayog.com/app/dgp-case/{doc.name}">http://mysahayog.com/app/dgp-case/{doc.name}</a></p>
             """
 
         frappe.sendmail(
