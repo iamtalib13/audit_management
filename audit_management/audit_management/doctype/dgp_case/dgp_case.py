@@ -546,6 +546,9 @@ def submit_stage_response(docname, response, attachment=None, stage_row_name=Non
 
     doc.save()
 
+    # Send email notification to creator on reviewer response
+    send_stage_notification(doc, target_row, "respond", response)
+
     # Close open ToDo for this specific reviewer
     if target_row.user_id:
         existing_todos = frappe.get_all("ToDo", filters={
@@ -765,36 +768,109 @@ def has_permission(doc, ptype="read", user=None):
     return False
 
 # Send email notification for stage action
-def send_stage_notification(doc, stage_row, action):
-    """Send email notification for stage action"""
+def send_stage_notification(doc, stage_row, action, response_text=None):
+    """Send email notification for stage action (assign / respond) with explicit DGP context and settings CC"""
     try:
-        template = frappe.db.get_value("Email Template",
-            {"name": "DGP Case Stage Notification"}, "name")
+        settings = frappe.get_single("Audit Management Settings")
+        creator_email = (frappe.db.get_value("User", doc.owner, "email") or doc.owner or "").strip().lower()
 
-        if not template:
-            frappe.sendmail(
-                recipients=[stage_row.email],
-                subject=f"DGP Case {doc.name} - {action.title()} at {stage_row.dc_level}",
-                message=f"""
-                    <p>Dear {stage_row.employee_name},</p>
-                    <p>A DGP Case has been {action}ed to you for review.</p>
-                    <p><b>Case:</b> {doc.name}</p>
-                    <p><b>Employee:</b> {doc.employee_name} ({doc.designation})</p>
-                    <p><b>CMG Code:</b> {doc.cmg_code} - {doc.cmg_recommended_outcome}</p>
-                    <p><b>TAT Deadline:</b> {stage_row.tat_deadline}</p>
-                    <p>Please review and respond in the DGP Case Portal.</p>
-                """
-            )
-        else:
-            frappe.sendmail(
-                recipients=[stage_row.email],
-                template=template,
-                args={
+        # Gather static CC emails from settings
+        static_cc_raw = getattr(settings, "dgp_assign_cc_emails", None) if action == "assign" else getattr(settings, "dgp_response_cc_emails", None)
+        static_cc_list = []
+        if static_cc_raw:
+            import re
+            for e in re.split(r'[,\s\n;]+', static_cc_raw):
+                e = e.strip().lower()
+                if e and "@" in e and e not in static_cc_list:
+                    static_cc_list.append(e)
+
+        template_name = getattr(settings, "dgp_email_template", None) or frappe.db.get_value("Email Template", {"name": "DGP Case Stage Notification"}, "name")
+
+        if action == "respond":
+            recipients = [creator_email] if creator_email else []
+            cc_list = []
+            if stage_row.email:
+                cc_list.append(stage_row.email.strip().lower())
+            for c in static_cc_list:
+                if c not in recipients and c not in cc_list:
+                    cc_list.append(c)
+
+            if not recipients:
+                return
+
+            if template_name:
+                from frappe.email.doctype.email_template.email_template import get_email_template
+                email_data = get_email_template(template_name, {
                     "doc": doc,
                     "stage": stage_row,
-                    "action": action
-                }
+                    "action": action,
+                    "response_text": response_text or stage_row.response
+                })
+                subject = email_data.get("subject") or f"DGP Case Reviewer Response [{stage_row.dc_level or stage_row.stage_name}]: {doc.name}"
+                message = email_data.get("message")
+            else:
+                subject = f"DGP Case Reviewer Response [{stage_row.dc_level or stage_row.stage_name}]: {doc.name}"
+                message = f"""
+                    <p>Dear Case Creator,</p>
+                    <p>A response has been submitted for <b>DGP Case ({doc.name})</b> by <b>{stage_row.employee_name or stage_row.reviewer_employee} ({stage_row.dc_level or stage_row.stage_name})</b>.</p>
+                    <p><b>DGP Case ID:</b> {doc.name}</p>
+                    <p><b>Accused Employee:</b> {doc.employee_name or doc.employee or 'N/A'} ({doc.designation or 'N/A'})</p>
+                    <p><b>CMG Code:</b> {doc.cmg_code or 'N/A'}</p>
+                    <p><b>Reviewer Response:</b><br>{response_text or stage_row.response or 'N/A'}</p>
+                    <p>Please log in to the DGP Case Portal for detailed review.</p>
+                """
+
+            frappe.sendmail(
+                recipients=recipients,
+                cc=cc_list,
+                subject=subject,
+                message=message,
+                reference_doctype=doc.doctype,
+                reference_name=doc.name,
+                now=True
             )
+            return
+
+        # Action: assign
+        recipients = [stage_row.email.strip().lower()] if stage_row.email else []
+        if not recipients:
+            return
+
+        cc_list = [creator_email] if creator_email and creator_email not in recipients else []
+        for c in static_cc_list:
+            if c not in recipients and c not in cc_list:
+                cc_list.append(c)
+
+        if template_name:
+            from frappe.email.doctype.email_template.email_template import get_email_template
+            email_data = get_email_template(template_name, {
+                "doc": doc,
+                "stage": stage_row,
+                "action": action
+            })
+            subject = email_data.get("subject") or f"DGP Case Assigned [{stage_row.dc_level or stage_row.stage_name}]: {doc.name}"
+            message = email_data.get("message")
+        else:
+            subject = f"DGP Case Assigned [{stage_row.dc_level or stage_row.stage_name}]: {doc.name}"
+            message = f"""
+                <p>Dear {stage_row.employee_name or 'Reviewer'},</p>
+                <p>A <b>DGP Case</b> has been assigned to you for review in stage <b>{stage_row.dc_level or stage_row.stage_name}</b>.</p>
+                <p><b>DGP Case ID:</b> {doc.name}</p>
+                <p><b>Accused Employee:</b> {doc.employee_name or doc.employee or 'N/A'} ({doc.designation or 'N/A'})</p>
+                <p><b>CMG Code:</b> {doc.cmg_code or 'N/A'} - {doc.cmg_recommended_outcome or 'N/A'}</p>
+                <p><b>TAT Deadline:</b> {stage_row.tat_deadline or doc.tat_deadline or 'N/A'}</p>
+                <p>Please review and submit your response in the DGP Case Portal.</p>
+            """
+
+        frappe.sendmail(
+            recipients=recipients,
+            cc=cc_list,
+            subject=subject,
+            message=message,
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+            now=True
+        )
     except Exception as e:
         frappe.log_error(f"DGP Case notification failed: {e}")
 
