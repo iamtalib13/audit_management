@@ -767,12 +767,24 @@ def has_permission(doc, ptype="read", user=None):
 
     return False
 
+def get_creator_company_email(owner):
+    """Fetch company_email (or prefered_email) of case creator from Employee record, fallback to User email"""
+    if not owner:
+        return ""
+    emp_email = frappe.db.get_value("Employee", {"user_id": owner}, ["company_email", "prefered_email"], as_dict=True)
+    if emp_email:
+        email = (emp_email.company_email or emp_email.prefered_email or "").strip().lower()
+        if email and "@" in email:
+            return email
+    user_email = (frappe.db.get_value("User", owner, "email") or owner or "").strip().lower()
+    return user_email if "@" in user_email else ""
+
 # Send email notification for stage action
 def send_stage_notification(doc, stage_row, action, response_text=None):
     """Send email notification for stage action (assign / respond) with explicit DGP context and settings CC"""
     try:
         settings = frappe.get_single("Audit Management Settings")
-        creator_email = (frappe.db.get_value("User", doc.owner, "email") or doc.owner or "").strip().lower()
+        creator_email = get_creator_company_email(doc.owner)
 
         # Gather static CC emails from settings
         static_cc_raw = getattr(settings, "dgp_assign_cc_emails", None) if action == "assign" else getattr(settings, "dgp_response_cc_emails", None)
@@ -884,7 +896,7 @@ def send_bulk_stage_assignment_notification(doc):
     """Send a SINGLE email notification to all stage reviewers in 'To' and settings CC in 'CC'"""
     try:
         settings = frappe.get_single("Audit Management Settings")
-        creator_email = (frappe.db.get_value("User", doc.owner, "email") or doc.owner or "").strip().lower()
+        creator_email = get_creator_company_email(doc.owner)
 
         recipients = []
         for row in doc.dgp_case_stages:
