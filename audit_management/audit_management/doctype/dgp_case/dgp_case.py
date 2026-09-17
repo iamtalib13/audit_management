@@ -472,7 +472,7 @@ def send_to_all_reviewers(docname):
             except Exception as e:
                 frappe.log_error(f"DGP Case assignment failed: {e}")
 
-        send_stage_notification(doc, row, "assign")
+    send_bulk_stage_assignment_notification(doc)
 
     doc.tat_deadline = tat_deadline_str
     doc.status = "Under Review"
@@ -829,6 +829,7 @@ def send_stage_notification(doc, stage_row, action, response_text=None):
                 message=message,
                 reference_doctype=doc.doctype,
                 reference_name=doc.name,
+                expose_recipients="header",
                 now=True
             )
             return
@@ -873,10 +874,75 @@ def send_stage_notification(doc, stage_row, action, response_text=None):
             message=message,
             reference_doctype=doc.doctype,
             reference_name=doc.name,
+            expose_recipients="header",
             now=True
         )
     except Exception as e:
         frappe.log_error(f"DGP Case notification failed: {e}")
+
+def send_bulk_stage_assignment_notification(doc):
+    """Send a SINGLE email notification to all stage reviewers in 'To' and settings CC in 'CC'"""
+    try:
+        settings = frappe.get_single("Audit Management Settings")
+        creator_email = (frappe.db.get_value("User", doc.owner, "email") or doc.owner or "").strip().lower()
+
+        recipients = []
+        for row in doc.dgp_case_stages:
+            if getattr(row, "email", None):
+                email = row.email.strip().lower()
+                if email and email not in recipients:
+                    recipients.append(email)
+
+        if not recipients:
+            return
+
+        static_cc_raw = getattr(settings, "dgp_assign_cc_emails", None)
+        cc_list = [creator_email] if creator_email and creator_email not in recipients else []
+        if static_cc_raw:
+            import re
+            for e in re.split(r'[,\s\n;]+', static_cc_raw):
+                e = e.strip().lower()
+                if e and "@" in e and e not in recipients and e not in cc_list:
+                    cc_list.append(e)
+
+        template_name = getattr(settings, "dgp_email_template", None) or frappe.db.get_value("Email Template", {"name": "DGP Case Stage Notification"}, "name")
+        first_stage = doc.dgp_case_stages[0] if doc.dgp_case_stages else None
+
+        if template_name and first_stage:
+            from frappe.email.doctype.email_template.email_template import get_email_template
+            email_data = get_email_template(template_name, {
+                "doc": doc,
+                "stage": first_stage,
+                "action": "assign"
+            })
+            subject = email_data.get("subject") or f"DGP Case Assigned: {doc.name}"
+            message = email_data.get("message")
+        else:
+            subject = f"DGP Case Assigned: {doc.name}"
+            message = f"""
+                <p>Dear Reviewers,</p>
+                <p>A <b>DGP Case</b> has been assigned for review.</p>
+                <p><b>DGP Case ID:</b> {doc.name}</p>
+                <p><b>Accused Employee:</b> {doc.employee_name or doc.employee or 'N/A'} ({doc.designation or 'N/A'})</p>
+                <p><b>CMG Code:</b> {doc.cmg_code or 'N/A'} - {doc.cmg_recommended_outcome or 'N/A'}</p>
+                <p><b>TAT Deadline:</b> {doc.tat_deadline or 'N/A'}</p>
+                <p>Please review and submit your response in the DGP Case Portal.</p>
+                <p>Please click below link to review: <br>
+                <a href="http://mysahayog.com/app/dgp-case/{doc.name}">http://mysahayog.com/app/dgp-case/{doc.name}</a></p>
+            """
+
+        frappe.sendmail(
+            recipients=recipients,
+            cc=cc_list,
+            subject=subject,
+            message=message,
+            reference_doctype=doc.doctype,
+            reference_name=doc.name,
+            expose_recipients="header",
+            now=True
+        )
+    except Exception as e:
+        frappe.log_error(f"DGP Case bulk assignment notification failed: {e}")
 
 # Escalate case to next DC level with justification
 @frappe.whitelist()
