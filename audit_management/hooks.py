@@ -232,7 +232,8 @@ fixtures = [
         "dt": "Email Template",
         "filters": [
             ["name", "in", [
-                "Audit Query Activity Notification"
+                "Audit Query Activity Notification",
+                "DGP Case Activity Notification"
             ]]
         ],
     },

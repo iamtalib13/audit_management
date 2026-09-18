@@ -15,6 +15,9 @@
     "division_permissions",
     "dgp_settings_sb",
     "enable_dgp_module",
+    "dgp_email_template",
+    "dgp_assign_cc_emails",
+    "dgp_response_cc_emails",
     "cmg_grid",
     "disciplinary_committee",
     "dgp_stages"
@@ -70,6 +73,24 @@
       "fieldname": "enable_dgp_module",
       "fieldtype": "Check",
       "label": "Enable DGP Module"
+    },
+    {
+      "fieldname": "dgp_email_template",
+      "fieldtype": "Link",
+      "label": "DGP Email Template",
+      "options": "Email Template"
+    },
+    {
+      "fieldname": "dgp_assign_cc_emails",
+      "fieldtype": "Small Text",
+      "label": "DGP Assignment CC Emails",
+      "description": "CC recipients for when a DGP case is assigned to a stage reviewer (comma separated)."
+    },
+    {
+      "fieldname": "dgp_response_cc_emails",
+      "fieldtype": "Small Text",
+      "label": "DGP Response CC Emails",
+      "description": "CC recipients for when a reviewer submits a response for a DGP case (comma separated)."
     },
     {
       "fieldname": "cmg_grid",

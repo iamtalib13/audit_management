@@ -103,8 +103,8 @@ frappe.ui.form.on('DGP Case', {
             $('<style id="dgp-case-custom-css">\
                 .dgp-btn-populate { background-color: #4f46e5 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
                 .dgp-btn-populate:hover { background-color: #4338ca !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3) !important; color: #ffffff !important; }\
-                .dgp-btn-send { background-color: #0d9488 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
-                .dgp-btn-send:hover { background-color: #0f766e !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3) !important; color: #ffffff !important; }\
+                .dgp-btn-send { background-color: #0d9488 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; cursor: pointer !important; pointer-events: auto !important; }\
+                .dgp-btn-send:hover { background-color: #0f766e !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3) !important; color: #ffffff !important; cursor: pointer !important; }\
                 .dgp-btn-escalate { background-color: #d97706 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
                 .dgp-btn-escalate:hover { background-color: #b45309 !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.3) !important; color: #ffffff !important; }\
                 .dgp-btn-close { background-color: #16a34a !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
@@ -139,7 +139,7 @@ frappe.ui.form.on('DGP Case', {
                 let b2 = frm.add_custom_button(__('Send to All Reviewers'), function() {
                     frm.events.send_to_all_reviewers(frm);
                 });
-                b2.addClass('dgp-btn-send').find('i, svg').remove();
+                b2.removeClass('disabled').prop('disabled', false).addClass('dgp-btn-send').find('i, svg').remove();
                 b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
             }
 
@@ -608,7 +608,31 @@ frappe.ui.form.on('DGP Case', {
     // Send case to all stage reviewers simultaneously
     send_to_all_reviewers: function(frm) {
         if (!frm.doc.dgp_case_stages || frm.doc.dgp_case_stages.length === 0) {
-            frappe.msgprint(__('Please populate stages first using "Populate Stages" button.'));
+            frappe.msgprint({
+                title: __('No Stages Found'),
+                indicator: 'red',
+                message: __('Please populate stages first using "Populate Stages" button.')
+            });
+            return;
+        }
+
+        const unassigned = (frm.doc.dgp_case_stages || []).filter(r => !r.reviewer_employee && !r.employee);
+        if (unassigned.length > 0) {
+            const missing_names = unassigned.map(r => r.stage_name || r.dc_level || `Stage ${r.stage}`).join(', ');
+            frappe.msgprint({
+                title: __('Missing Reviewers'),
+                indicator: 'red',
+                message: __('Please select an Employee for all stage reviewers before sending:<br><br><b>{0}</b>').format(missing_names)
+            });
+            return;
+        }
+
+        if (frm.is_dirty()) {
+            frappe.msgprint({
+                title: __('Unsaved Changes'),
+                indicator: 'orange',
+                message: __('Please save the document before sending to reviewers.')
+            });
             return;
         }
 
