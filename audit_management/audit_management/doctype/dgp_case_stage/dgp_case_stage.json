@@ -25,6 +25,7 @@
  ],
  "fields": [
   {
+   "columns": 1,
    "fieldname": "stage",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -46,6 +47,7 @@
    "label": "DC Level"
   },
   {
+   "columns": 1,
    "fieldname": "reviewer_employee",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
@@ -133,7 +135,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-24 15:34:59.912597",
+ "modified": "2026-09-26 15:40:42.988441",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DGP Case Stage",
