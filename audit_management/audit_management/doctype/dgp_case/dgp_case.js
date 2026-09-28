@@ -1147,8 +1147,8 @@ frappe.ui.form.on('DGP Case', {
             let tipW = $tip.outerWidth();
             let tipH = $tip.outerHeight();
             let left = rect.left + (rect.width / 2) - (tipW / 2);
-            let top = rect.top - tipH - 10;
-            if (top < 0) top = rect.bottom + 10;
+            let top = rect.bottom + 10;
+            if (top + tipH > window.innerHeight) top = rect.top - tipH - 10;
             if (left < 4) left = 4;
             if (left + tipW > window.innerWidth - 4) left = window.innerWidth - tipW - 4;
             $tip.css({ top: top + 'px', left: left + 'px' });
