@@ -1091,7 +1091,7 @@ frappe.ui.form.on('DGP Case', {
             html += '<div class="dgp-pill-wrapper" style="display: flex; flex-direction: column; align-items: center; position: relative;">';
             html += `<div class="dgp-step-pill ${pillClass}">`;
             html += `<span class="dgp-step-num">${iconHtml}</span>`;
-            html += `<span>${stg.dc_level || stg.stage_name}</span>`;
+            html += `<span>${stg.stage_name || stg.dc_level}</span>`;
             
             let respInfo = stg.response ? `<div style="margin-top:4px; border-top:1px solid #334155; padding-top:4px; color:#38bdf8;"><strong>Response:</strong> ${stg.response}</div>` : '';
             let attachInfo = '';
@@ -1106,7 +1106,7 @@ frappe.ui.form.on('DGP Case', {
 
             // Hover Tooltip (Floating Outside)
             html += `<div class="dgp-tooltip">`;
-            html += `<div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">${stg.dc_level || stg.stage_name}</div>`;
+            html += `<div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">${stg.stage_name || stg.dc_level}</div>`;
             html += `<div><strong>Assigned To:</strong> ${empName}${empDesig}</div>`;
             html += `<div><strong>Status:</strong> ${stg.status || 'Not Sent'}</div>`;
             html += `<div><strong>Sent On:</strong> ${sentOn}</div>`;
