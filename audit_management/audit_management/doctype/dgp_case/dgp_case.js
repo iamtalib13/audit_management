@@ -927,7 +927,7 @@ frappe.ui.form.on('DGP Case', {
             $('<style id="dgp-tracker-style">\
                 .dgp-stage-tracker-container { margin-top: 8px; margin-bottom: 12px; padding: 10px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); position: relative; overflow: visible !important; }\
                 .dgp-tracker-header { font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }\
-                .dgp-tracker-flow { display: flex; align-items: flex-start; justify-content: flex-start !important; width: 100%; overflow: visible !important; padding: 4px 0; }\
+                .dgp-tracker-flow { display: flex; align-items: flex-start; justify-content: flex-start !important; width: 100%; overflow-x: auto !important; overflow-y: visible !important; white-space: nowrap; padding: 4px 0; }\
                 .dgp-tracker-step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 0 0 auto !important; min-width: 145px; max-width: 220px; overflow: visible !important; margin-right: 12px; }\
                 .dgp-step-top-row { display: flex; align-items: center; width: 100%; position: relative; }\
                 .dgp-step-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; transition: all 0.2s ease; position: relative; cursor: pointer; white-space: nowrap; }\
@@ -942,7 +942,7 @@ frappe.ui.form.on('DGP Case', {
                 .dgp-pill-responded .dgp-step-num { background: #16a34a; color: #ffffff; }\
                 .dgp-pill-overdue .dgp-step-num { background: #dc2626; color: #ffffff; }\
                 .dgp-pill-escalated .dgp-step-num { background: #d97706; color: #ffffff; }\
-                .dgp-step-connector { flex: 1; height: 2px; background: #e2e8f0; margin: 0 8px; }\
+                .dgp-step-connector { height: 2px; background: #e2e8f0; margin: 14px 8px 0 8px; flex-shrink: 0 !important; }\
                 .dgp-conn-completed { background: #22c55e; }\
                 .dgp-conn-escalated { background: #f59e0b; }\
                 .dgp-step-status-subtext { margin-top: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; text-align: center; white-space: nowrap; }\
@@ -952,16 +952,16 @@ frappe.ui.form.on('DGP Case', {
                 .dgp-status-overdue { color: #dc2626; }\
                 .dgp-status-escalated { color: #d97706; }\
                 .dgp-status-skipped { color: #94a3b8; }\
-                .dgp-pill-wrapper .dgp-tooltip {\
-                    visibility: hidden; opacity: 0; position: absolute; top: 100%; bottom: auto; left: 50%; transform: translateX(-50%); margin-top: 38px;\
-                    background-color: #0f172a; color: #ffffff; text-align: left; padding: 8px 12px; border-radius: 8px;\
-                    font-size: 11px; font-weight: 400; line-height: 1.5; white-space: nowrap; z-index: 999999 !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);\
-                    transition: opacity 0.2s ease, visibility 0.2s ease; pointer-events: none;\
+                .dgp-floating-tooltip {\
+                    position: fixed; background-color: #0f172a; color: #ffffff; text-align: left;\
+                    padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 400;\
+                    line-height: 1.5; white-space: nowrap; z-index: 999999 !important;\
+                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); pointer-events: none;\
                 }\
-                .dgp-pill-wrapper .dgp-tooltip::after {\
-                    content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: transparent transparent #0f172a transparent;\
+                .dgp-floating-tooltip::after {\
+                    content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -5px;\
+                    border-width: 5px; border-style: solid; border-color: transparent transparent #0f172a transparent;\
                 }\
-                .dgp-pill-wrapper:hover .dgp-tooltip, .dgp-step-pill:hover .dgp-tooltip { visibility: visible !important; opacity: 1 !important; }\
             </style>').appendTo('head');
         }
 
@@ -1085,14 +1085,6 @@ frappe.ui.form.on('DGP Case', {
                 }
             }
 
-            html += '<div class="dgp-tracker-step">';
-            
-            // Pill Wrapper (Pill + Status directly below)
-            html += '<div class="dgp-pill-wrapper" style="display: flex; flex-direction: column; align-items: center; position: relative;">';
-            html += `<div class="dgp-step-pill ${pillClass}">`;
-            html += `<span class="dgp-step-num">${iconHtml}</span>`;
-            html += `<span>${stg.dc_level || stg.stage_name}</span>`;
-            
             let respInfo = stg.response ? `<div style="margin-top:4px; border-top:1px solid #334155; padding-top:4px; color:#38bdf8;"><strong>Response:</strong> ${stg.response}</div>` : '';
             let attachInfo = '';
             if (stg.attachment) {
@@ -1104,16 +1096,21 @@ frappe.ui.form.on('DGP Case', {
                 attachInfo = `<div style="margin-top:2px; color:#a7f3d0;"><strong>Attachments (${links.length}):</strong> ${linkHtml}</div>`;
             }
 
-            // Hover Tooltip (Floating Outside)
-            html += `<div class="dgp-tooltip">`;
-            html += `<div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">${stg.dc_level || stg.stage_name}</div>`;
-            html += `<div><strong>Assigned To:</strong> ${empName}${empDesig}</div>`;
-            html += `<div><strong>Status:</strong> ${stg.status || 'Not Sent'}</div>`;
-            html += `<div><strong>Sent On:</strong> ${sentOn}</div>`;
-            html += `<div><strong>TAT:</strong> ${tatDays} Days (Deadline: ${formattedTat})</div>`;
-            html += respInfo;
-            html += attachInfo;
-            html += `</div>`;
+            let tooltipContent = `<div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">${stg.stage_name || stg.dc_level}</div>`;
+            tooltipContent += `<div><strong>Assigned To:</strong> ${empName}${empDesig}</div>`;
+            tooltipContent += `<div><strong>Status:</strong> ${stg.status || 'Not Sent'}</div>`;
+            tooltipContent += `<div><strong>Sent On:</strong> ${sentOn}</div>`;
+            tooltipContent += `<div><strong>TAT:</strong> ${tatDays} Days (Deadline: ${formattedTat})</div>`;
+            tooltipContent += respInfo;
+            tooltipContent += attachInfo;
+
+            html += '<div class="dgp-tracker-step">';
+            
+            // Pill Wrapper (Pill + Status directly below)
+            html += '<div class="dgp-pill-wrapper" style="display: flex; flex-direction: column; align-items: center; position: relative;">';
+            html += `<div class="dgp-step-pill ${pillClass}" data-tooltip="${encodeURIComponent(tooltipContent)}">`;
+            html += `<span class="dgp-step-num">${iconHtml}</span>`;
+            html += `<span>${stg.stage_name || stg.dc_level}</span>`;
 
             html += `</div>`; // .dgp-step-pill
 
@@ -1142,6 +1139,22 @@ frappe.ui.form.on('DGP Case', {
         } else {
             frm.page.wrapper.find('.layout-main-section').first().prepend(html);
         }
+
+        frm.page.wrapper.find('.dgp-step-pill[data-tooltip]').off('mouseenter mouseleave').on('mouseenter', function(e) {
+            let tooltipHtml = decodeURIComponent($(this).attr('data-tooltip'));
+            let $tip = $('<div class="dgp-floating-tooltip"></div>').html(tooltipHtml).appendTo('body');
+            let rect = this.getBoundingClientRect();
+            let tipW = $tip.outerWidth();
+            let tipH = $tip.outerHeight();
+            let left = rect.left + (rect.width / 2) - (tipW / 2);
+            let top = rect.bottom + 10;
+            if (top + tipH > window.innerHeight) top = rect.top - tipH - 10;
+            if (left < 4) left = 4;
+            if (left + tipW > window.innerWidth - 4) left = window.innerWidth - tipW - 4;
+            $tip.css({ top: top + 'px', left: left + 'px' });
+        }).on('mouseleave', function() {
+            $('.dgp-floating-tooltip').remove();
+        });
     }
 });
 
