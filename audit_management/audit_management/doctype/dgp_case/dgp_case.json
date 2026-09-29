@@ -32,7 +32,6 @@
   "section_break_stages",
   "dgp_case_stages",
   "section_break_tracking",
-  "current_stage",
   "current_dc_level",
   "status",
   "column_break_3",
@@ -198,13 +197,6 @@
    "label": "Tracking"
   },
   {
-   "fieldname": "current_stage",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Current Stage",
-   "read_only": 1
-  },
-  {
    "fieldname": "current_dc_level",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -235,7 +227,7 @@
    "fieldname": "tat_deadline",
    "fieldtype": "Datetime",
    "in_list_view": 1,
-   "label": "TAT Deadline",
+   "label": "TAT Due Date",
    "read_only": 1
   },
   {
@@ -285,7 +277,7 @@
    "link_fieldname": "employee"
   }
  ],
- "modified": "2026-09-29 14:09:30.970693",
+ "modified": "2026-09-29 15:41:52.042076",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DGP Case",
