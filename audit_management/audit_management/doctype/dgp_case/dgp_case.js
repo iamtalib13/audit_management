@@ -297,6 +297,10 @@ frappe.ui.form.on('DGP Case', {
             frm.set_value('status', 'Draft');
             frm.set_value('escalation_count', 0);
         }
+
+        if (frm.doc.cmg_code && frm.doc.created_on) {
+            frm.events.set_tat_deadline(frm);
+        }
     },
 
     validate: function(frm) {
@@ -574,6 +578,8 @@ frappe.ui.form.on('DGP Case', {
 
         if (current_tat !== new_tat) {
             frm.set_value('tat_deadline', deadline);
+        }
+        if (frm.doc.escalation_count !== String(days)) {
             frm.set_value('escalation_count', days);
         }
     },
