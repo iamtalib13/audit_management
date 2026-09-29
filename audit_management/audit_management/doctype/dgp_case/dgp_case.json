@@ -48,8 +48,9 @@
  ],
  "fields": [
   {
-   "fieldname": "section_break_case_details",
-   "fieldtype": "Section Break"
+    "fieldname": "section_break_case_details",
+    "fieldtype": "Section Break",
+    "collapsible": 1
   },
   {
    "default": "0",
@@ -174,9 +175,10 @@
    "label": "Case Description"
   },
   {
-   "fieldname": "section_break_stages",
-   "fieldtype": "Section Break",
-   "label": "Disciplinary Committee Stages"
+    "fieldname": "section_break_stages",
+    "fieldtype": "Section Break",
+    "collapsible": 1,
+    "label": "Disciplinary Committee Stages"
   },
   {
    "fieldname": "dgp_case_stages",
@@ -261,8 +263,9 @@
    "label": "DGP Attachment"
   },
   {
-   "fieldname": "case_details_section",
-   "fieldtype": "Section Break"
+    "fieldname": "case_details_section",
+    "fieldtype": "Section Break",
+    "collapsible": 1
   },
   {
    "fieldname": "case_details",
