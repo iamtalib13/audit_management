@@ -38,6 +38,7 @@
   "created_on",
   "tat_deadline",
   "escalation_count",
+  "closed_date",
   "section_break_final",
   "final_decision",
   "final_justification",
@@ -231,10 +232,16 @@
    "read_only": 1
   },
   {
-   "default": "0",
+   "fieldname": "closed_date",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Closed Date",
+   "read_only": 1
+  },
+  {
    "fieldname": "escalation_count",
-   "fieldtype": "Int",
-   "label": "Escalation Count",
+   "fieldtype": "Data",
+   "label": "TAT Days",
    "read_only": 1
   },
   {
@@ -277,7 +284,7 @@
    "link_fieldname": "employee"
   }
  ],
- "modified": "2026-09-29 15:41:52.042076",
+ "modified": "2026-09-29 15:51:54.751175",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DGP Case",
