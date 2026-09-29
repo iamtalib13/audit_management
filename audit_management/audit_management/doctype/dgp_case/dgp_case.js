@@ -574,6 +574,7 @@ frappe.ui.form.on('DGP Case', {
 
         if (current_tat !== new_tat) {
             frm.set_value('tat_deadline', deadline);
+            frm.set_value('escalation_count', days);
         }
     },
 
