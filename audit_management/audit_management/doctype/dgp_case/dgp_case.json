@@ -217,7 +217,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-    "options": "Draft\nUnder Review\nTAT Overdue\nClosed\nCessation",
+   "options": "Draft\nUnder Review\nTAT Overdue\nClosed\nCessation",
    "read_only": 1
   },
   {
@@ -276,6 +276,7 @@
   }
  ],
  "grid_page_length": 50,
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [
   {
@@ -284,7 +285,7 @@
    "link_fieldname": "employee"
   }
  ],
- "modified": "2026-09-04 12:12:35.907432",
+ "modified": "2026-09-29 14:09:30.970693",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "DGP Case",
