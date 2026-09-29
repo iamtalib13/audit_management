@@ -50,7 +50,7 @@ def get_dashboard_number_cards():
 	dgp_total = frappe.db.count("DGP Case", dgp_filters)
 	dgp_draft = frappe.db.count("DGP Case", {**dgp_filters, "status": "Draft"})
 	dgp_under_review = frappe.db.count("DGP Case", {**dgp_filters, "status": "Under Review"})
-	dgp_escalated = frappe.db.count("DGP Case", {**dgp_filters, "status": "Escalated"})
+	dgp_tat_overdue = frappe.db.count("DGP Case", {**dgp_filters, "status": "TAT Overdue"})
 	dgp_closed = frappe.db.count("DGP Case", {**dgp_filters, "status": "Closed"})
 	dgp_cessation = frappe.db.count("DGP Case", {**dgp_filters, "status": "Cessation"})
 
@@ -67,7 +67,7 @@ def get_dashboard_number_cards():
 			{"key": "dgp_total", "label": "DGP Total", "value": dgp_total},
 			{"key": "dgp_draft", "label": "DGP Draft", "value": dgp_draft},
 			{"key": "dgp_under_review", "label": "Under Review", "value": dgp_under_review},
-			{"key": "dgp_escalated", "label": "Escalated", "value": dgp_escalated},
+			{"key": "dgp_tat_overdue", "label": "TAT Overdue", "value": dgp_tat_overdue},
 			{"key": "dgp_closed", "label": "Closed", "value": dgp_closed},
 			{"key": "dgp_cessation", "label": "Cessation", "value": dgp_cessation},
 		]

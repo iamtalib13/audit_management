@@ -180,7 +180,7 @@
 		.count-overdue { background-color: #f56565; color: #fff; }
 		.count-dgp-total { background-color: #8b0000; color: #fff; }
 		.count-dgp-under { background-color: #ed8936; color: #fff; }
-		.count-dgp-escalated { background-color: #f56565; color: #fff; }
+		.count-dgp-overdue { background-color: #ed8936; color: #fff; }
 		.count-dgp-closed { background-color: #48bb78; color: #fff; }
 		.count-dgp-cessation { background-color: #c0392b; color: #fff; }
 
@@ -1043,13 +1043,13 @@
 						<span class="summary-count count-dgp-under" v-text="dgpNumberCards.find(c => c.key === 'dgp_under_review')?.value || 0"></span>
 					</div>
 					<div class="nav-item summary-item" 
-						 :class="{ 'active': dgpActiveFilter === 'escalated' }" 
-						 @click="filterDgpCases('escalated')">
+						 :class="{ 'active': dgpActiveFilter === 'tat_overdue' }" 
+						 @click="filterDgpCases('tat_overdue')">
 						<div class="summary-label">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-							Escalated
+							TAT Overdue
 						</div>
-						<span class="summary-count count-dgp-escalated" v-text="dgpNumberCards.find(c => c.key === 'dgp_escalated')?.value || 0"></span>
+						<span class="summary-count count-dgp-overdue" v-text="dgpNumberCards.find(c => c.key === 'dgp_tat_overdue')?.value || 0"></span>
 					</div>
 					<div class="nav-item summary-item" 
 						 :class="{ 'active': dgpActiveFilter === 'closed' }" 
@@ -1758,7 +1758,7 @@
 						const statusMap = {
 							'draft': 'Draft',
 							'under_review': 'Under Review',
-							'escalated': 'Escalated',
+							'tat_overdue': 'TAT Overdue',
 							'closed': 'Closed',
 							'cessation': 'Cessation'
 						};
