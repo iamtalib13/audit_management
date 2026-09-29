@@ -985,6 +985,7 @@ def close_case(docname, final_decision=None, justification=None, governance_note
     if governance_notes:
         doc.governance_notes = (doc.governance_notes or "") + "\n" + governance_notes
     doc.status = "Closed"
+    doc.closed_date = now_datetime()
 
     for row in doc.dgp_case_stages:
         if row.status == "Pending":
