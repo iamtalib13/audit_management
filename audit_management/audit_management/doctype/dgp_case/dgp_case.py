@@ -956,35 +956,6 @@ def send_bulk_stage_assignment_notification(doc):
     except Exception as e:
         frappe.log_error(f"DGP Case bulk assignment notification failed: {e}")
 
-# Escalate case to next DC level with justification
-@frappe.whitelist()
-def escalate_case(docname, justification):
-    """Escalate case to next DC level"""
-    doc = frappe.get_doc("DGP Case", docname)
-
-    if doc.current_stage >= len(doc.dgp_case_stages):
-        frappe.throw(_("Already at final stage"))
-
-    current_row = doc.dgp_case_stages[doc.current_stage - 1]
-    current_row.status = "Escalated"
-    current_row.escalation_justification = justification
-    current_row.response_time = now_datetime()
-
-    doc.current_stage += 1
-    next_row = doc.dgp_case_stages[doc.current_stage - 1]
-    doc.current_dc_level = next_row.dc_level
-    next_row.status = "Pending"
-    next_row.pending_time = now_datetime()
-
-    doc.escalation_count += 1
-    doc.status = "Escalated"
-    doc.save()
-
-    send_stage_notification(doc, next_row, "assign")
-    check_governance_rules(doc)
-
-    return {"success": True}
-
 # Close DGP case with restriction for authorized employee IDs and admin roles
 @frappe.whitelist()
 def close_case(docname, final_decision=None, justification=None, governance_notes=None, outcome=None):
@@ -1078,9 +1049,16 @@ def check_dgp_pending_tat():
     )
 
     updated_count = 0
+    affected_parents = set()
     for stage in overdue_stages:
         frappe.db.set_value("DGP Case Stage", stage.name, "status", "No Responded")
+        affected_parents.add(stage.parent)
         updated_count += 1
+
+    for parent_name in affected_parents:
+        parent_status = frappe.db.get_value("DGP Case", parent_name, "status")
+        if parent_status not in ["Closed", "Cessation"]:
+            frappe.db.set_value("DGP Case", parent_name, "status", "TAT Overdue")
 
     if updated_count > 0:
         frappe.db.commit()
