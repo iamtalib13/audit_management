@@ -214,10 +214,39 @@ def get_stage_definitions_for_cmg(cmg_code):
         return zonal_stages + national_stages + management_stages
     return zonal_stages
 
+CMG_TAT_MAP = {
+    "C0": 7,
+    "C1": 7,
+    "C2": 15,
+    "C3": 15,
+    "C4": 15,
+    "C5": 45
+}
+
+def get_total_tat_for_cmg(cmg_code):
+    """Return max TAT days based on BRD rules"""
+    return CMG_TAT_MAP.get(cmg_code, 15)
+
+def _build_stage_row_dict(idx, stage_name, dc_level, emp_info, tat_deadline):
+    """Helper to build a clean DGP Case Stage dictionary"""
+    return {
+        "stage": str(idx),
+        "stage_name": stage_name,
+        "dc_level": dc_level,
+        "reviewer_employee": emp_info.name if emp_info else "",
+        "user_id": emp_info.user_id if emp_info else "",
+        "employee_name": emp_info.employee_name if emp_info else "",
+        "designation": emp_info.designation if emp_info else "",
+        "email": (emp_info.company_email or emp_info.prefered_email) if emp_info else "",
+        "status": "Not Sent",
+        "pending_time": None,
+        "tat_deadline": tat_deadline
+    }
+
 # Calculates and returns DGP Stage rows for auto-population based on CMG Code
 @frappe.whitelist()
 def fetch_auto_dgp_stages(cmg_code, emp_branch=None, created_on=None, accused_employee=None):
-    """Return DGP stage rows for UI auto-population based on CMG Code hierarchy: Stage 1 = BM from branch, rest are blank"""
+    """Return DGP stage rows for UI auto-population based on CMG Code hierarchy"""
     if not cmg_code:
         return []
 
@@ -234,34 +263,9 @@ def fetch_auto_dgp_stages(cmg_code, emp_branch=None, created_on=None, accused_em
     stage_rows = []
     for idx, (stage_name, dc_level) in enumerate(stage_defs, start=1):
         emp_info = bm_info if stage_name == "Branch Manager" else None
-
-        stage_rows.append({
-            "stage": str(idx),
-            "stage_name": stage_name,
-            "dc_level": dc_level,
-            "reviewer_employee": emp_info.name if emp_info else "",
-            "user_id": emp_info.user_id if emp_info else "",
-            "employee_name": emp_info.employee_name if emp_info else "",
-            "designation": emp_info.designation if emp_info else "",
-            "email": (emp_info.company_email or emp_info.prefered_email) if emp_info else "",
-            "status": "Not Sent",
-            "tat_deadline": tat_deadline
-        })
+        stage_rows.append(_build_stage_row_dict(idx, stage_name, dc_level, emp_info, tat_deadline))
 
     return stage_rows
-
-# Return max TAT days based on BRD rules for CMG Code
-def get_total_tat_for_cmg(cmg_code):
-    """Return max TAT days based on BRD rules"""
-    tat_map = {
-        "C0": 7,
-        "C1": 7,
-        "C2": 15,
-        "C3": 15,
-        "C4": 15,
-        "C5": 45
-    }
-    return tat_map.get(cmg_code, 15)
 
 # Populate stage reviewers from backend
 @frappe.whitelist()
@@ -289,20 +293,7 @@ def populate_dgp_stages(docname, cmg_code=None, emp_branch=None):
 
     for idx, (stage_name, dc_level) in enumerate(stage_defs, start=1):
         emp_info = bm_info if stage_name == "Branch Manager" else None
-
-        doc.append("dgp_case_stages", {
-            "stage": str(idx),
-            "stage_name": stage_name,
-            "dc_level": dc_level,
-            "reviewer_employee": emp_info.name if emp_info else "",
-            "user_id": emp_info.user_id if emp_info else "",
-            "employee_name": emp_info.employee_name if emp_info else "",
-            "designation": emp_info.designation if emp_info else "",
-            "email": (emp_info.company_email or emp_info.prefered_email) if emp_info else "",
-            "status": "Not Sent",
-            "pending_time": None,
-            "tat_deadline": tat_deadline
-        })
+        doc.append("dgp_case_stages", _build_stage_row_dict(idx, stage_name, dc_level, emp_info, tat_deadline))
 
     doc.current_stage = 1
     doc.current_dc_level = "Zonal DC"
