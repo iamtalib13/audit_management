@@ -866,9 +866,10 @@ def send_stage_notification(doc, stage_row, action, response_text=None):
             subject = email_data.get("subject") or f"DGP Case Assigned [{stage_row.dc_level or stage_row.stage_name}]: {doc.name}"
             message = email_data.get("message")
         else:
+            salutation = get_reviewers_salutation(doc, stage_row)
             subject = f"DGP Case Assigned [{stage_row.dc_level or stage_row.stage_name}]: {doc.name}"
             message = f"""
-                <p>Dear {stage_row.employee_name or 'Reviewer'},</p>
+                <p>{salutation}</p>
                 <p>A <b>DGP Case</b> has been assigned to you for review in stage <b>{stage_row.dc_level or stage_row.stage_name}</b>.</p>
                 <p><b>DGP Case ID:</b> {doc.name}</p>
                 <p><b>Accused Employee:</b> {doc.employee_name or doc.employee or 'N/A'} ({doc.designation or 'N/A'})</p>
@@ -891,6 +892,36 @@ def send_stage_notification(doc, stage_row, action, response_text=None):
         )
     except Exception as e:
         frappe.log_error(f"DGP Case notification failed: {e}")
+
+def get_reviewers_salutation(doc, stage_row=None):
+    """Derive salutation based on gender of stage reviewers from Employee DocType"""
+    target_stages = [stage_row] if stage_row else (doc.dgp_case_stages or [])
+    genders = set()
+    for s in target_stages:
+        emp_id = getattr(s, "reviewer_employee", None) or getattr(s, "employee", None)
+        user_id = getattr(s, "user_id", None)
+        gender = None
+        if emp_id:
+            gender = frappe.db.get_value("Employee", emp_id, "gender")
+        elif user_id:
+            gender = frappe.db.get_value("Employee", {"user_id": user_id}, "gender")
+        
+        if gender:
+            gender_clean = str(gender).strip().lower()
+            if "female" in gender_clean or "woman" in gender_clean:
+                genders.add("Female")
+            elif "male" in gender_clean or "man" in gender_clean:
+                genders.add("Male")
+
+    is_plural = len(target_stages) > 1
+    if "Male" in genders and "Female" in genders:
+        return "Dear Sirs/Ma'ams," if is_plural else "Dear Sir/Ma'am,"
+    elif "Female" in genders:
+        return "Dear Ma'ams," if is_plural else "Dear Ma'am,"
+    elif "Male" in genders:
+        return "Dear Sirs," if is_plural else "Dear Sir,"
+    else:
+        return "Dear Sirs/Ma'ams," if is_plural else "Dear Sir/Ma'am,"
 
 def send_bulk_stage_assignment_notification(doc):
     """Send a SINGLE email notification to all stage reviewers in 'To' and settings CC in 'CC'"""
@@ -917,31 +948,20 @@ def send_bulk_stage_assignment_notification(doc):
                 if e and "@" in e and e not in recipients and e not in cc_list:
                     cc_list.append(e)
 
-        template_name = getattr(settings, "dgp_email_template", None) or frappe.db.get_value("Email Template", {"name": "DGP Case Stage Notification"}, "name")
-        first_stage = doc.dgp_case_stages[0] if doc.dgp_case_stages else None
+        salutation = get_reviewers_salutation(doc)
 
-        if template_name and first_stage:
-            from frappe.email.doctype.email_template.email_template import get_email_template
-            email_data = get_email_template(template_name, {
-                "doc": doc,
-                "stage": first_stage,
-                "action": "assign"
-            })
-            subject = email_data.get("subject") or f"DGP Case Assigned: {doc.name}"
-            message = email_data.get("message")
-        else:
-            subject = f"DGP Case Assigned: {doc.name}"
-            message = f"""
-                <p>Dear Reviewers,</p>
-                <p>A <b>DGP Case</b> has been assigned for review.</p>
-                <p><b>DGP Case ID:</b> {doc.name}</p>
-                <p><b>Accused Employee:</b> {doc.employee_name or doc.employee or 'N/A'} ({doc.designation or 'N/A'})</p>
-                <p><b>CMG Code:</b> {doc.cmg_code or 'N/A'} - {doc.cmg_recommended_outcome or 'N/A'}</p>
-                <p><b>TAT Deadline:</b> {doc.tat_deadline or 'N/A'}</p>
-                <p>Please review and submit your response in the DGP Case Portal.</p>
-                <p>Please click below link to review: <br>
-                <a href="http://mysahayog.com/app/dgp-case/{doc.name}">http://mysahayog.com/app/dgp-case/{doc.name}</a></p>
-            """
+        subject = f"DGP Case Assigned: {doc.name}"
+        message = f"""
+            <p>{salutation}</p>
+            <p>A <b>DGP Case</b> has been assigned for review.</p>
+            <p><b>DGP Case ID:</b> {doc.name}</p>
+            <p><b>Accused Employee:</b> {doc.employee_name or doc.employee or 'N/A'} ({doc.designation or 'N/A'})</p>
+            <p><b>CMG Code:</b> {doc.cmg_code or 'N/A'} - {doc.cmg_recommended_outcome or 'N/A'}</p>
+            <p><b>TAT Deadline:</b> {doc.tat_deadline or 'N/A'}</p>
+            <p>Please review and submit your response in the DGP Case Portal.</p>
+            <p>Please click below link to review: <br>
+            <a href="http://mysahayog.com/app/dgp-case/{doc.name}">http://mysahayog.com/app/dgp-case/{doc.name}</a></p>
+        """
 
         frappe.sendmail(
             recipients=recipients,
