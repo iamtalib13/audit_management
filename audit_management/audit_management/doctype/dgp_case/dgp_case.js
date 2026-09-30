@@ -32,6 +32,12 @@ frappe.ui.form.on('DGP Case', {
         frm.set_df_property('cmg_code', 'read_only', 1);
         frm.set_df_property('cmg_recommended_outcome', 'read_only', 1);
 
+        // Hide Connections section safely from Form UI
+        setTimeout(() => {
+            $(frm.wrapper).find('.form-links, .form-dashboard, .form-assignments').closest('.form-section, .form-dashboard-section').hide();
+            $(frm.wrapper).find('.form-dashboard').hide();
+        }, 300);
+
         // Make form 100% strictly read-only and unclickable for Stage Reviewers (non-creator / non-admin / non-manager)
         const is_admin_or_creator = (frm.doc.owner === frappe.session.user) ||
                                     frappe.user.has_role('System Manager') ||
@@ -105,8 +111,6 @@ frappe.ui.form.on('DGP Case', {
                 .dgp-btn-populate:hover { background-color: #4338ca !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3) !important; color: #ffffff !important; }\
                 .dgp-btn-send { background-color: #0d9488 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; cursor: pointer !important; pointer-events: auto !important; }\
                 .dgp-btn-send:hover { background-color: #0f766e !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3) !important; color: #ffffff !important; cursor: pointer !important; }\
-                .dgp-btn-escalate { background-color: #d97706 !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
-                .dgp-btn-escalate:hover { background-color: #b45309 !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.3) !important; color: #ffffff !important; }\
                 .dgp-btn-close { background-color: #16a34a !important; color: #ffffff !important; border-radius: 6px !important; font-weight: 600 !important; border: none !important; transition: all 0.2s ease !important; padding: 5px 12px !important; }\
                 .dgp-btn-close:hover { background-color: #15803d !important; transform: translateY(-1px) !important; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3) !important; color: #ffffff !important; }\
                 [data-doctype="DGP Case"] .form-links, [data-doctype="DGP Case"] .form-documents, [data-doctype="DGP Case"] .form-dashboard-section { display: none !important; }\
@@ -298,6 +302,10 @@ frappe.ui.form.on('DGP Case', {
             frm.set_value('created_on', frappe.datetime.now_datetime());
             frm.set_value('status', 'Draft');
             frm.set_value('escalation_count', 0);
+        }
+
+        if (frm.doc.cmg_code && frm.doc.created_on) {
+            frm.events.set_tat_deadline(frm);
         }
     },
 
@@ -577,6 +585,9 @@ frappe.ui.form.on('DGP Case', {
         if (current_tat !== new_tat) {
             frm.set_value('tat_deadline', deadline);
         }
+        if (frm.doc.escalation_count !== String(days)) {
+            frm.set_value('escalation_count', days);
+        }
     },
 
     // Populate stage reviewers from backend and allow editing
@@ -650,39 +661,6 @@ frappe.ui.form.on('DGP Case', {
                 }
             });
         });
-    },
-
-    // Open escalation dialog and submit to next stage
-    escalate_case: function(frm) {
-        const d = new frappe.ui.Dialog({
-            title: __('Escalate Case'),
-            fields: [
-                {
-                    fieldname: 'justification',
-                    fieldtype: 'Small Text',
-                    label: __('Escalation Justification (Required)'),
-                    reqd: 1
-                }
-            ],
-            primary_action_label: __('Escalate'),
-            primary_action: function(values) {
-                frappe.call({
-                    method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.escalate_case',
-                    args: {
-                        docname: frm.doc.name,
-                        justification: values.justification
-                    },
-                    callback: function(r) {
-                        if (r.message) {
-                            d.hide();
-                            frm.reload_doc();
-                            frappe.show_alert({message: __('Case escalated to next stage'), indicator: 'orange'});
-                        }
-                    }
-                });
-            }
-        });
-        d.show();
     },
 
     // Open closure dialog with decision and justification
@@ -935,22 +913,18 @@ frappe.ui.form.on('DGP Case', {
                 .dgp-pill-active { background: #dbeafe !important; color: #1d4ed8 !important; border-color: #3b82f6 !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important; }\
                 .dgp-pill-responded { background: #dcfce7 !important; color: #15803d !important; border-color: #22c55e !important; }\
                 .dgp-pill-overdue { background: #fee2e2 !important; color: #b91c1c !important; border-color: #ef4444 !important; }\
-                .dgp-pill-escalated { background: #fef3c7 !important; color: #b45309 !important; border-color: #f59e0b !important; }\
                 .dgp-pill-skipped { background: #f8fafc !important; color: #94a3b8 !important; border-color: #e2e8f0 !important; }\
                 .dgp-step-num { width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.08); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }\
                 .dgp-pill-active .dgp-step-num { background: #2563eb; color: #ffffff; }\
                 .dgp-pill-responded .dgp-step-num { background: #16a34a; color: #ffffff; }\
                 .dgp-pill-overdue .dgp-step-num { background: #dc2626; color: #ffffff; }\
-                .dgp-pill-escalated .dgp-step-num { background: #d97706; color: #ffffff; }\
                 .dgp-step-connector { height: 2px; background: #e2e8f0; margin: 14px 8px 0 8px; flex-shrink: 0 !important; }\
                 .dgp-conn-completed { background: #22c55e; }\
-                .dgp-conn-escalated { background: #f59e0b; }\
                 .dgp-step-status-subtext { margin-top: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; text-align: center; white-space: nowrap; }\
                 .dgp-status-pending { color: #64748b; }\
                 .dgp-status-active { color: #2563eb; }\
                 .dgp-status-responded { color: #16a34a; }\
                 .dgp-status-overdue { color: #dc2626; }\
-                .dgp-status-escalated { color: #d97706; }\
                 .dgp-status-skipped { color: #94a3b8; }\
                 .dgp-floating-tooltip {\
                     position: fixed; background-color: #0f172a; color: #ffffff; text-align: left;\
@@ -1005,10 +979,10 @@ frappe.ui.form.on('DGP Case', {
 
             if (stg.status === 'Responded') {
                 if (isLateResponded && lateDaysBreached > 0) {
-                    pillClass = 'dgp-pill-escalated';
+                    pillClass = 'dgp-pill-overdue';
                     connClass = 'dgp-conn-completed';
                     statusText = `⚠️ Responded (${lateDaysBreached}d Late)`;
-                    statusTextClass = 'dgp-status-escalated';
+                    statusTextClass = 'dgp-status-overdue';
                 } else {
                     pillClass = 'dgp-pill-responded';
                     connClass = 'dgp-conn-completed';
@@ -1016,10 +990,9 @@ frappe.ui.form.on('DGP Case', {
                     statusTextClass = 'dgp-status-responded';
                 }
             } else if (stg.status === 'No Responded') {
-                pillClass = 'dgp-pill-escalated';
-                connClass = 'dgp-conn-escalated';
+                pillClass = 'dgp-pill-overdue';
                 statusText = '⨂ No Responded';
-                statusTextClass = 'dgp-status-escalated';
+                statusTextClass = 'dgp-status-overdue';
             } else if (stg.status === 'Overdue' || isOverdue) {
                 pillClass = 'dgp-pill-overdue';
                 statusText = '⚠ Overdue';
@@ -1064,7 +1037,6 @@ frappe.ui.form.on('DGP Case', {
 
             let iconHtml = stg.stage;
             if (stg.status === 'Responded') iconHtml = '<i class="fa fa-check" style="font-size:9px;"></i>';
-            else if (stg.status === 'Escalated') iconHtml = '<i class="fa fa-arrow-up" style="font-size:9px;"></i>';
             else if (isOverdue) iconHtml = '<i class="fa fa-exclamation" style="font-size:9px;"></i>';
 
             let empName = stg.employee_name || stg.employee || 'Unassigned';
