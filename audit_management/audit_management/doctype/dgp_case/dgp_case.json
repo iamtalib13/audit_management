@@ -49,8 +49,7 @@
  "fields": [
   {
     "fieldname": "section_break_case_details",
-    "fieldtype": "Section Break",
-    "collapsible": 1
+    "fieldtype": "Section Break"
   },
   {
    "default": "0",
@@ -177,7 +176,6 @@
   {
     "fieldname": "section_break_stages",
     "fieldtype": "Section Break",
-    "collapsible": 1,
     "label": "Disciplinary Committee Stages"
   },
   {
