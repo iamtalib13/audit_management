@@ -32,6 +32,12 @@ frappe.ui.form.on('DGP Case', {
         frm.set_df_property('cmg_code', 'read_only', 1);
         frm.set_df_property('cmg_recommended_outcome', 'read_only', 1);
 
+        // Hide Connections section safely from Form UI
+        setTimeout(() => {
+            $(frm.wrapper).find('.form-links, .form-dashboard, .form-assignments').closest('.form-section, .form-dashboard-section').hide();
+            $(frm.wrapper).find('.form-dashboard').hide();
+        }, 300);
+
         // Make form 100% strictly read-only and unclickable for Stage Reviewers (non-creator / non-admin / non-manager)
         const is_admin_or_creator = (frm.doc.owner === frappe.session.user) ||
                                     frappe.user.has_role('System Manager') ||
