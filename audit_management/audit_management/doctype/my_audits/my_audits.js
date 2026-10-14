@@ -1244,6 +1244,8 @@ frappe.ui.form.on("My Audits", {
                 name: r.stage_name,
                 employee_name: r.employee_name || "Unassigned",
                 status: r.status,
+                // Only keep disabled if currently Pending; allow resending if empty, No Response, or Responded
+                is_disabled: r.status === "Pending",
                 is_sent: !!r.status,
               };
             });
@@ -1280,14 +1282,14 @@ frappe.ui.form.on("My Audits", {
                                     <tr>
                                         <td style="text-align: center; vertical-align: middle;">
                                             <input type="checkbox" class="stage-checkbox" value="${s.name}" 
-                                                ${s.is_sent ? "checked disabled" : ""} 
+                                                ${s.is_disabled ? "checked disabled" : ""} 
                                                 style="width: 16px; height: 16px;">
                                         </td>
                                         <td style="vertical-align: middle; font-weight: 500;">${s.name}</td>
                                         <td style="vertical-align: middle;">${s.employee_name}</td>
                                         <td style="vertical-align: middle;">
                                             <div style="display: flex; align-items: center; justify-content: space-between;">
-                                                <span style="color: ${s.is_sent ? "#28a745" : "#6c757d"}; font-weight: ${s.is_sent ? "bold" : "normal"};">
+                                                <span style="color: ${s.status === "Responded" ? "#28a745" : s.status === "Pending" ? "#f39c12" : "#6c757d"}; font-weight: ${s.is_sent ? "bold" : "normal"};">
                                                     ${s.is_sent ? s.status : __("Not Sent")}
                                                 </span>
                                                 ${
