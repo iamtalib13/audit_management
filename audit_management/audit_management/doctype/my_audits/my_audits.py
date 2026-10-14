@@ -1187,8 +1187,8 @@ def rollback_stage(docname, stagename, row_name=None):
         is_match = (row.name == row_name) if row_name else (row.stage_name == stagename)
         
         if is_match:
-            if row.status not in ["Pending", "No Response"]:
-                frappe.throw(_("Only Pending or No Response stages can be rolled back. {0} is currently {1}.").format(row.stage_name, row.status))
+            if row.status not in ["Pending", "No Response", "Responded"]:
+                frappe.throw(_("Only Pending, No Response, or Responded stages can be rolled back. {0} is currently {1}.").format(row.stage_name, row.status))
             
             # 1. Revoke access only if user is not in any other active stage
             if row.user_id:

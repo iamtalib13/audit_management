@@ -1296,6 +1296,7 @@ frappe.ui.form.on("My Audits", {
                                                   [
                                                     "Pending",
                                                     "No Response",
+                                                    "Responded",
                                                   ].includes(s.status)
                                                     ? `
                                                     <span class="rollback-btn text-danger" data-stage="${s.name}" title="Rollback Stage" style="cursor: pointer; font-weight: bold; font-size: 22px; line-height: 1; margin-left: 10px;">
