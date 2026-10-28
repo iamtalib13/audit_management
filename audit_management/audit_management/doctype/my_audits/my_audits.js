@@ -270,10 +270,14 @@ frappe.ui.form.on("My Audits", {
         let auditor = frm.doc.query_generated_by_name || frappe.user.full_name() || "—";
         let branch = frm.doc.branch_name || frm.doc.emp_branch || "—";
 
-        // Current start and end dates from first row (if any)
+        // Current start and end dates and month from first row (if any)
         let first_row = frm.doc.checklist_items && frm.doc.checklist_items[0] ? frm.doc.checklist_items[0] : {};
         let start_val = first_row.audit_start_date || "";
         let end_val = first_row.audit_end_date || "";
+        let month_val = first_row.audit_period_month || "";
+
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let month_options = months.map(m => `<option value="${m}" ${m === month_val ? "selected" : ""}>${m}</option>`).join("");
 
         let banner_html = $(`
           <div class="checklist-header-banner" style="
@@ -287,7 +291,7 @@ frappe.ui.form.on("My Audits", {
             align-items: center;
             justify-content: flex-start;
             flex-wrap: wrap;
-            gap: 24px;
+            gap: 20px;
             font-size: 13px;
           ">
             <div>
@@ -301,15 +305,32 @@ frappe.ui.form.on("My Audits", {
             </div>
             <div style="border-left: 1px solid #cbd5e1; height: 18px;"></div>
             <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #64748b; font-weight: 600;">🗓️ Audit Period Month:</span>
+              <select class="form-control input-xs chk-month-select" style="width: 120px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
+                <option value="">Select Month</option>
+                ${month_options}
+              </select>
+            </div>
+            <div style="border-left: 1px solid #cbd5e1; height: 18px;"></div>
+            <div style="display: flex; align-items: center; gap: 8px;">
               <span style="color: #64748b; font-weight: 600;">📅 Audit Start Date:</span>
-              <input type="date" class="form-control input-xs chk-start-date" value="${start_val}" style="width: 140px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
+              <input type="date" class="form-control input-xs chk-start-date" value="${start_val}" style="width: 130px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="color: #64748b; font-weight: 600;">📅 Audit End Date:</span>
-              <input type="date" class="form-control input-xs chk-end-date" value="${end_val}" style="width: 140px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
+              <input type="date" class="form-control input-xs chk-end-date" value="${end_val}" style="width: 130px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
             </div>
           </div>
         `);
+
+        // Sync month selection into child table records
+        banner_html.find(".chk-month-select").on("change", function () {
+          let val = $(this).val();
+          if (frm.doc.checklist_items) {
+            frm.doc.checklist_items.forEach((r) => (r.audit_period_month = val));
+            frm.dirty();
+          }
+        });
 
         // Sync date inputs into child table records on change
         banner_html.find(".chk-start-date").on("change", function () {
