@@ -261,6 +261,27 @@ frappe.ui.form.on("My Audits", {
       let grid = frm.fields_dict.checklist_items.grid;
       grid.page_length = 50;
 
+      // Allow full questions and remarks to wrap into multiple lines without truncation (...)
+      if (!$("#checklist-grid-wrap-style").length) {
+        $(`
+          <style id="checklist-grid-wrap-style">
+            [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="question"],
+            [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="remarks"],
+            [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="category"] {
+              white-space: normal !important;
+              word-break: break-word !important;
+              overflow: visible !important;
+              line-height: 1.4 !important;
+              height: auto !important;
+            }
+            [data-fieldname="checklist_items"] .grid-body .grid-row .data-row {
+              min-height: 40px !important;
+              align-items: center !important;
+            }
+          </style>
+        `).appendTo("head");
+      }
+
       const render_inline_checklist_headers = () => {
         if (!grid || !grid.wrapper) return;
         let rows = grid.wrapper.find(".grid-body .grid-row");
