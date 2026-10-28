@@ -234,6 +234,55 @@ frappe.ui.form.on("My Audits", {
         });
       }
     }
+
+    // Auto-populate checklist questions for new doc if empty
+    if (frm.is_new() && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+      frappe.call({
+        method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
+        callback: function (r) {
+          if (r.message && r.message.length) {
+            frm.clear_table("checklist_items");
+            r.message.forEach((q) => {
+              let row = frm.add_child("checklist_items");
+              row.sr_no = q.sr_no;
+              row.section = q.section;
+              row.category = q.category;
+              row.question = q.question;
+              row.response = "";
+              row.remarks = "";
+            });
+            frm.refresh_field("checklist_items");
+          }
+        },
+      });
+    }
+
+    // Add Load Checklist button if empty on existing document
+    if (!frm.is_new() && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+      if (frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member") || frappe.user_roles.includes("System Manager")) {
+        frm.add_custom_button(__("Load Checklist Questions"), function () {
+          frappe.call({
+            method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
+            callback: function (r) {
+              if (r.message && r.message.length) {
+                frm.clear_table("checklist_items");
+                r.message.forEach((q) => {
+                  let row = frm.add_child("checklist_items");
+                  row.sr_no = q.sr_no;
+                  row.section = q.section;
+                  row.category = q.category;
+                  row.question = q.question;
+                  row.response = "";
+                  row.remarks = "";
+                });
+                frm.refresh_field("checklist_items");
+                frappe.msgprint(__("Checklist questions loaded successfully. Please save the document."));
+              }
+            },
+          });
+        }, __("Audit Checklist"));
+      }
+    }
   },
 
   // refresh: function(frm) {
