@@ -256,6 +256,11 @@ frappe.ui.form.on("My Audits", {
       });
     }
 
+    // Ensure checklist grid page length is 50
+    if (frm.fields_dict.checklist_items && frm.fields_dict.checklist_items.grid) {
+      frm.fields_dict.checklist_items.grid.page_length = 50;
+    }
+
     // Add Load Checklist button if empty on existing document
     if (!frm.is_new() && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
       if (frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member") || frappe.user_roles.includes("System Manager")) {
@@ -2944,34 +2949,36 @@ function render_interactive_tracker(frm, can_edit) {
   // 4. Sortable Engine
   if (can_edit && typeof Sortable !== "undefined") {
     let el = document.getElementById("draggable-stages");
-    new Sortable(el, {
-      animation: 150,
-      draggable: ".sortable-item",
-      ghostClass: "sortable-ghost",
-      onEnd: function (evt) {
-        let old_index = evt.oldIndex - 1;
-        let new_index = evt.newIndex - 1;
+    if (el) {
+      new Sortable(el, {
+        animation: 150,
+        draggable: ".sortable-item",
+        ghostClass: "sortable-ghost",
+        onEnd: function (evt) {
+          let old_index = evt.oldIndex - 1;
+          let new_index = evt.newIndex - 1;
 
-        if (old_index < 0 || new_index < 0 || old_index === new_index) return;
+          if (old_index < 0 || new_index < 0 || old_index === new_index) return;
 
-        let moved_item = frm.doc.audit_stages.splice(old_index, 1)[0];
-        frm.doc.audit_stages.splice(new_index, 0, moved_item);
+          let moved_item = frm.doc.audit_stages.splice(old_index, 1)[0];
+          frm.doc.audit_stages.splice(new_index, 0, moved_item);
 
-        frm.doc.audit_stages.forEach((row, i) => {
-          row.stage = i + 1;
-          row.idx = i + 1;
-        });
-
-        frm.dirty();
-        frm.refresh_field("audit_stages");
-        frm.save().then(() => {
-          frappe.show_alert({
-            message: "Stage sequence updated",
-            indicator: "green",
+          frm.doc.audit_stages.forEach((row, i) => {
+            row.stage = i + 1;
+            row.idx = i + 1;
           });
-        });
-      },
-    });
+
+          frm.dirty();
+          frm.refresh_field("audit_stages");
+          frm.save().then(() => {
+            frappe.show_alert({
+              message: "Stage sequence updated",
+              indicator: "green",
+            });
+          });
+        },
+      });
+    }
   }
 }
 
