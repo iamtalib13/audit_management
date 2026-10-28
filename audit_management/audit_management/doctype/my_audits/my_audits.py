@@ -71,7 +71,6 @@ class MyAudits(Document):
                     questions = json.load(f)
                 for item in questions:
                     self.append("checklist_items", {
-                        "sr_no": item.get("sr_no"),
                         "section": item.get("section"),
                         "category": item.get("category"),
                         "question": item.get("question"),
