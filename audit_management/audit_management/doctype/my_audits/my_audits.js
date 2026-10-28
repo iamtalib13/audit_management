@@ -269,7 +269,11 @@ frappe.ui.form.on("My Audits", {
 
         let auditor = frm.doc.query_generated_by_name || frappe.user.full_name() || "—";
         let branch = frm.doc.branch_name || frm.doc.emp_branch || "—";
-        let audit_date = frm.doc.creation ? frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0]) : frappe.datetime.get_today();
+
+        // Current start and end dates from first row (if any)
+        let first_row = frm.doc.checklist_items && frm.doc.checklist_items[0] ? frm.doc.checklist_items[0] : {};
+        let start_val = first_row.audit_start_date || "";
+        let end_val = first_row.audit_end_date || "";
 
         let banner_html = $(`
           <div class="checklist-header-banner" style="
@@ -277,7 +281,7 @@ frappe.ui.form.on("My Audits", {
             border: 1px solid #e2e8f0;
             border-left: 5px solid #2563eb;
             border-radius: 6px;
-            padding: 12px 18px;
+            padding: 10px 18px;
             margin-bottom: 14px;
             display: flex;
             align-items: center;
@@ -288,20 +292,42 @@ frappe.ui.form.on("My Audits", {
           ">
             <div>
               <span style="color: #64748b; font-weight: 600;">👤 Auditor Name:</span>
-              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${auditor}</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 6px;">${auditor}</span>
             </div>
             <div style="border-left: 1px solid #cbd5e1; height: 18px;"></div>
             <div>
               <span style="color: #64748b; font-weight: 600;">🏢 Branch:</span>
-              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${branch}</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 6px;">${branch}</span>
             </div>
             <div style="border-left: 1px solid #cbd5e1; height: 18px;"></div>
-            <div>
-              <span style="color: #64748b; font-weight: 600;">📅 Date:</span>
-              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${audit_date}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #64748b; font-weight: 600;">📅 Audit Start Date:</span>
+              <input type="date" class="form-control input-xs chk-start-date" value="${start_val}" style="width: 140px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #64748b; font-weight: 600;">📅 Audit End Date:</span>
+              <input type="date" class="form-control input-xs chk-end-date" value="${end_val}" style="width: 140px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
             </div>
           </div>
         `);
+
+        // Sync date inputs into child table records on change
+        banner_html.find(".chk-start-date").on("change", function () {
+          let val = $(this).val();
+          if (frm.doc.checklist_items) {
+            frm.doc.checklist_items.forEach((r) => (r.audit_start_date = val));
+            frm.dirty();
+          }
+        });
+
+        banner_html.find(".chk-end-date").on("change", function () {
+          let val = $(this).val();
+          if (frm.doc.checklist_items) {
+            frm.doc.checklist_items.forEach((r) => (r.audit_end_date = val));
+            frm.dirty();
+          }
+        });
+
         sec_wrapper.find(".section-head").after(banner_html);
       };
 
