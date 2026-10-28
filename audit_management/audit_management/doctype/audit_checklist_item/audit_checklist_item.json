@@ -10,6 +10,7 @@
   "branch",
   "audit_start_date",
   "audit_end_date",
+  "audit_period_month",
   "section",
   "category",
   "question",
@@ -39,6 +40,13 @@
    "fieldname": "audit_end_date",
    "fieldtype": "Date",
    "label": "Audit End Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "audit_period_month",
+   "fieldtype": "Select",
+   "label": "Audit Period Month",
+   "options": "\nJanuary\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember",
    "read_only": 1
   },
   {
@@ -81,7 +89,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-10-28 15:44:00.000000",
+ "modified": "2026-10-28 15:51:00.000000",
  "modified_by": "Administrator",
  "module": "Audit Management",
  "name": "Audit Checklist Item",
