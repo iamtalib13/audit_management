@@ -261,6 +261,50 @@ frappe.ui.form.on("My Audits", {
       let grid = frm.fields_dict.checklist_items.grid;
       grid.page_length = 50;
 
+      // Render Auditor & Branch Header Info Banner above checklist
+      const render_checklist_info_banner = () => {
+        if (!frm.fields_dict.checklist_section || !frm.fields_dict.checklist_section.wrapper) return;
+        let sec_wrapper = frm.fields_dict.checklist_section.wrapper;
+        sec_wrapper.find(".checklist-header-banner").remove();
+
+        let auditor = frm.doc.query_generated_by_name || frappe.user.full_name() || "—";
+        let branch = frm.doc.branch_name || frm.doc.emp_branch || "—";
+        let audit_date = frm.doc.creation ? frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0]) : frappe.datetime.get_today();
+
+        let banner_html = $(`
+          <div class="checklist-header-banner" style="
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #2563eb;
+            border-radius: 6px;
+            padding: 12px 18px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 24px;
+            font-size: 13px;
+          ">
+            <div>
+              <span style="color: #64748b; font-weight: 600;">👤 Auditor Name:</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${auditor}</span>
+            </div>
+            <div style="border-left: 1px solid #cbd5e1; height: 18px;"></div>
+            <div>
+              <span style="color: #64748b; font-weight: 600;">🏢 Branch:</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${branch}</span>
+            </div>
+            <div style="border-left: 1px solid #cbd5e1; height: 18px;"></div>
+            <div>
+              <span style="color: #64748b; font-weight: 600;">📅 Date:</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${audit_date}</span>
+            </div>
+          </div>
+        `);
+        sec_wrapper.find(".section-head").after(banner_html);
+      };
+
       // Allow full questions and remarks to wrap into multiple lines without truncation (...)
       if (!$("#checklist-grid-wrap-style").length) {
         $(`
@@ -369,18 +413,21 @@ frappe.ui.form.on("My Audits", {
 
       // Hook onto Frappe tab switch to "Audit Checklist"
       $('a[data-toggle="tab"][href="#checklist_tab"], a[data-fieldname="checklist_tab"]').off("shown.bs.tab.chk").on("shown.bs.tab.chk", function () {
+        render_checklist_info_banner();
         setTimeout(render_inline_checklist_headers, 50);
         setTimeout(render_inline_checklist_headers, 200);
       });
 
       if (frm.fields_dict.checklist_tab && frm.fields_dict.checklist_tab.$wrapper) {
         frm.fields_dict.checklist_tab.$wrapper.off("shown.bs.tab.chk").on("shown.bs.tab.chk", function () {
+          render_checklist_info_banner();
           setTimeout(render_inline_checklist_headers, 50);
           setTimeout(render_inline_checklist_headers, 200);
         });
       }
 
       // Initial loads
+      render_checklist_info_banner();
       setTimeout(render_inline_checklist_headers, 100);
       setTimeout(render_inline_checklist_headers, 400);
       setTimeout(render_inline_checklist_headers, 800);
