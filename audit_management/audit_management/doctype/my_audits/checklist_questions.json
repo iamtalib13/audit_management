@@ -1,0 +1,680 @@
+[
+  {
+    "sr_no": 1,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "1. Major Observations",
+    "question": "Are there any major observations to be recorded for the day?"
+  },
+  {
+    "sr_no": 2,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "2. Cash Verification",
+    "question": "Does opening cash match last working day's closing balance (GSTTDR)?"
+  },
+  {
+    "sr_no": 3,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "2. Cash Verification",
+    "question": "Is cash held within the branch's retention limit?"
+  },
+  {
+    "sr_no": 4,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "2. Cash Verification",
+    "question": "Does cash-in-hand match GL 11001 closing balance (HACLINQ)?"
+  },
+  {
+    "sr_no": 5,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "3. Branch's Current Account Reconciliation",
+    "question": "Is the branch's current account statement reconciled with UBS balance (GL 12001/12002/12003)?"
+  },
+  {
+    "sr_no": 6,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "4. Detail Day Book Verification with Vouchers",
+    "question": "Are vouchers available for all cash debit/credit and transfer transactions in the day book?"
+  },
+  {
+    "sr_no": 7,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "4. Detail Day Book Verification with Vouchers",
+    "question": "Are any FD bonds printed but not issued to customers for long periods?"
+  },
+  {
+    "sr_no": 8,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "4. Detail Day Book Verification with Vouchers",
+    "question": "Are any blank expense bills found kept at branch?"
+  },
+  {
+    "sr_no": 9,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "4. Detail Day Book Verification with Vouchers",
+    "question": "Are any customers' original documents found retained at branch?"
+  },
+  {
+    "sr_no": 10,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "4. Detail Day Book Verification with Vouchers",
+    "question": "Are any blank vouchers with customer signature found?"
+  },
+  {
+    "sr_no": 11,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "5. Branch Critical Registers",
+    "question": "Are all critical registers being maintained and verified?"
+  },
+  {
+    "sr_no": 12,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "5. Branch Critical Registers",
+    "question": "Is the rent agreement valid and current?"
+  },
+  {
+    "sr_no": 13,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "5. Branch Critical Registers",
+    "question": "Is the Shop Act licence displayed at the branch?"
+  },
+  {
+    "sr_no": 14,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "6. Previous Audit Report Compliance",
+    "question": "Has the branch physically maintained the last audit compliance report?"
+  },
+  {
+    "sr_no": 15,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "6. Previous Audit Report Compliance",
+    "question": "Is the compliance report prepared and mailed as per format (if not available)?"
+  },
+  {
+    "sr_no": 16,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "7. Last Day / Current Month Documents Verification",
+    "question": "Are all sampled vouchers and account opening forms properly prepared?"
+  },
+  {
+    "sr_no": 17,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "7. Last Day / Current Month Documents Verification",
+    "question": "Are they duly signed by customer / BM / BO and available at branch?"
+  },
+  {
+    "sr_no": 18,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "8. Voucher Set Verification (Calendar Month/Year)",
+    "question": "Is the voucher set complete as per the working days of the audit review period?"
+  },
+  {
+    "sr_no": 19,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "9. Customer Request Forms",
+    "question": "Are customer requests recorded on proper Customer Request Forms?"
+  },
+  {
+    "sr_no": 20,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "9. Customer Request Forms",
+    "question": "Are self-attested KYC documents attached with each Customer Request Form?"
+  },
+  {
+    "sr_no": 21,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "10. Loans Disbursements Verification (All GLs)",
+    "question": "Are all Taran loan accounts lien-marked with respective deposit accounts?"
+  },
+  {
+    "sr_no": 22,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "10. Loans Disbursements Verification (All GLs)",
+    "question": "Has calling verification / confirmation been done with loan borrowers?"
+  },
+  {
+    "sr_no": 23,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "10. Loans Disbursements Verification (All GLs)",
+    "question": "Is the loan form properly filled with customer signature on promissory note (with revenue stamp)?"
+  },
+  {
+    "sr_no": 24,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "10. Loans Disbursements Verification (All GLs)",
+    "question": "Is the debit voucher affixed with revenue stamp and borrower's signature?"
+  },
+  {
+    "sr_no": 25,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "10. Loans Disbursements Verification (All GLs)",
+    "question": "Is self-attested KYC available for all loan accounts?"
+  },
+  {
+    "sr_no": 26,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "10. Loans Disbursements Verification (All GLs)",
+    "question": "Is nominal membership fee deducted for borrower & guarantor (unsecured loans)?"
+  },
+  {
+    "sr_no": 27,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "10. Loans Disbursements Verification (All GLs)",
+    "question": "Are security deposit & processing fees deducted as per circular?"
+  },
+  {
+    "sr_no": 28,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "10. Loans Disbursements Verification (All GLs)",
+    "question": "Is the FD certificate attached and physically lien-marked (signed with revenue stamp) for FD Taran?"
+  },
+  {
+    "sr_no": 29,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "11. Account Opening Verification",
+    "question": "Are 100% CASA account opening forms verified?"
+  },
+  {
+    "sr_no": 30,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "11. Account Opening Verification",
+    "question": "Are sample FD/RD/SMBG/DD forms verified (min. 30 forms per GL per month)?"
+  },
+  {
+    "sr_no": 31,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "11. Account Opening Verification",
+    "question": "Are accounts opened from other states where the Society does not have a presence identified?"
+  },
+  {
+    "sr_no": 32,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "12. Account Closing Verification",
+    "question": "Are all FD certificates of closed accounts collected and kept with withdrawal/debit voucher?"
+  },
+  {
+    "sr_no": 33,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "12. Account Closing Verification",
+    "question": "Does cash withdrawal voucher signature (CASA) match UBS uploaded signature?"
+  },
+  {
+    "sr_no": 34,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "12. Account Closing Verification",
+    "question": "Does signature on cash withdrawal/debit voucher match UBS for RD/SMBG/DD/Other?"
+  },
+  {
+    "sr_no": 35,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "13. New Agent Enrolments",
+    "question": "Is the new agent enrolment form complete with passport photo?"
+  },
+  {
+    "sr_no": 36,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "13. New Agent Enrolments",
+    "question": "Is SS Agreement / DD Agent Agreement documentation available?"
+  },
+  {
+    "sr_no": 37,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "13. New Agent Enrolments",
+    "question": "Is Indemnity Bond signed by agent available?"
+  },
+  {
+    "sr_no": 38,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "13. New Agent Enrolments",
+    "question": "Is RH/DH approval available for new agent?"
+  },
+  {
+    "sr_no": 39,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "13. New Agent Enrolments",
+    "question": "Is self-attested KYC (Aadhar & PAN) available?"
+  },
+  {
+    "sr_no": 40,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "13. New Agent Enrolments",
+    "question": "Is security deposit collected for new DD agent?"
+  },
+  {
+    "sr_no": 41,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "13. New Agent Enrolments",
+    "question": "Are 2 blank account payee cheques collected as security?"
+  },
+  {
+    "sr_no": 42,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "14. Daily Deposit Receipts Reconciliation",
+    "question": "Are DD receipts of last month accurately calculated?"
+  },
+  {
+    "sr_no": 43,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "14. Daily Deposit Receipts Reconciliation",
+    "question": "Does DD receipt amount match UBS balance (cut book)?"
+  },
+  {
+    "sr_no": 44,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "14. Daily Deposit Receipts Reconciliation",
+    "question": "Are signatures of customer, agent, BDE, and BM/BOM present?"
+  },
+  {
+    "sr_no": 45,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "14. Daily Deposit Receipts Reconciliation",
+    "question": "Has calling been done for customers with significant UBS balance difference?"
+  },
+  {
+    "sr_no": 46,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "15. Sample Vouchers Verification",
+    "question": "Does customer signature on withdrawal/deposit voucher match UBS?"
+  },
+  {
+    "sr_no": 47,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "15. Sample Vouchers Verification",
+    "question": "Is authorization letter available for non-customer (agent) transactions?"
+  },
+  {
+    "sr_no": 48,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "15. Sample Vouchers Verification",
+    "question": "Is prematurity closure form properly calculated with customer signature (verified with UBS)?"
+  },
+  {
+    "sr_no": 49,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "15. Sample Vouchers Verification",
+    "question": "Does withdrawal/payslip voucher mention proper cash denomination?"
+  },
+  {
+    "sr_no": 50,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "15. Sample Vouchers Verification",
+    "question": "Is voucher checking done for cash and non-cash transactions?"
+  },
+  {
+    "sr_no": 51,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "16. HO GL Debit Vouchers Verification",
+    "question": "Are HO debit GL vouchers verified (expenses, purchases, cash movement, transfers, suspense)?"
+  },
+  {
+    "sr_no": 52,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "16. HO GL Debit Vouchers Verification",
+    "question": "Are approvals available for expenses above Rs.100?"
+  },
+  {
+    "sr_no": 53,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "16. HO GL Debit Vouchers Verification",
+    "question": "Are approvals available for fixed asset purchases (locker, CCTV, computer etc.)?"
+  },
+  {
+    "sr_no": 54,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "16. HO GL Debit Vouchers Verification",
+    "question": "Are cash withdrawal approvals as per matrix approval available?"
+  },
+  {
+    "sr_no": 55,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "17. Secured Stationery Reconciliation",
+    "question": "Is reconciliation done for new/counter receipt/damaged/misprinted FD certificates (HISRA)?"
+  },
+  {
+    "sr_no": 56,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "17. Secured Stationery Reconciliation",
+    "question": "Is reconciliation done for HO-provided cheques?"
+  },
+  {
+    "sr_no": 57,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "17. Secured Stationery Reconciliation",
+    "question": "Is physical erroneous FD receipts stationery checked?"
+  },
+  {
+    "sr_no": 58,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "17. Secured Stationery Reconciliation",
+    "question": "Is checking done for reprinted FD receipts?"
+  },
+  {
+    "sr_no": 59,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "18. Stationery Stock Verification",
+    "question": "Does physical stationery match the stationery register/stock report (UBS)?"
+  },
+  {
+    "sr_no": 60,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "19. Fixed Asset Stock Verification",
+    "question": "Are IT assets verified against the register?"
+  },
+  {
+    "sr_no": 61,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "19. Fixed Asset Stock Verification",
+    "question": "Are furniture & electrical stock verified against the register?"
+  },
+  {
+    "sr_no": 62,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "20. Sales Scheme Stocks Verification",
+    "question": "Are sales scheme stocks (silver coin, blanket, etc.) verified against HO-issued list?"
+  },
+  {
+    "sr_no": 63,
+    "section": "A. OPERATION VERIFICATION",
+    "category": "20. Sales Scheme Stocks Verification",
+    "question": "Are eligible customers for silver coins matched with issued list?"
+  },
+  {
+    "sr_no": 64,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "21. Share Accounts Verification",
+    "question": "Is share issued to all new customer IDs created after 01-01-2024?"
+  },
+  {
+    "sr_no": 65,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "22. High Value Transaction (CASA)",
+    "question": "Are high-value/frequent transactions identified and verified?"
+  },
+  {
+    "sr_no": 66,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "22. High Value Transaction (CASA)",
+    "question": "Is cash deposit/withdrawal activity near month-end reviewed?"
+  },
+  {
+    "sr_no": 67,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "22. High Value Transaction (CASA)",
+    "question": "Are high-value NEFT receipts followed by frequent cash withdrawal reviewed?"
+  },
+  {
+    "sr_no": 68,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "22. High Value Transaction (CASA)",
+    "question": "Have special-case accounts (Silver/Gold/Wealth) been visited for suspicious activity?"
+  },
+  {
+    "sr_no": 69,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "23. Fund Rotation & Transaction Pattern Monitoring",
+    "question": "Are frequent high-value transactions monitored?"
+  },
+  {
+    "sr_no": 70,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "23. Fund Rotation & Transaction Pattern Monitoring",
+    "question": "Are high-value cash credit/debit entries on same/next day flagged?"
+  },
+  {
+    "sr_no": 71,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "24. Recurring Account's Transactions Verification",
+    "question": "Are bulk credit/debit entries before account closure identified?"
+  },
+  {
+    "sr_no": 72,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "24. Recurring Account's Transactions Verification",
+    "question": "Are amounts credited frequently more than instalment amount flagged?"
+  },
+  {
+    "sr_no": 73,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "25. Cash Debit Entries Under Non-Cash GL",
+    "question": "Is Interest Paid GL checked for wrongful cash debit?"
+  },
+  {
+    "sr_no": 74,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "25. Cash Debit Entries Under Non-Cash GL",
+    "question": "Is Unclaimed A/c GL checked for cash debit?"
+  },
+  {
+    "sr_no": 75,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "25. Cash Debit Entries Under Non-Cash GL",
+    "question": "Is Suspense A/c GL checked for cash debit?"
+  },
+  {
+    "sr_no": 76,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "26. Deposit Account's Interest Verification",
+    "question": "Is interest paid accurately verified for all active & closed accounts during audit period?"
+  },
+  {
+    "sr_no": 77,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "27. Dummy/Fake Accounts Monitoring",
+    "question": "Are multiple accounts of same customer under same GL identified?"
+  },
+  {
+    "sr_no": 78,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "27. Dummy/Fake Accounts Monitoring",
+    "question": "Are accounts without regular instalments flagged?"
+  },
+  {
+    "sr_no": 79,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "27. Dummy/Fake Accounts Monitoring",
+    "question": "Are accounts opened without customer consent identified?"
+  },
+  {
+    "sr_no": 80,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "28. Staff Accounts Verification",
+    "question": "Is customer funding to staff accounts checked?"
+  },
+  {
+    "sr_no": 81,
+    "section": "B. DATA ANALYSIS (Searching Transaction Report)",
+    "category": "28. Staff Accounts Verification",
+    "question": "Are high-amount deposits/withdrawals in staff accounts reviewed?"
+  },
+  {
+    "sr_no": 82,
+    "section": "C. REPORT PART",
+    "category": "29. Branch Business (BDO/BDE Target vs Collection)",
+    "question": "Has BDO/BDE target vs collection performance been reviewed (min. 50% target)?"
+  },
+  {
+    "sr_no": 83,
+    "section": "C. REPORT PART",
+    "category": "30. Active Accounts Even After Maturity Date",
+    "question": "Are active accounts exceeding maturity date identified (HACDET)?"
+  },
+  {
+    "sr_no": 84,
+    "section": "C. REPORT PART",
+    "category": "31. Advance Balance Under Sundry Register",
+    "question": "Is outstanding balance under Sundry Register (GL 39001, 39018, 91005) reviewed?"
+  },
+  {
+    "sr_no": 85,
+    "section": "C. REPORT PART",
+    "category": "32. GL with Abnormal Balance Verification",
+    "question": "Are deposit/CASA accounts checked for abnormal debit balance?"
+  },
+  {
+    "sr_no": 86,
+    "section": "C. REPORT PART",
+    "category": "32. GL with Abnormal Balance Verification",
+    "question": "Are loan accounts checked for abnormal credit balance?"
+  },
+  {
+    "sr_no": 87,
+    "section": "C. REPORT PART",
+    "category": "32. GL with Abnormal Balance Verification",
+    "question": "Are asset-side GLs checked for credit balance?"
+  },
+  {
+    "sr_no": 88,
+    "section": "C. REPORT PART",
+    "category": "32. GL with Abnormal Balance Verification",
+    "question": "Are liability-side GLs checked for debit balance?"
+  },
+  {
+    "sr_no": 89,
+    "section": "C. REPORT PART",
+    "category": "33. Agent Code Balance Pending",
+    "question": "Is outstanding balance under agent code/mobile app collection/JLL RD reviewed (should be zero)?"
+  },
+  {
+    "sr_no": 90,
+    "section": "C. REPORT PART",
+    "category": "34. Accounts Below Minimum Balance Limit",
+    "question": "Are zero-balance and below-minimum-balance CASA accounts identified?"
+  },
+  {
+    "sr_no": 91,
+    "section": "C. REPORT PART",
+    "category": "34. Accounts Below Minimum Balance Limit",
+    "question": "Are zero-balance loan accounts not yet closed identified?"
+  },
+  {
+    "sr_no": 92,
+    "section": "C. REPORT PART",
+    "category": "35. Loans Accounts with Outstanding Instalments",
+    "question": "Is the Loan Due Report reviewed for pending instalments?"
+  },
+  {
+    "sr_no": 93,
+    "section": "C. REPORT PART",
+    "category": "36. HO GL Not Credited as Per Policy",
+    "question": "Is deposit prematurity charges calculation verified (Suspense GL 59009)?"
+  },
+  {
+    "sr_no": 94,
+    "section": "C. REPORT PART",
+    "category": "36. HO GL Not Credited as Per Policy",
+    "question": "Is MIS scheme interest deduction verified as per applicable slab?"
+  },
+  {
+    "sr_no": 95,
+    "section": "C. REPORT PART",
+    "category": "37. Attendance Irregularities",
+    "question": "Is \u201cApproved-OD\u201d verified against biometric report?"
+  },
+  {
+    "sr_no": 96,
+    "section": "C. REPORT PART",
+    "category": "37. Attendance Irregularities",
+    "question": "Is staff biometric thumb registration checked for duplication?"
+  },
+  {
+    "sr_no": 97,
+    "section": "C. REPORT PART",
+    "category": "37. Attendance Irregularities",
+    "question": "Is password sharing in Finacle checked?"
+  },
+  {
+    "sr_no": 98,
+    "section": "C. REPORT PART",
+    "category": "HO Circular Compliance",
+    "question": "Are approvals available for cash transactions above Rs.5 lakh?"
+  },
+  {
+    "sr_no": 99,
+    "section": "C. REPORT PART",
+    "category": "HO Circular Compliance",
+    "question": "Is cash withdrawal above Rs.50,000 directly from deposit accounts flagged?"
+  },
+  {
+    "sr_no": 100,
+    "section": "C. REPORT PART",
+    "category": "HO Circular Compliance",
+    "question": "Does branch close on time (by 6:30 pm)?"
+  },
+  {
+    "sr_no": 101,
+    "section": "C. REPORT PART",
+    "category": "HO Circular Compliance",
+    "question": "Are all latest HO circulars complied with?"
+  },
+  {
+    "sr_no": 102,
+    "section": "C. REPORT PART",
+    "category": "Branch Current Profit/Loss",
+    "question": "Is the branch in profit as per P&L statement (FY start to date)?"
+  },
+  {
+    "sr_no": 103,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "Code of Conduct",
+    "question": "Is staff wearing professional attire?"
+  },
+  {
+    "sr_no": 104,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "Code of Conduct",
+    "question": "Is the branch closed on time?"
+  },
+  {
+    "sr_no": 105,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "Sales Team Vehicles & Licences",
+    "question": "Do BDO/BDE/RO have valid licences and vehicle documents?"
+  },
+  {
+    "sr_no": 106,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "Notice Board & Display Board",
+    "question": "Are all latest circulars displayed on the notice board?"
+  },
+  {
+    "sr_no": 107,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "Notice Board & Display Board",
+    "question": "Are Shop Act & other certificates displayed in the manager's cabin?"
+  },
+  {
+    "sr_no": 108,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "38. Field Visits & Tele-Calling Verification",
+    "question": "Have field visits/tele-calls been done for irregular instalment/bulk debit-credit accounts?"
+  },
+  {
+    "sr_no": 109,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "38. Field Visits & Tele-Calling Verification",
+    "question": "Have DD visits been done for 10% of total active accounts?"
+  },
+  {
+    "sr_no": 110,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "38. Field Visits & Tele-Calling Verification",
+    "question": "Have high-value CASA transaction accounts been visited?"
+  },
+  {
+    "sr_no": 111,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "38. Field Visits & Tele-Calling Verification",
+    "question": "Have NPA loan cases (zero instalment / 3+ pending) been visited?"
+  },
+  {
+    "sr_no": 112,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "39. Other Audit Findings",
+    "question": "Has staff bag checking been conducted?"
+  },
+  {
+    "sr_no": 113,
+    "section": "D. OTHER OBSERVATIONS",
+    "category": "39. Other Audit Findings",
+    "question": "Are there any other findings not covered above?"
+  }
+]
