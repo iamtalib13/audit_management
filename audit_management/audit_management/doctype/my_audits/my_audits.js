@@ -369,6 +369,21 @@ frappe.ui.form.on("My Audits", {
               font-weight: 600 !important;
               font-size: 11.5px !important;
               letter-spacing: 0.3px !important;
+              border-right: 1px solid #475569 !important;
+            }
+
+            /* Dark distinct vertical and horizontal cell borders */
+            [data-fieldname="checklist_items"] .grid-body .grid-row {
+              border-bottom: 1px solid #94a3b8 !important;
+            }
+            [data-fieldname="checklist_items"] .grid-body .grid-static-col {
+              border-right: 1px solid #94a3b8 !important;
+            }
+            [data-fieldname="checklist_items"] .grid-body .grid-row-check {
+              border-right: 1px solid #94a3b8 !important;
+            }
+            [data-fieldname="checklist_items"] .grid-body .row-index {
+              border-right: 1px solid #94a3b8 !important;
             }
 
             [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="question"],
