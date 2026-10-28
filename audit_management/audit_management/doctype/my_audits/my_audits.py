@@ -20,6 +20,9 @@ class MyAudits(Document):
         if self.status == "Closed":
             self.validate_resolution_fields()
         
+        # Sync auditor_name and branch to all checklist items for reporting
+        self.sync_checklist_meta()
+        
         # Prevent stage users from removing/deleting attachments
         self.validate_attachment_removal()
 
@@ -61,6 +64,16 @@ class MyAudits(Document):
         # 5. Populate default Audit Checklist items if empty
         self.populate_default_checklist()
 
+    def sync_checklist_meta(self):
+        auditor = self.query_generated_by_name or frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "employee_name") or self.owner
+        branch = self.emp_branch or self.branch_name or ""
+        if getattr(self, "checklist_items", None):
+            for row in self.checklist_items:
+                if not row.auditor_name and auditor:
+                    row.auditor_name = auditor
+                if not row.branch and branch:
+                    row.branch = branch
+
     def populate_default_checklist(self):
         if not getattr(self, "checklist_items", None):
             import os
@@ -69,8 +82,12 @@ class MyAudits(Document):
             if os.path.exists(json_path):
                 with open(json_path, "r", encoding="utf-8") as f:
                     questions = json.load(f)
+                auditor = self.query_generated_by_name or ""
+                branch = self.emp_branch or self.branch_name or ""
                 for item in questions:
                     self.append("checklist_items", {
+                        "auditor_name": auditor,
+                        "branch": branch,
                         "section": item.get("section"),
                         "category": item.get("category"),
                         "question": item.get("question"),
