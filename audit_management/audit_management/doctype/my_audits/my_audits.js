@@ -244,7 +244,6 @@ frappe.ui.form.on("My Audits", {
             frm.clear_table("checklist_items");
             r.message.forEach((q) => {
               let row = frm.add_child("checklist_items");
-              row.sr_no = q.sr_no;
               row.section = q.section;
               row.category = q.category;
               row.question = q.question;
@@ -268,7 +267,6 @@ frappe.ui.form.on("My Audits", {
                 frm.clear_table("checklist_items");
                 r.message.forEach((q) => {
                   let row = frm.add_child("checklist_items");
-                  row.sr_no = q.sr_no;
                   row.section = q.section;
                   row.category = q.category;
                   row.question = q.question;
