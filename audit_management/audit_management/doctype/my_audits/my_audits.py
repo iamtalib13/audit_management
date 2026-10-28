@@ -58,6 +58,27 @@ class MyAudits(Document):
         # 4. Set emp_division on the document from the Employee's custom_division
         self.emp_division = employee.custom_division
 
+        # 5. Populate default Audit Checklist items if empty
+        self.populate_default_checklist()
+
+    def populate_default_checklist(self):
+        if not getattr(self, "checklist_items", None):
+            import os
+            import json
+            json_path = os.path.join(os.path.dirname(__file__), "checklist_questions.json")
+            if os.path.exists(json_path):
+                with open(json_path, "r", encoding="utf-8") as f:
+                    questions = json.load(f)
+                for item in questions:
+                    self.append("checklist_items", {
+                        "sr_no": item.get("sr_no"),
+                        "section": item.get("section"),
+                        "category": item.get("category"),
+                        "question": item.get("question"),
+                        "response": "",
+                        "remarks": ""
+                    })
+
         if not self.emp_division:
             frappe.throw(
                 _("Division is not set for Employee: <b>{0}</b>. Please update HR master data.").format(employee.employee_name))
@@ -1526,6 +1547,17 @@ def get_filtered_docinfo(doctype, name):
     docinfo = frappe.response.get("docinfo")
     if docinfo:
         _filter_docinfo(docinfo, doctype)
+
+
+@frappe.whitelist()
+def load_audit_checklist_template():
+    import os
+    import json
+    json_path = os.path.join(os.path.dirname(__file__), "checklist_questions.json")
+    if os.path.exists(json_path):
+        with open(json_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
 
 
 @frappe.whitelist()
