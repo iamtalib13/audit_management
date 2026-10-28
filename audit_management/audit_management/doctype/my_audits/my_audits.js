@@ -288,9 +288,10 @@ frappe.ui.form.on("My Audits", {
         if (!rows.length) return;
 
         // Remove old injected headers
-        grid.wrapper.find(".checklist-inline-header").remove();
+        grid.wrapper.find(".checklist-inline-header, .checklist-inline-subcategory").remove();
 
         let prev_section = null;
+        let prev_category = null;
         rows.each(function () {
           let $row = $(this);
           // Look up doc by name or index
@@ -303,9 +304,11 @@ frappe.ui.form.on("My Audits", {
             }
           }
 
-          if (row_doc && row_doc.section) {
-            if (row_doc.section !== prev_section) {
+          if (row_doc) {
+            // 1. Major Section Header
+            if (row_doc.section && row_doc.section !== prev_section) {
               prev_section = row_doc.section;
+              prev_category = null; // reset category on section change
               let header_row = $(`
                 <div class="checklist-inline-header" style="
                   background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
@@ -313,7 +316,7 @@ frappe.ui.form.on("My Audits", {
                   font-weight: 700;
                   font-size: 13px;
                   padding: 8px 14px;
-                  margin: 8px 0 4px 0;
+                  margin: 10px 0 4px 0;
                   border-radius: 4px;
                   display: flex;
                   align-items: center;
@@ -324,6 +327,29 @@ frappe.ui.form.on("My Audits", {
                 </div>
               `);
               $row.before(header_row);
+            }
+
+            // 2. Sub-Category Header
+            if (row_doc.category && row_doc.category !== prev_category) {
+              prev_category = row_doc.category;
+              let subhead_row = $(`
+                <div class="checklist-inline-subcategory" style="
+                  background: #f1f5f9;
+                  color: #1e293b;
+                  border-left: 4px solid #2563eb;
+                  font-weight: 600;
+                  font-size: 12px;
+                  padding: 5px 12px;
+                  margin: 6px 0 2px 0;
+                  border-radius: 2px;
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                ">
+                  <i class="fa fa-tag" style="color: #3b82f6; font-size: 11px;"></i> <span>${prev_category}</span>
+                </div>
+              `);
+              $row.before(subhead_row);
             }
           }
         });
