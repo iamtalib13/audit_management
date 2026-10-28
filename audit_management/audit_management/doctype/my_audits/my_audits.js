@@ -256,9 +256,87 @@ frappe.ui.form.on("My Audits", {
       });
     }
 
-    // Ensure checklist grid page length is 50
+    // Checklist grid setup and robust inline header rendering
     if (frm.fields_dict.checklist_items && frm.fields_dict.checklist_items.grid) {
-      frm.fields_dict.checklist_items.grid.page_length = 50;
+      let grid = frm.fields_dict.checklist_items.grid;
+      grid.page_length = 50;
+
+      const render_inline_checklist_headers = () => {
+        if (!grid || !grid.wrapper) return;
+        let rows = grid.wrapper.find(".grid-body .grid-row");
+        if (!rows.length) return;
+
+        // Remove old injected headers
+        grid.wrapper.find(".checklist-inline-header").remove();
+
+        let prev_section = null;
+        rows.each(function () {
+          let $row = $(this);
+          // Look up doc by name or index
+          let docname = $row.attr("data-name");
+          let row_doc = docname ? locals["Audit Checklist Item"][docname] : null;
+          if (!row_doc) {
+            let row_idx = parseInt($row.attr("data-idx"), 10);
+            if (row_idx && frm.doc.checklist_items) {
+              row_doc = frm.doc.checklist_items[row_idx - 1];
+            }
+          }
+
+          if (row_doc && row_doc.section) {
+            if (row_doc.section !== prev_section) {
+              prev_section = row_doc.section;
+              let header_row = $(`
+                <div class="checklist-inline-header" style="
+                  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+                  color: #ffffff;
+                  font-weight: 700;
+                  font-size: 13px;
+                  padding: 8px 14px;
+                  margin: 8px 0 4px 0;
+                  border-radius: 4px;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                ">
+                  <i class="fa fa-folder-open-o"></i> <span>${prev_section}</span>
+                </div>
+              `);
+              $row.before(header_row);
+            }
+          }
+        });
+      };
+
+      // Hook on grid refresh, pagination clicks, and row render
+      grid.on_refresh = (function (orig) {
+        return function () {
+          if (orig) orig.apply(this, arguments);
+          setTimeout(render_inline_checklist_headers, 50);
+        };
+      })(grid.on_refresh);
+
+      grid.wrapper.off("click.chkpagi").on("click.chkpagi", ".btn-pagination, .grid-pagination .btn, .page-item", function () {
+        setTimeout(render_inline_checklist_headers, 150);
+      });
+
+      // Hook onto Frappe tab switch to "Audit Checklist"
+      $('a[data-toggle="tab"][href="#checklist_tab"], a[data-fieldname="checklist_tab"]').off("shown.bs.tab.chk").on("shown.bs.tab.chk", function () {
+        setTimeout(render_inline_checklist_headers, 50);
+        setTimeout(render_inline_checklist_headers, 200);
+      });
+
+      if (frm.fields_dict.checklist_tab && frm.fields_dict.checklist_tab.$wrapper) {
+        frm.fields_dict.checklist_tab.$wrapper.off("shown.bs.tab.chk").on("shown.bs.tab.chk", function () {
+          setTimeout(render_inline_checklist_headers, 50);
+          setTimeout(render_inline_checklist_headers, 200);
+        });
+      }
+
+      // Initial loads
+      setTimeout(render_inline_checklist_headers, 100);
+      setTimeout(render_inline_checklist_headers, 400);
+      setTimeout(render_inline_checklist_headers, 800);
     }
 
     // Add Load Checklist button if empty on existing document
