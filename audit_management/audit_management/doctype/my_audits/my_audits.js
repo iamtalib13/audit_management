@@ -283,42 +283,42 @@ frappe.ui.form.on("My Audits", {
           <div class="checklist-header-banner" style="
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-left: 5px solid #2563eb;
-            border-radius: 6px;
-            padding: 10px 18px;
-            margin-bottom: 14px;
+            border-left: 4px solid #2563eb;
+            border-radius: 4px;
+            padding: 6px 14px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             justify-content: flex-start;
             flex-wrap: wrap;
-            gap: 20px;
-            font-size: 13px;
+            gap: 16px;
+            font-size: 11.5px;
           ">
             <div>
               <span style="color: #64748b; font-weight: 600;">👤 Auditor Name:</span>
-              <span style="color: #0f172a; font-weight: 700; margin-left: 6px;">${auditor}</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${auditor}</span>
             </div>
-            <div style="border-left: 1px solid #cbd5e1; height: 18px;"></div>
+            <div style="border-left: 1px solid #cbd5e1; height: 14px;"></div>
             <div>
               <span style="color: #64748b; font-weight: 600;">🏢 Branch:</span>
-              <span style="color: #0f172a; font-weight: 700; margin-left: 6px;">${branch}</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${branch}</span>
             </div>
-            <div style="border-left: 1px solid #cbd5e1; height: 18px;"></div>
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="border-left: 1px solid #cbd5e1; height: 14px;"></div>
+            <div style="display: flex; align-items: center; gap: 6px;">
               <span style="color: #64748b; font-weight: 600;">🗓️ Audit Period Month:</span>
-              <select class="form-control input-xs chk-month-select" style="width: 120px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
-                <option value="">Select Month</option>
+              <select class="form-control input-xs chk-month-select" style="width: 88px; height: 22px; padding: 1px 3px; font-size: 10.5px; display: inline-block;">
+                <option value="">Month</option>
                 ${month_options}
               </select>
             </div>
-            <div style="border-left: 1px solid #cbd5e1; height: 18px;"></div>
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="border-left: 1px solid #cbd5e1; height: 14px;"></div>
+            <div style="display: flex; align-items: center; gap: 6px;">
               <span style="color: #64748b; font-weight: 600;">📅 Audit Start Date:</span>
-              <input type="date" class="form-control input-xs chk-start-date" value="${start_val}" style="width: 130px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
+              <input type="date" class="form-control input-xs chk-start-date" value="${start_val}" style="width: 118px; height: 24px; padding: 1px 4px; font-size: 11px; display: inline-block;">
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
               <span style="color: #64748b; font-weight: 600;">📅 Audit End Date:</span>
-              <input type="date" class="form-control input-xs chk-end-date" value="${end_val}" style="width: 130px; height: 28px; padding: 2px 6px; font-size: 12px; display: inline-block;">
+              <input type="date" class="form-control input-xs chk-end-date" value="${end_val}" style="width: 118px; height: 24px; padding: 1px 4px; font-size: 11px; display: inline-block;">
             </div>
           </div>
         `);
