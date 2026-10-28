@@ -352,10 +352,25 @@ frappe.ui.form.on("My Audits", {
         sec_wrapper.find(".section-head").after(banner_html);
       };
 
-      // Allow full questions and remarks to wrap into multiple lines without truncation (...)
+      // Allow full questions and remarks to wrap and apply Clean Modern Corporate theme
       if (!$("#checklist-grid-wrap-style").length) {
         $(`
           <style id="checklist-grid-wrap-style">
+            /* Clean Modern Corporate Table Header */
+            [data-fieldname="checklist_items"] .grid-heading-row {
+              background: #1e293b !important;
+              color: #ffffff !important;
+              border-bottom: 2px solid #3b82f6 !important;
+            }
+            [data-fieldname="checklist_items"] .grid-heading-row .static-area,
+            [data-fieldname="checklist_items"] .grid-heading-row th,
+            [data-fieldname="checklist_items"] .grid-heading-row .grid-static-col {
+              color: #ffffff !important;
+              font-weight: 600 !important;
+              font-size: 11.5px !important;
+              letter-spacing: 0.3px !important;
+            }
+
             [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="question"],
             [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="remarks"],
             [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="category"] {
