@@ -6,6 +6,8 @@ from frappe import _
 
 
 def execute(filters=None):
+	if not filters:
+		filters = {}
 	columns = get_columns()
 	data = get_data(filters)
 	report_summary = get_report_summary(data)
@@ -19,7 +21,7 @@ def get_columns():
 			"fieldname": "parent",
 			"fieldtype": "Link",
 			"options": "My Audits",
-			"width": 190,
+			"width": 200,
 		},
 		{
 			"label": _("Zone"),
@@ -41,10 +43,10 @@ def get_columns():
 			"width": 160,
 		},
 		{
-			"label": _("Audit Period Month"),
+			"label": _("Period Month"),
 			"fieldname": "audit_period_month",
 			"fieldtype": "Data",
-			"width": 140,
+			"width": 120,
 		},
 		{
 			"label": _("Start Date"),
@@ -59,34 +61,40 @@ def get_columns():
 			"width": 105,
 		},
 		{
-			"label": _("Section"),
-			"fieldname": "section",
-			"fieldtype": "Data",
-			"width": 200,
+			"label": _("Total Qs"),
+			"fieldname": "total_questions",
+			"fieldtype": "Int",
+			"width": 80,
 		},
 		{
-			"label": _("Category"),
-			"fieldname": "category",
-			"fieldtype": "Data",
-			"width": 180,
+			"label": _("Complied (Yes)"),
+			"fieldname": "complied_yes",
+			"fieldtype": "Int",
+			"width": 110,
 		},
 		{
-			"label": _("Particulars / Question"),
-			"fieldname": "question",
-			"fieldtype": "Data",
-			"width": 320,
+			"label": _("Discrepancies (No)"),
+			"fieldname": "discrepancies",
+			"fieldtype": "Int",
+			"width": 130,
 		},
 		{
-			"label": _("Response"),
-			"fieldname": "response",
-			"fieldtype": "Data",
-			"width": 90,
+			"label": _("Pending"),
+			"fieldname": "pending_count",
+			"fieldtype": "Int",
+			"width": 85,
 		},
 		{
-			"label": _("Remarks"),
-			"fieldname": "remarks",
+			"label": _("Compliance %"),
+			"fieldname": "compliance_score",
 			"fieldtype": "Data",
-			"width": 220,
+			"width": 115,
+		},
+		{
+			"label": _("Actions"),
+			"fieldname": "view_details",
+			"fieldtype": "Data",
+			"width": 130,
 		},
 	]
 
@@ -106,18 +114,6 @@ def get_data(filters):
 	if filters.get("month"):
 		conditions.append("chk.audit_period_month = %(month)s")
 		values["month"] = filters.get("month")
-
-	if filters.get("response"):
-		resp = filters.get("response")
-		if resp == "Pending (Empty)":
-			conditions.append("(chk.response IS NULL OR chk.response = '')")
-		else:
-			conditions.append("chk.response = %(response)s")
-			values["response"] = resp
-
-	if filters.get("section"):
-		conditions.append("chk.section = %(section)s")
-		values["section"] = filters.get("section")
 
 	if filters.get("from_date"):
 		conditions.append("DATE(ma.creation) >= %(from_date)s")
@@ -139,19 +135,17 @@ def get_data(filters):
 
 	query = f"""
 		SELECT
-			chk.name,
 			chk.parent,
 			COALESCE(emp.custom_zone, '') AS zone,
-			COALESCE(chk.branch, ma.emp_branch, '') AS branch,
-			COALESCE(chk.auditor_name, ma.query_generated_by_name, '') AS auditor_name,
-			COALESCE(chk.audit_period_month, '') AS audit_period_month,
-			chk.audit_start_date,
-			chk.audit_end_date,
-			chk.section,
-			chk.category,
-			chk.question,
-			chk.response,
-			chk.remarks
+			COALESCE(MAX(chk.branch), MAX(ma.emp_branch), '') AS branch,
+			COALESCE(MAX(chk.auditor_name), MAX(ma.query_generated_by_name), '') AS auditor_name,
+			COALESCE(MAX(chk.audit_period_month), '') AS audit_period_month,
+			MAX(chk.audit_start_date) AS audit_start_date,
+			MAX(chk.audit_end_date) AS audit_end_date,
+			COUNT(chk.name) AS total_questions,
+			SUM(CASE WHEN chk.response = 'Yes' THEN 1 ELSE 0 END) AS complied_yes,
+			SUM(CASE WHEN chk.response = 'No' THEN 1 ELSE 0 END) AS discrepancies,
+			SUM(CASE WHEN chk.response IS NULL OR chk.response = '' THEN 1 ELSE 0 END) AS pending_count
 		FROM
 			`tabAudit Checklist Item` chk
 		INNER JOIN
@@ -159,44 +153,76 @@ def get_data(filters):
 		LEFT JOIN
 			`tabEmployee` emp ON emp.name = ma.query_generated_by_empid
 		{where_clause}
+		GROUP BY
+			chk.parent, emp.custom_zone
 		ORDER BY
-			chk.parent DESC, chk.idx ASC
+			chk.parent DESC
 	"""
 
-	return frappe.db.sql(query, values, as_dict=True)
+	raw_data = frappe.db.sql(query, values, as_dict=True)
+
+	for row in raw_data:
+		total = row.get("total_questions") or 0
+		yes = row.get("complied_yes") or 0
+		if total > 0:
+			score = round((yes / total) * 100, 1)
+			row["compliance_score"] = score
+		else:
+			row["compliance_score"] = 0.0
+
+		row["view_details"] = "🔍 View Checklist"
+
+	return raw_data
 
 
 def get_report_summary(data):
 	if not data:
 		return []
 
-	total = len(data)
-	yes_count = sum(1 for d in data if d.get("response") == "Yes")
-	no_count = sum(1 for d in data if d.get("response") == "No")
-	pending_count = sum(1 for d in data if not d.get("response"))
+	total_audits = len(data)
+	total_questions = sum(d.get("total_questions", 0) for d in data)
+	total_yes = sum(d.get("complied_yes", 0) for d in data)
+	total_no = sum(d.get("discrepancies", 0) for d in data)
+	total_pending = sum(d.get("pending_count", 0) for d in data)
+
+	overall_compliance = round((total_yes / total_questions * 100), 1) if total_questions > 0 else 0
 
 	return [
 		{
-			"value": total,
-			"label": _("Total Questions"),
+			"value": total_audits,
+			"label": _("Total Audits Completed"),
 			"datatype": "Int",
 		},
 		{
-			"value": yes_count,
-			"label": _("Complied (Yes)"),
-			"datatype": "Int",
-			"indicator": "Green",
+			"value": f"{overall_compliance}%",
+			"label": _("Avg Compliance Score"),
+			"datatype": "Data",
+			"indicator": "Green" if overall_compliance >= 90 else "Orange",
 		},
 		{
-			"value": no_count,
-			"label": _("Discrepancies / Observations (No)"),
+			"value": total_no,
+			"label": _("Total Observations / No"),
 			"datatype": "Int",
 			"indicator": "Red",
 		},
 		{
-			"value": pending_count,
-			"label": _("Pending Responses"),
+			"value": total_pending,
+			"label": _("Total Pending Questions"),
 			"datatype": "Int",
 			"indicator": "Orange",
 		},
 	]
+
+
+@frappe.whitelist()
+def get_audit_checklist_details(audit_name):
+	"""Fetch all 113 checklist items on-demand only when user clicks 'View Checklist'."""
+	if not audit_name:
+		return []
+
+	return frappe.get_all(
+		"Audit Checklist Item",
+		filters={"parent": audit_name},
+		fields=["idx", "section", "category", "question", "response", "remarks"],
+		order_by="idx asc",
+	)
