@@ -6,6 +6,13 @@ from frappe import _
 
 
 def execute(filters=None):
+	# Role-based restriction: Only Audit Team and System Manager / Admin can view
+	allowed_roles = {"Audit Manager", "Audit Member", "System Manager", "Administrator"}
+	user_roles = set(frappe.get_roles(frappe.session.user))
+	if not user_roles.intersection(allowed_roles) and frappe.session.user != "Administrator":
+		frappe.msgprint(_("You are not authorized to view this report."), alert=True)
+		return [], [], None, None, []
+
 	if not filters:
 		filters = {}
 	columns = get_columns()
@@ -116,11 +123,11 @@ def get_data(filters):
 		values["month"] = filters.get("month")
 
 	if filters.get("from_date"):
-		conditions.append("DATE(ma.creation) >= %(from_date)s")
+		conditions.append("(chk.audit_start_date >= %(from_date)s OR DATE(ma.creation) >= %(from_date)s)")
 		values["from_date"] = filters.get("from_date")
 
 	if filters.get("to_date"):
-		conditions.append("DATE(ma.creation) <= %(to_date)s")
+		conditions.append("(chk.audit_end_date <= %(to_date)s OR DATE(ma.creation) <= %(to_date)s)")
 		values["to_date"] = filters.get("to_date")
 
 	if filters.get("zone"):
@@ -180,24 +187,14 @@ def get_report_summary(data):
 		return []
 
 	total_audits = len(data)
-	total_questions = sum(d.get("total_questions", 0) for d in data)
-	total_yes = sum(d.get("complied_yes", 0) for d in data)
 	total_no = sum(d.get("discrepancies", 0) for d in data)
 	total_pending = sum(d.get("pending_count", 0) for d in data)
-
-	overall_compliance = round((total_yes / total_questions * 100), 1) if total_questions > 0 else 0
 
 	return [
 		{
 			"value": total_audits,
 			"label": _("Total Audits Completed"),
 			"datatype": "Int",
-		},
-		{
-			"value": f"{overall_compliance}%",
-			"label": _("Avg Compliance Score"),
-			"datatype": "Data",
-			"indicator": "Green" if overall_compliance >= 90 else "Orange",
 		},
 		{
 			"value": total_no,

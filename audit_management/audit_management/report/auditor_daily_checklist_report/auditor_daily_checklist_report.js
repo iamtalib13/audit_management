@@ -62,6 +62,19 @@ frappe.query_reports["Auditor Daily Checklist Report"] = {
 		return value;
 	},
 	onload: function (report) {
+		// Add "Clear Filters" button in report toolbar
+		report.page.add_inner_button(__("Clear Filters"), function () {
+			report.filters.forEach(function (filter) {
+				filter.set_input(filter.default || "");
+			});
+			report.refresh();
+		});
+
+		// Add "Download / Export" button in report toolbar
+		report.page.add_inner_button(__("Download"), function () {
+			frappe.tools.downloadify(report.data, null, report.report_name);
+		});
+
 		// Delegate click event for On-Demand Checklist Modal
 		$(report.wrapper).off("click.viewchk").on("click.viewchk", ".btn-view-checklist", function () {
 			let audit_id = $(this).attr("data-audit");
