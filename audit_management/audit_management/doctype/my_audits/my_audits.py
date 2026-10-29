@@ -26,11 +26,30 @@ class MyAudits(Document):
         # Prevent stage users from removing/deleting attachments
         self.validate_attachment_removal()
 
-        # Enforce mandatory fields for new records
-        if self.is_new():
+        # Enforce mandatory fields only when sending/dispatching (not during initial branch draft save)
+        if self.status != "Draft":
             for field in ["query_type", "primary_nature", "department_alignment"]:
                 if not self.get(field):
-                    frappe.throw(_("{0} is mandatory for new records").format(self.meta.get_label(field)))
+                    frappe.throw(_("{0} is mandatory to send query").format(self.meta.get_label(field)))
+
+            # Ensure all checklist questions are answered before leaving Draft
+            self.validate_checklist_completion()
+        else:
+            # Sync completion status while in Draft
+            if getattr(self, "checklist_items", None):
+                unanswered = [row.idx for row in self.checklist_items if not row.response]
+                self.checklist_completed = 1 if not unanswered else 0
+
+    def validate_checklist_completion(self):
+        if getattr(self, "checklist_items", None):
+            unanswered = [row.idx for row in self.checklist_items if not row.response]
+            if unanswered:
+                self.checklist_completed = 0
+                frappe.throw(
+                    _("Please complete all Audit Checklist questions before sending the audit query. ({0} questions pending)").format(len(unanswered))
+                )
+            else:
+                self.checklist_completed = 1
 
     def before_insert(self):
         # 1. Force the status to Draft upon creation
