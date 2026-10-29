@@ -2048,8 +2048,11 @@ frappe.ui.form.on("My Audits", {
 
     frm.set_df_property("audit_stages", "read_only", 1);
 
-    // 2b. Make all *_attach_box fields read-only for stage users (prevent delete/remove)
+    // 2b. Make all *_attach_box fields read-only and hide checklist tab for non-audit team users
     if (!is_audit_team) {
+      frm.toggle_display("checklist_tab", false);
+      frm.toggle_display("checklist_items", false);
+
       const attach_fields = [
         "audit_attach_box", "bm_attach_box", "dh_attach_box", "com_attach_box",
         "rm_attach_box", "rom_attach_box", "zm_attach_box", "zom_attach_box",
