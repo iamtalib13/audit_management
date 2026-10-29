@@ -270,14 +270,22 @@ frappe.ui.form.on("My Audits", {
         let auditor = frm.doc.query_generated_by_name || frappe.user.full_name() || "—";
         let branch = frm.doc.branch_name || frm.doc.emp_branch || "—";
 
-        // Current start and end dates and month from first row (if any)
+        // Current start/end dates, months and years from first row
         let first_row = frm.doc.checklist_items && frm.doc.checklist_items[0] ? frm.doc.checklist_items[0] : {};
         let start_val = first_row.audit_start_date || "";
         let end_val = first_row.audit_end_date || "";
-        let month_val = first_row.audit_period_month || "";
+        let from_m = first_row.from_month || "";
+        let from_y = first_row.from_year || new Date().getFullYear();
+        let to_m = first_row.to_month || "";
+        let to_y = first_row.to_year || new Date().getFullYear();
 
         const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        let month_options = months.map(m => `<option value="${m}" ${m === month_val ? "selected" : ""}>${m}</option>`).join("");
+        const years = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+
+        let from_m_opts = months.map(m => `<option value="${m}" ${m === from_m ? "selected" : ""}>${m}</option>`).join("");
+        let to_m_opts = months.map(m => `<option value="${m}" ${m === to_m ? "selected" : ""}>${m}</option>`).join("");
+        let from_y_opts = years.map(y => `<option value="${y}" ${String(y) === String(from_y) ? "selected" : ""}>${y}</option>`).join("");
+        let to_y_opts = years.map(y => `<option value="${y}" ${String(y) === String(to_y) ? "selected" : ""}>${y}</option>`).join("");
 
         let banner_html = $(`
           <div class="checklist-header-banner" style="
@@ -291,46 +299,75 @@ frappe.ui.form.on("My Audits", {
             align-items: center;
             justify-content: flex-start;
             flex-wrap: wrap;
-            gap: 16px;
-            font-size: 11.5px;
+            gap: 14px;
+            font-size: 11px;
           ">
             <div>
-              <span style="color: #64748b; font-weight: 600;">👤 Auditor Name:</span>
-              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${auditor}</span>
+              <span style="color: #64748b; font-weight: 600;">👤 Auditor:</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 3px;">${auditor}</span>
             </div>
             <div style="border-left: 1px solid #cbd5e1; height: 14px;"></div>
             <div>
               <span style="color: #64748b; font-weight: 600;">🏢 Branch:</span>
-              <span style="color: #0f172a; font-weight: 700; margin-left: 4px;">${branch}</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 3px;">${branch}</span>
             </div>
             <div style="border-left: 1px solid #cbd5e1; height: 14px;"></div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="color: #64748b; font-weight: 600;">🗓️ Audit Period Month:</span>
-              <select class="form-control input-xs chk-month-select" style="width: 88px; height: 22px; padding: 1px 3px; font-size: 10.5px; display: inline-block;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: #64748b; font-weight: 600;">🗓️ Period From:</span>
+              <select class="form-control input-xs chk-from-m" style="width: 82px; height: 22px; padding: 1px 2px; font-size: 10.5px; display: inline-block;">
                 <option value="">Month</option>
-                ${month_options}
+                ${from_m_opts}
+              </select>
+              <select class="form-control input-xs chk-from-y" style="width: 60px; height: 22px; padding: 1px 2px; font-size: 10.5px; display: inline-block;">
+                ${from_y_opts}
+              </select>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: #64748b; font-weight: 600;">To:</span>
+              <select class="form-control input-xs chk-to-m" style="width: 82px; height: 22px; padding: 1px 2px; font-size: 10.5px; display: inline-block;">
+                <option value="">Month</option>
+                ${to_m_opts}
+              </select>
+              <select class="form-control input-xs chk-to-y" style="width: 60px; height: 22px; padding: 1px 2px; font-size: 10.5px; display: inline-block;">
+                ${to_y_opts}
               </select>
             </div>
             <div style="border-left: 1px solid #cbd5e1; height: 14px;"></div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="color: #64748b; font-weight: 600;">📅 Audit Start Date:</span>
-              <input type="date" class="form-control input-xs chk-start-date" value="${start_val}" style="width: 118px; height: 24px; padding: 1px 4px; font-size: 11px; display: inline-block;">
-            </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="color: #64748b; font-weight: 600;">📅 Audit End Date:</span>
-              <input type="date" class="form-control input-xs chk-end-date" value="${end_val}" style="width: 118px; height: 24px; padding: 1px 4px; font-size: 11px; display: inline-block;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: #64748b; font-weight: 600;">📅 Date:</span>
+              <input type="date" class="form-control input-xs chk-start-date" value="${start_val}" style="width: 110px; height: 22px; padding: 1px 3px; font-size: 10.5px; display: inline-block;" title="Audit Start Date">
+              <span style="color: #94a3b8;">-</span>
+              <input type="date" class="form-control input-xs chk-end-date" value="${end_val}" style="width: 110px; height: 22px; padding: 1px 3px; font-size: 10.5px; display: inline-block;" title="Audit End Date">
             </div>
           </div>
         `);
 
-        // Sync month selection into child table records
-        banner_html.find(".chk-month-select").on("change", function () {
-          let val = $(this).val();
+        const sync_period_month_range = () => {
+          let fm = banner_html.find(".chk-from-m").val();
+          let fy = banner_html.find(".chk-from-y").val();
+          let tm = banner_html.find(".chk-to-m").val();
+          let ty = banner_html.find(".chk-to-y").val();
+
+          let period_str = "";
+          if (fm && tm) {
+            period_str = `${fm} ${fy} - ${tm} ${ty}`;
+          } else if (fm) {
+            period_str = `${fm} ${fy}`;
+          }
+
           if (frm.doc.checklist_items) {
-            frm.doc.checklist_items.forEach((r) => (r.audit_period_month = val));
+            frm.doc.checklist_items.forEach((r) => {
+              r.from_month = fm;
+              r.from_year = fy;
+              r.to_month = tm;
+              r.to_year = ty;
+              r.audit_period_month = period_str;
+            });
             frm.dirty();
           }
-        });
+        };
+
+        banner_html.find(".chk-from-m, .chk-from-y, .chk-to-m, .chk-to-y").on("change", sync_period_month_range);
 
         // Sync date inputs into child table records on change
         banner_html.find(".chk-start-date").on("change", function () {
