@@ -52,7 +52,7 @@ frappe.ui.form.on("My Audits", {
 
   refresh: function (frm) {
     // 1. Inject Creation/Closing Date & Aging into Header
-    if (!frm.is_new() && frm.doc.creation) {
+    if (!frm.is_new() && (frm.doc.modified || frm.doc.creation)) {
       setTimeout(() => {
         let header_status = frm.page.wrapper.find(".indicator-pill").first();
 
@@ -60,8 +60,10 @@ frappe.ui.form.on("My Audits", {
         frm.page.wrapper.find(".date-tag").remove();
 
         if (header_status.length > 0) {
-          const created_date = frappe.datetime.str_to_user(
-            frm.doc.creation.split(" ")[0],
+          // Show last modified date with "Created" label as requested
+          const last_modified_source = frm.doc.modified || frm.doc.creation;
+          const display_date = frappe.datetime.str_to_user(
+            last_modified_source.split(" ")[0],
           );
 
           let date_html = `<span class="date-tag" style="margin-left: 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 8px; color: #475569;">`;
@@ -70,7 +72,7 @@ frappe.ui.form.on("My Audits", {
           const item = (label, val) =>
             `<span style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px 10px; border-radius: 4px; white-space: nowrap;"><span style="color: #64748b; font-weight: 600;">${label}:</span> <span style="color: #1e293b;">${val}</span></span>`;
 
-          date_html += item("Created", created_date);
+          date_html += item("Created", display_date);
 
           if (frm.doc.status === "Closed" && frm.doc.closing_date) {
             const closed_date = frappe.datetime.str_to_user(
@@ -80,10 +82,6 @@ frappe.ui.form.on("My Audits", {
           }
 
           if (frm.doc.creation) {
-            const created_date = frappe.datetime.str_to_user(
-              frm.doc.creation.split(" ")[0],
-            );
-
             // Calculate dynamic aging: today - creation date
             const creation_date_obj = frappe.datetime.str_to_obj(
               frm.doc.creation,
