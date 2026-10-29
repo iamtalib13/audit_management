@@ -1602,3 +1602,143 @@ def filtered_getdoc(doctype, name):
     docinfo = frappe.response.get("docinfo")
     if docinfo:
         _filter_docinfo(docinfo, doctype)
+
+
+@frappe.whitelist()
+def update_case_audit_stages(docname, stages, update_audit_level=1):
+    """
+    Updates audit_stages of a running case (Draft, Pending, Responded) safely.
+    Preserves existing responses, status, attachments, and response times.
+    Optionally syncs changes back to the master Audit Level for this branch.
+    """
+    import json
+
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    if "Audit Manager" not in roles and "Audit Member" not in roles and "System Manager" not in roles:
+        frappe.throw(frappe._("Only Audit Team or System Managers are authorized to update audit stages."))
+
+    if isinstance(stages, str):
+        stages = json.loads(stages)
+
+    doc = frappe.get_doc("My Audits", docname)
+
+    # Map existing rows by name or stage_id
+    existing_map = {r.name: r for r in (doc.audit_stages or [])}
+
+    new_stage_rows = []
+    for idx, s in enumerate(stages):
+        stage_id = s.get("stage_id")
+        stage_name = (s.get("stage_name") or "").strip()
+        employee = (s.get("employee") or "").strip()
+        employee_name = (s.get("employee_name") or "").strip()
+        email = (s.get("email") or "").strip()
+
+        # If employee is given, fetch details if missing
+        user_id = s.get("user_id")
+        designation = s.get("designation")
+        if employee:
+            emp_data = frappe.db.get_value(
+                "Employee",
+                employee,
+                ["employee_name", "user_id", "company_email", "prefered_email", "personal_email", "designation"],
+                as_dict=True
+            )
+            if emp_data:
+                if not employee_name:
+                    employee_name = emp_data.employee_name or ""
+                if not user_id:
+                    user_id = emp_data.user_id or ""
+                if not email:
+                    email = emp_data.company_email or emp_data.prefered_email or emp_data.personal_email or ""
+                if not designation:
+                    designation = emp_data.designation or ""
+
+        # Update company_email in Employee if changed
+        if employee and email:
+            current_emp_email = frappe.db.get_value("Employee", employee, "company_email")
+            if not current_emp_email:
+                frappe.db.set_value("Employee", employee, "company_email", email)
+
+        if stage_id and stage_id in existing_map:
+            # Preserve existing row's tracking metadata
+            row = existing_map[stage_id]
+            row.stage = str(idx + 1)
+            row.idx = idx + 1
+            row.stage_name = stage_name
+            row.employee = employee
+            row.employee_name = employee_name
+            row.user_id = user_id or row.user_id
+            row.email = email
+            if designation:
+                row.designation = designation
+            new_stage_rows.append(row)
+        else:
+            # New row added
+            new_row = doc.append("audit_stages", {
+                "stage": str(idx + 1),
+                "idx": idx + 1,
+                "stage_name": stage_name,
+                "employee": employee,
+                "employee_name": employee_name,
+                "user_id": user_id,
+                "email": email,
+                "designation": designation or "",
+                "status": "",
+            })
+            new_stage_rows.append(new_row)
+
+    doc.audit_stages = new_stage_rows
+    # Ignore mandatory check on stages update so running cases don't fail validation
+    doc.flags.ignore_mandatory = True
+    doc.flags.ignore_validate = True
+    doc.save(ignore_permissions=True)
+
+    # Update master Audit Level if requested
+    audit_level_updated = False
+    if int(update_audit_level or 0) and doc.emp_branch and frappe.db.exists("Audit Level", doc.emp_branch):
+        al = frappe.get_doc("Audit Level", doc.emp_branch)
+        al.set("audit_stages", [])
+        for idx, s in enumerate(stages):
+            st_name = (s.get("stage_name") or "").strip()
+            emp = (s.get("employee") or "").strip()
+            emp_nm = (s.get("employee_name") or "").strip()
+            eml = (s.get("email") or "").strip()
+            u_id = s.get("user_id")
+            desig = s.get("designation")
+
+            if emp and (not u_id or not eml or not emp_nm):
+                emp_info = frappe.db.get_value(
+                    "Employee",
+                    emp,
+                    ["employee_name", "user_id", "company_email", "prefered_email", "personal_email", "designation"],
+                    as_dict=True
+                )
+                if emp_info:
+                    emp_nm = emp_nm or emp_info.employee_name or ""
+                    u_id = u_id or emp_info.user_id or ""
+                    eml = eml or emp_info.company_email or emp_info.prefered_email or emp_info.personal_email or ""
+                    desig = desig or emp_info.designation or ""
+
+            al.append("audit_stages", {
+                "stage": str(idx + 1),
+                "idx": idx + 1,
+                "stage_name": st_name,
+                "employee": emp,
+                "employee_name": emp_nm,
+                "user_id": u_id,
+                "email": eml,
+                "designation": desig or "",
+            })
+
+        if hasattr(al, "sync_new_to_old_stages"):
+            al.sync_new_to_old_stages()
+        al.flags.ignore_mandatory = True
+        al.save(ignore_permissions=True)
+        audit_level_updated = True
+
+    return {
+        "status": "success",
+        "audit_level_updated": audit_level_updated,
+        "message": frappe._("Audit stages updated successfully.")
+    }
