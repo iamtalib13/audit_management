@@ -207,7 +207,8 @@
   "query_generated_by_branch",
   "checklist_tab",
   "checklist_section",
-  "checklist_items"
+  "checklist_items",
+  "checklist_completed"
  ],
  "fields": [
   {
@@ -301,20 +302,18 @@
    "fieldname": "audit_query_box",
    "fieldtype": "Text Editor",
    "label": "Query Description :",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "primary_nature",
    "fieldtype": "Link",
    "label": "Primary Nature of Query",
-   "mandatory_depends_on": "eval:doc.__islocal",
    "options": "Audit Primary Nature"
   },
   {
    "fieldname": "department_alignment",
    "fieldtype": "Link",
    "label": "Departmental & Product Alignment",
-   "mandatory_depends_on": "eval:doc.__islocal",
    "options": "Audit Department"
   },
   {
@@ -1019,7 +1018,7 @@
    "fieldtype": "Small Text",
    "label": "Query Subject :",
    "max_height": "50px",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "column_break_afr2c",
@@ -1137,7 +1136,7 @@
    "fieldtype": "Link",
    "label": "Query Type",
    "options": "Audit Query Type",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "column_break_lmxqs",
@@ -1346,6 +1345,14 @@
    "fieldtype": "Table",
    "label": "Checklist Items",
    "options": "Audit Checklist Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "checklist_completed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Checklist Completed",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
