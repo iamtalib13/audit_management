@@ -1564,6 +1564,15 @@ frappe.ui.form.on("My Audits", {
           });
         })
         .css({ "background-color": "#4a90e2", color: "white" });
+
+      // Edit Stages Button for Audit Team
+      if (is_audit_team && frm.doc.status !== "Closed") {
+        frm
+          .add_custom_button(__("Edit Stages"), function () {
+            open_stages_modal(frm);
+          })
+          .css({ "background-color": "#6366f1", color: "white" });
+      }
     }
 
     // 0. REOPEN LOGIC: Only Audit Team can reopen a Closed query
@@ -3442,6 +3451,12 @@ function open_stages_modal(frm) {
           },
         ],
       },
+      {
+        fieldname: "update_master_audit_level",
+        fieldtype: "Check",
+        label: "Also sync & update Branch Audit Level master",
+        default: 1,
+      },
     ],
     primary_action_label: "Save Changes",
     primary_action: function () {
@@ -3449,57 +3464,71 @@ function open_stages_modal(frm) {
       if (document.activeElement) document.activeElement.blur();
 
       let grid_data = d.fields_dict.temp_stages.grid.get_data();
+      let update_al = d.get_value("update_master_audit_level") ? 1 : 0;
 
-      // 1. Store EXACT references to existing memory objects so we don't lose responses!
-      let old_rows_map = {};
-      (frm.doc.audit_stages || []).forEach((r) => {
-        old_rows_map[r.name] = r;
-      });
-
-      // 2. Empty the array WITHOUT deleting from frappe.locals memory
-      // This completely prevents the "Missing Fields" framework error
-      frm.doc.audit_stages = [];
-
-      // 3. Rebuild the child table perfectly
-      grid_data.forEach((row, idx) => {
-        let target_row;
-
-        if (row.stage_id && old_rows_map[row.stage_id]) {
-          // Re-use the existing Frappe object (retains responses, attachments, status)
-          target_row = old_rows_map[row.stage_id];
-          // Push it manually back into the form array
-          frm.doc.audit_stages.push(target_row);
-        } else {
-          // It's a completely new row added via the modal
-          // This automatically creates it in memory and pushes it to doc.audit_stages
-          target_row = frm.add_child("audit_stages");
-        }
-
-        // 4. Update the values from the modal safely
-        target_row.stage_name = row.stage_name;
-        target_row.employee = row.employee;
-        target_row.employee_name = row.employee_name;
-        target_row.email = row.email;
-        target_row.stage = idx + 1;
-        target_row.idx = idx + 1; // Required by Frappe for sequence tracking
-
-        if (!target_row.status) {
-          // target_row.status = 'Pending';
-          target_row.status = "";
-        }
-      });
-
-      frm.refresh_field("audit_stages");
-      frm.dirty(); // Tell Frappe the document has unsaved changes
-
-      // Save the document and refresh the UI tracker
-      frm.save().then(() => {
-        frappe.show_alert({
-          message: "Stages updated successfully",
-          indicator: "green",
+      // In Draft state or new doc, update memory objects
+      if (frm.is_new()) {
+        let old_rows_map = {};
+        (frm.doc.audit_stages || []).forEach((r) => {
+          old_rows_map[r.name] = r;
         });
-        render_interactive_tracker(frm, true);
-        d.hide();
+
+        frm.doc.audit_stages = [];
+        grid_data.forEach((row, idx) => {
+          let target_row;
+          if (row.stage_id && old_rows_map[row.stage_id]) {
+            target_row = old_rows_map[row.stage_id];
+            frm.doc.audit_stages.push(target_row);
+          } else {
+            target_row = frm.add_child("audit_stages");
+          }
+          target_row.stage_name = row.stage_name;
+          target_row.employee = row.employee;
+          target_row.employee_name = row.employee_name;
+          target_row.email = row.email;
+          target_row.stage = idx + 1;
+          target_row.idx = idx + 1;
+          if (!target_row.status) target_row.status = "";
+        });
+
+        frm.refresh_field("audit_stages");
+        frm.dirty();
+        frm.save().then(() => {
+          frappe.show_alert({
+            message: "Stages updated successfully",
+            indicator: "green",
+          });
+          render_interactive_tracker(frm, true);
+          d.hide();
+        });
+        return;
+      }
+
+      // For running or saved cases (Draft, Pending, Responded), call whitelisted backend method
+      frappe.call({
+        method: "audit_management.audit_management.doctype.my_audits.my_audits.update_case_audit_stages",
+        args: {
+          docname: frm.doc.name,
+          stages: JSON.stringify(grid_data),
+          update_audit_level: update_al,
+        },
+        freeze: true,
+        freeze_message: __("Updating stages..."),
+        callback: function (r) {
+          if (r.message && r.message.status === "success") {
+            let msg = r.message.audit_level_updated
+              ? "Stages & Branch Audit Level updated successfully"
+              : "Stages updated successfully";
+            frappe.show_alert({
+              message: msg,
+              indicator: "green",
+            });
+            d.hide();
+            frm.reload_doc().then(() => {
+              render_interactive_tracker(frm, true);
+            });
+          }
+        },
       });
     },
   });
