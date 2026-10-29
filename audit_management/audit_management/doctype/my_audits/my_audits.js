@@ -1538,6 +1538,37 @@ frappe.ui.form.on("My Audits", {
     if (is_audit_team) {
       frm
         .add_custom_button(__("Send"), function () {
+          // Gate check: Checklist must be completed before sending to stage users
+          if (frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
+            let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
+            if (unanswered.length > 0) {
+              frappe.msgprint({
+                title: __("Checklist Incomplete"),
+                indicator: "orange",
+                message: __(
+                  `<b>Please complete all questions in the "Audit Checklist" tab before sending.</b><br><br>There are currently <b>${unanswered.length}</b> questions pending response.`,
+                ),
+              });
+              return;
+            }
+          }
+
+          // Case details mandatory checks before dispatch
+          let missing_fields = [];
+          if (!frm.doc.query_type) missing_fields.push("Query Type");
+          if (!frm.doc.primary_nature) missing_fields.push("Primary Nature");
+          if (!frm.doc.department_alignment) missing_fields.push("Department Alignment");
+          if (missing_fields.length > 0) {
+            frappe.msgprint({
+              title: __("Missing Case Details"),
+              indicator: "red",
+              message: __(
+                `<b>Please fill mandatory case details before sending:</b><br>• ${missing_fields.join("<br>• ")}`,
+              ),
+            });
+            return;
+          }
+
           let stages = audit_table
             .filter((r) => r.stage_name)
             .map((r) => {
@@ -2002,10 +2033,45 @@ frappe.ui.form.on("My Audits", {
       }
     }
 
-    // 3. Section Visibility
-    if (is_audit_team) {
-      frm.toggle_display("audit_items_section", true);
-      frm.toggle_display("audit_stages", true);
+    // 3. Section Visibility & Progressive Case Flow
+    // Case details fields: hide until checklist is fully completed
+    const is_checklist_done = !!(frm.doc.checklist_completed || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0 && !frm.doc.checklist_items.some(r => !r.response)));
+
+    if (frm.is_new()) {
+      // Step 1: Initial new doc - only Branch is required to start
+      [
+        "query_type", "risk", "primary_nature", "department_alignment",
+        "employee_id", "query_description_section", "audit_query_subject_box",
+        "audit_query_box", "audit_attach_box", "tracking_section", "audit_items_section"
+      ].forEach(f => frm.toggle_display(f, false));
+
+      frm.toggle_display("emp_branch", true);
+      frm.set_df_property("emp_branch", "reqd", 1);
+    } else if (frm.doc.status === "Draft") {
+      // Step 2 & 3: Draft doc - show details only after checklist completion
+      let show_details = is_checklist_done;
+      [
+        "query_type", "risk", "primary_nature", "department_alignment",
+        "employee_id", "query_description_section", "audit_query_subject_box",
+        "audit_query_box", "audit_attach_box", "tracking_section"
+      ].forEach(f => frm.toggle_display(f, show_details));
+
+      // Make mandatory only after checklist is done
+      [
+        "query_type", "primary_nature", "department_alignment",
+        "audit_query_subject_box", "audit_query_box"
+      ].forEach(f => frm.set_df_property(f, "reqd", show_details ? 1 : 0));
+
+      if (is_audit_team) {
+        frm.toggle_display("audit_items_section", show_details);
+        frm.toggle_display("audit_stages", show_details);
+      }
+    } else {
+      // Non-draft existing docs: standard display
+      if (is_audit_team) {
+        frm.toggle_display("audit_items_section", true);
+        frm.toggle_display("audit_stages", true);
+      }
     }
 
     // Show the resolution section ONLY when the query is closed
