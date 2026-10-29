@@ -75,6 +75,15 @@ frappe.query_reports["Auditor Daily Checklist Report"] = {
 			frappe.tools.downloadify(report.data, null, report.report_name);
 		});
 
+		// Hide Frappe standard Actions dropdown button
+		let hide_actions_interval = setInterval(() => {
+			let $actions = report.page.wrapper.find('.actions-btn-group, [data-label="Actions"]');
+			if ($actions.length) {
+				$actions.attr('style', 'display: none !important');
+			}
+		}, 50);
+		setTimeout(() => clearInterval(hide_actions_interval), 2000);
+
 		// Delegate click event for On-Demand Checklist Modal
 		$(report.wrapper).off("click.viewchk").on("click.viewchk", ".btn-view-checklist", function () {
 			let audit_id = $(this).attr("data-audit");
