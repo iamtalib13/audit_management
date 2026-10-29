@@ -62,18 +62,42 @@ frappe.query_reports["Auditor Daily Checklist Report"] = {
 		return value;
 	},
 	onload: function (report) {
-		// Add "Clear Filters" button in report toolbar
-		report.page.add_inner_button(__("Clear Filters"), function () {
+		// Add "Clear Filters" button in report toolbar (Blue with hover)
+		let $clear_btn = report.page.add_inner_button(__("Clear Filters"), function () {
 			report.filters.forEach(function (filter) {
 				filter.set_input(filter.default || "");
 			});
 			report.refresh();
 		});
+		$clear_btn
+			.css({
+				"background-color": "#2563eb",
+				"color": "#ffffff",
+				"border-color": "#1d4ed8",
+				"font-weight": "600",
+				"transition": "all 0.2s ease"
+			})
+			.hover(
+				function () { $(this).css({ "background-color": "#1d4ed8", "color": "#ffffff" }); },
+				function () { $(this).css({ "background-color": "#2563eb", "color": "#ffffff" }); }
+			);
 
-		// Add "Download / Export" button in report toolbar
-		report.page.add_inner_button(__("Download"), function () {
+		// Add "Download" button in report toolbar (Black with hover)
+		let $download_btn = report.page.add_inner_button(__("Download"), function () {
 			frappe.tools.downloadify(report.data, null, report.report_name);
 		});
+		$download_btn
+			.css({
+				"background-color": "#0f172a",
+				"color": "#ffffff",
+				"border-color": "#020617",
+				"font-weight": "600",
+				"transition": "all 0.2s ease"
+			})
+			.hover(
+				function () { $(this).css({ "background-color": "#334155", "color": "#ffffff" }); },
+				function () { $(this).css({ "background-color": "#0f172a", "color": "#ffffff" }); }
+			);
 
 		// Hide Frappe standard Actions dropdown button
 		let hide_actions_interval = setInterval(() => {
