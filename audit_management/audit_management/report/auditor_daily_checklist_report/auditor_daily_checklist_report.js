@@ -82,9 +82,18 @@ frappe.query_reports["Auditor Daily Checklist Report"] = {
 				function () { $(this).css({ "background-color": "#2563eb", "color": "#ffffff" }); }
 			);
 
-		// Add "Download" button in report toolbar (Black with hover)
+		// Add "Download" button in report toolbar (Black with hover, excludes Action column)
 		let $download_btn = report.page.add_inner_button(__("Download"), function () {
-			frappe.tools.downloadify(report.data, null, report.report_name);
+			if (!report.data || !report.data.length) {
+				frappe.msgprint(__("No data available to download."));
+				return;
+			}
+			let clean_data = report.data.map((row) => {
+				let copy = Object.assign({}, row);
+				delete copy.view_details;
+				return copy;
+			});
+			frappe.tools.downloadify(clean_data, null, report.report_name);
 		});
 		$download_btn
 			.css({
@@ -108,8 +117,10 @@ frappe.query_reports["Auditor Daily Checklist Report"] = {
 		}, 50);
 		setTimeout(() => clearInterval(hide_actions_interval), 2000);
 
-		// Delegate click event for On-Demand Checklist Modal
-		$(report.wrapper).off("click.viewchk").on("click.viewchk", ".btn-view-checklist", function () {
+		// Delegate click event for On-Demand Checklist Modal via document for reliable triggering
+		$(document).off("click.viewchk", ".btn-view-checklist").on("click.viewchk", ".btn-view-checklist", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
 			let audit_id = $(this).attr("data-audit");
 			if (!audit_id) return;
 
