@@ -1517,7 +1517,9 @@ frappe.ui.form.on("My Audits", {
 
     const is_audit_team =
       frappe.user.has_role("Audit Manager") ||
-      frappe.user.has_role("Audit Member");
+      frappe.user.has_role("Audit Member") ||
+      frappe.user.has_role("System Manager") ||
+      frappe.session.user === "Administrator";
     const current_user = (frappe.session.user || "").toLowerCase();
     const audit_table = frm.doc.auditstages || frm.doc.audit_stages || [];
 
@@ -2009,7 +2011,9 @@ frappe.ui.form.on("My Audits", {
   handle_read_only_new: function (frm) {
     const is_audit_team =
       frappe.user.has_role("Audit Manager") ||
-      frappe.user.has_role("Audit Member");
+      frappe.user.has_role("Audit Member") ||
+      frappe.user.has_role("System Manager") ||
+      frappe.session.user === "Administrator";
 
     const current_user = frappe.session.user;
 
