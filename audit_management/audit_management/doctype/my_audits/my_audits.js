@@ -2052,11 +2052,29 @@ frappe.ui.form.on("My Audits", {
 
     frm.set_df_property("audit_stages", "read_only", 1);
 
-    // 2b. Make all *_attach_box fields read-only and hide checklist tab for non-audit team users
-    if (!is_audit_team) {
-      frm.toggle_display("checklist_tab", false);
-      frm.toggle_display("checklist_items", false);
+    // 2b. Checklist Tab visibility:
+    // Only show for new forms or cases that actually have checklist items.
+    // Completely hide for older legacy cases that don't have checklist items.
+    const has_checklist = frm.is_new() || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0);
+    const can_see_checklist = is_audit_team && has_checklist;
 
+    frm.toggle_display("checklist_tab", can_see_checklist);
+    frm.toggle_display("checklist_section", can_see_checklist);
+    frm.toggle_display("checklist_items", can_see_checklist);
+
+    // Explicitly toggle DOM nav-tab header in Frappe form
+    setTimeout(() => {
+      let $tab_nav_item = frm.page.wrapper.find('a[data-toggle="tab"][href="#checklist_tab"], a[data-fieldname="checklist_tab"]').closest("li");
+      if ($tab_nav_item.length) {
+        if (can_see_checklist) {
+          $tab_nav_item.show();
+        } else {
+          $tab_nav_item.hide();
+        }
+      }
+    }, 50);
+
+    if (!is_audit_team) {
       const attach_fields = [
         "audit_attach_box", "bm_attach_box", "dh_attach_box", "com_attach_box",
         "rm_attach_box", "rom_attach_box", "zm_attach_box", "zom_attach_box",
@@ -2085,8 +2103,8 @@ frappe.ui.form.on("My Audits", {
     }
 
     // 3. Section Visibility & Progressive Case Flow
-    // Case details fields: hide until checklist is fully completed
-    const is_checklist_done = !!(frm.doc.checklist_completed || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0 && !frm.doc.checklist_items.some(r => !r.response)));
+    // For legacy cases (without checklist), show fields directly like older flow
+    const is_checklist_done = !has_checklist || !!(frm.doc.checklist_completed || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0 && !frm.doc.checklist_items.some(r => !r.response)));
 
     if (frm.is_new()) {
       // Step 1: Initial new doc - only Branch is required to start
