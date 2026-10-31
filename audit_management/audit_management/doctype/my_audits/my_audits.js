@@ -52,7 +52,7 @@ frappe.ui.form.on("My Audits", {
 
   refresh: function (frm) {
     // 1. Inject Creation/Closing Date & Aging into Header
-    if (!frm.is_new() && frm.doc.creation) {
+    if (!frm.is_new() && (frm.doc.modified || frm.doc.creation)) {
       setTimeout(() => {
         let header_status = frm.page.wrapper.find(".indicator-pill").first();
 
@@ -60,8 +60,10 @@ frappe.ui.form.on("My Audits", {
         frm.page.wrapper.find(".date-tag").remove();
 
         if (header_status.length > 0) {
-          const created_date = frappe.datetime.str_to_user(
-            frm.doc.creation.split(" ")[0],
+          // Show last modified date with "Created" label as requested
+          const last_modified_source = frm.doc.modified || frm.doc.creation;
+          const display_date = frappe.datetime.str_to_user(
+            last_modified_source.split(" ")[0],
           );
 
           let date_html = `<span class="date-tag" style="margin-left: 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 8px; color: #475569;">`;
@@ -70,7 +72,7 @@ frappe.ui.form.on("My Audits", {
           const item = (label, val) =>
             `<span style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px 10px; border-radius: 4px; white-space: nowrap;"><span style="color: #64748b; font-weight: 600;">${label}:</span> <span style="color: #1e293b;">${val}</span></span>`;
 
-          date_html += item("Created", created_date);
+          date_html += item("Created", display_date);
 
           if (frm.doc.status === "Closed" && frm.doc.closing_date) {
             const closed_date = frappe.datetime.str_to_user(
@@ -80,10 +82,6 @@ frappe.ui.form.on("My Audits", {
           }
 
           if (frm.doc.creation) {
-            const created_date = frappe.datetime.str_to_user(
-              frm.doc.creation.split(" ")[0],
-            );
-
             // Calculate dynamic aging: today - creation date
             const creation_date_obj = frappe.datetime.str_to_obj(
               frm.doc.creation,
@@ -232,6 +230,344 @@ frappe.ui.form.on("My Audits", {
             }
           }
         });
+      }
+    }
+
+    // Auto-populate checklist questions for new doc if empty
+    if (frm.is_new() && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+      frappe.call({
+        method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
+        callback: function (r) {
+          if (r.message && r.message.length) {
+            frm.clear_table("checklist_items");
+            r.message.forEach((q) => {
+              let row = frm.add_child("checklist_items");
+              row.section = q.section;
+              row.category = q.category;
+              row.question = q.question;
+              row.response = "";
+              row.remarks = "";
+            });
+            frm.refresh_field("checklist_items");
+          }
+        },
+      });
+    }
+
+    // Checklist grid setup and robust inline header rendering
+    if (frm.fields_dict.checklist_items && frm.fields_dict.checklist_items.grid) {
+      let grid = frm.fields_dict.checklist_items.grid;
+      grid.page_length = 50;
+
+      // Render Auditor & Branch Header Info Banner above checklist
+      const render_checklist_info_banner = () => {
+        if (!frm.fields_dict.checklist_section || !frm.fields_dict.checklist_section.wrapper) return;
+        let sec_wrapper = frm.fields_dict.checklist_section.wrapper;
+        sec_wrapper.find(".checklist-header-banner").remove();
+
+        let auditor = frm.doc.query_generated_by_name || frappe.user.full_name() || "—";
+        let branch = frm.doc.branch_name || frm.doc.emp_branch || "—";
+
+        // Current start/end dates, months and years from first row
+        let first_row = frm.doc.checklist_items && frm.doc.checklist_items[0] ? frm.doc.checklist_items[0] : {};
+        let start_val = first_row.audit_start_date || "";
+        let end_val = first_row.audit_end_date || "";
+        let from_m = first_row.from_month || "";
+        let from_y = first_row.from_year || new Date().getFullYear();
+        let to_m = first_row.to_month || "";
+        let to_y = first_row.to_year || new Date().getFullYear();
+
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const years = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+
+        let from_m_opts = months.map(m => `<option value="${m}" ${m === from_m ? "selected" : ""}>${m}</option>`).join("");
+        let to_m_opts = months.map(m => `<option value="${m}" ${m === to_m ? "selected" : ""}>${m}</option>`).join("");
+        let from_y_opts = years.map(y => `<option value="${y}" ${String(y) === String(from_y) ? "selected" : ""}>${y}</option>`).join("");
+        let to_y_opts = years.map(y => `<option value="${y}" ${String(y) === String(to_y) ? "selected" : ""}>${y}</option>`).join("");
+
+        let banner_html = $(`
+          <div class="checklist-header-banner" style="
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #2563eb;
+            border-radius: 4px;
+            padding: 6px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 14px;
+            font-size: 11px;
+          ">
+            <div>
+              <span style="color: #64748b; font-weight: 600;">👤 Auditor:</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 3px;">${auditor}</span>
+            </div>
+            <div style="border-left: 1px solid #cbd5e1; height: 14px;"></div>
+            <div>
+              <span style="color: #64748b; font-weight: 600;">🏢 Branch:</span>
+              <span style="color: #0f172a; font-weight: 700; margin-left: 3px;">${branch}</span>
+            </div>
+            <div style="border-left: 1px solid #cbd5e1; height: 14px;"></div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: #64748b; font-weight: 600;">🗓️ Period From:</span>
+              <select class="form-control input-xs chk-from-m" style="width: 82px; height: 22px; padding: 1px 2px; font-size: 10.5px; display: inline-block;">
+                <option value="">Month</option>
+                ${from_m_opts}
+              </select>
+              <select class="form-control input-xs chk-from-y" style="width: 60px; height: 22px; padding: 1px 2px; font-size: 10.5px; display: inline-block;">
+                ${from_y_opts}
+              </select>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: #64748b; font-weight: 600;">To:</span>
+              <select class="form-control input-xs chk-to-m" style="width: 82px; height: 22px; padding: 1px 2px; font-size: 10.5px; display: inline-block;">
+                <option value="">Month</option>
+                ${to_m_opts}
+              </select>
+              <select class="form-control input-xs chk-to-y" style="width: 60px; height: 22px; padding: 1px 2px; font-size: 10.5px; display: inline-block;">
+                ${to_y_opts}
+              </select>
+            </div>
+            <div style="border-left: 1px solid #cbd5e1; height: 14px;"></div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="color: #64748b; font-weight: 600;">📅 Date:</span>
+              <input type="date" class="form-control input-xs chk-start-date" value="${start_val}" style="width: 110px; height: 22px; padding: 1px 3px; font-size: 10.5px; display: inline-block;" title="Audit Start Date">
+              <span style="color: #94a3b8;">-</span>
+              <input type="date" class="form-control input-xs chk-end-date" value="${end_val}" style="width: 110px; height: 22px; padding: 1px 3px; font-size: 10.5px; display: inline-block;" title="Audit End Date">
+            </div>
+          </div>
+        `);
+
+        const sync_period_month_range = () => {
+          let fm = banner_html.find(".chk-from-m").val();
+          let fy = banner_html.find(".chk-from-y").val();
+          let tm = banner_html.find(".chk-to-m").val();
+          let ty = banner_html.find(".chk-to-y").val();
+
+          let period_str = "";
+          if (fm && tm) {
+            period_str = `${fm} ${fy} - ${tm} ${ty}`;
+          } else if (fm) {
+            period_str = `${fm} ${fy}`;
+          }
+
+          if (frm.doc.checklist_items) {
+            frm.doc.checklist_items.forEach((r) => {
+              r.from_month = fm;
+              r.from_year = fy;
+              r.to_month = tm;
+              r.to_year = ty;
+              r.audit_period_month = period_str;
+            });
+            frm.dirty();
+          }
+        };
+
+        banner_html.find(".chk-from-m, .chk-from-y, .chk-to-m, .chk-to-y").on("change", sync_period_month_range);
+
+        // Sync date inputs into child table records on change
+        banner_html.find(".chk-start-date").on("change", function () {
+          let val = $(this).val();
+          if (frm.doc.checklist_items) {
+            frm.doc.checklist_items.forEach((r) => (r.audit_start_date = val));
+            frm.dirty();
+          }
+        });
+
+        banner_html.find(".chk-end-date").on("change", function () {
+          let val = $(this).val();
+          if (frm.doc.checklist_items) {
+            frm.doc.checklist_items.forEach((r) => (r.audit_end_date = val));
+            frm.dirty();
+          }
+        });
+
+        sec_wrapper.find(".section-head").after(banner_html);
+      };
+
+      // Allow full questions and remarks to wrap and apply Clean Modern Corporate theme
+      if (!$("#checklist-grid-wrap-style").length) {
+        $(`
+          <style id="checklist-grid-wrap-style">
+            /* Clean Modern Corporate Table Header */
+            [data-fieldname="checklist_items"] .grid-heading-row {
+              background: #1e293b !important;
+              color: #ffffff !important;
+              border-bottom: 2px solid #3b82f6 !important;
+            }
+            [data-fieldname="checklist_items"] .grid-heading-row .static-area,
+            [data-fieldname="checklist_items"] .grid-heading-row th,
+            [data-fieldname="checklist_items"] .grid-heading-row .grid-static-col {
+              color: #ffffff !important;
+              font-weight: 600 !important;
+              font-size: 11.5px !important;
+              letter-spacing: 0.3px !important;
+              border-right: 1px solid #475569 !important;
+            }
+
+            /* Dark distinct vertical and horizontal cell borders */
+            [data-fieldname="checklist_items"] .grid-body .grid-row {
+              border-bottom: 1px solid #94a3b8 !important;
+            }
+            [data-fieldname="checklist_items"] .grid-body .grid-static-col {
+              border-right: 1px solid #94a3b8 !important;
+            }
+            [data-fieldname="checklist_items"] .grid-body .grid-row-check {
+              border-right: 1px solid #94a3b8 !important;
+            }
+            [data-fieldname="checklist_items"] .grid-body .row-index {
+              border-right: 1px solid #94a3b8 !important;
+            }
+
+            [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="question"],
+            [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="remarks"],
+            [data-fieldname="checklist_items"] .grid-body .grid-static-col[data-fieldname="category"] {
+              white-space: normal !important;
+              word-break: break-word !important;
+              overflow: visible !important;
+              line-height: 1.4 !important;
+              height: auto !important;
+            }
+            [data-fieldname="checklist_items"] .grid-body .grid-row .data-row {
+              min-height: 40px !important;
+              align-items: center !important;
+            }
+          </style>
+        `).appendTo("head");
+      }
+
+      const render_inline_checklist_headers = () => {
+        if (!grid || !grid.wrapper) return;
+        let rows = grid.wrapper.find(".grid-body .grid-row");
+        if (!rows.length) return;
+
+        // Remove old injected headers
+        grid.wrapper.find(".checklist-inline-header, .checklist-inline-subcategory").remove();
+
+        let prev_section = null;
+        let prev_category = null;
+        rows.each(function () {
+          let $row = $(this);
+          // Look up doc by name or index
+          let docname = $row.attr("data-name");
+          let row_doc = docname ? locals["Audit Checklist Item"][docname] : null;
+          if (!row_doc) {
+            let row_idx = parseInt($row.attr("data-idx"), 10);
+            if (row_idx && frm.doc.checklist_items) {
+              row_doc = frm.doc.checklist_items[row_idx - 1];
+            }
+          }
+
+          if (row_doc) {
+            // 1. Major Section Header
+            if (row_doc.section && row_doc.section !== prev_section) {
+              prev_section = row_doc.section;
+              prev_category = null; // reset category on section change
+              let header_row = $(`
+                <div class="checklist-inline-header" style="
+                  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+                  color: #ffffff;
+                  font-weight: 700;
+                  font-size: 13px;
+                  padding: 8px 14px;
+                  margin: 10px 0 4px 0;
+                  border-radius: 4px;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                ">
+                  <i class="fa fa-folder-open-o"></i> <span>${prev_section}</span>
+                </div>
+              `);
+              $row.before(header_row);
+            }
+
+            // 2. Sub-Category Header
+            if (row_doc.category && row_doc.category !== prev_category) {
+              prev_category = row_doc.category;
+              let subhead_row = $(`
+                <div class="checklist-inline-subcategory" style="
+                  background: #f1f5f9;
+                  color: #1e293b;
+                  border-left: 4px solid #2563eb;
+                  font-weight: 600;
+                  font-size: 12px;
+                  padding: 5px 12px;
+                  margin: 6px 0 2px 0;
+                  border-radius: 2px;
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                ">
+                  <i class="fa fa-tag" style="color: #3b82f6; font-size: 11px;"></i> <span>${prev_category}</span>
+                </div>
+              `);
+              $row.before(subhead_row);
+            }
+          }
+        });
+      };
+
+      // Hook on grid refresh, pagination clicks, and row render
+      grid.on_refresh = (function (orig) {
+        return function () {
+          if (orig) orig.apply(this, arguments);
+          setTimeout(render_inline_checklist_headers, 50);
+        };
+      })(grid.on_refresh);
+
+      grid.wrapper.off("click.chkpagi").on("click.chkpagi", ".btn-pagination, .grid-pagination .btn, .page-item", function () {
+        setTimeout(render_inline_checklist_headers, 150);
+      });
+
+      // Hook onto Frappe tab switch to "Audit Checklist"
+      $('a[data-toggle="tab"][href="#checklist_tab"], a[data-fieldname="checklist_tab"]').off("shown.bs.tab.chk").on("shown.bs.tab.chk", function () {
+        render_checklist_info_banner();
+        setTimeout(render_inline_checklist_headers, 50);
+        setTimeout(render_inline_checklist_headers, 200);
+      });
+
+      if (frm.fields_dict.checklist_tab && frm.fields_dict.checklist_tab.$wrapper) {
+        frm.fields_dict.checklist_tab.$wrapper.off("shown.bs.tab.chk").on("shown.bs.tab.chk", function () {
+          render_checklist_info_banner();
+          setTimeout(render_inline_checklist_headers, 50);
+          setTimeout(render_inline_checklist_headers, 200);
+        });
+      }
+
+      // Initial loads
+      render_checklist_info_banner();
+      setTimeout(render_inline_checklist_headers, 100);
+      setTimeout(render_inline_checklist_headers, 400);
+      setTimeout(render_inline_checklist_headers, 800);
+    }
+
+    // Add Load Checklist button if empty on existing document
+    if (!frm.is_new() && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+      if (frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member") || frappe.user_roles.includes("System Manager")) {
+        frm.add_custom_button(__("Load Checklist Questions"), function () {
+          frappe.call({
+            method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
+            callback: function (r) {
+              if (r.message && r.message.length) {
+                frm.clear_table("checklist_items");
+                r.message.forEach((q) => {
+                  let row = frm.add_child("checklist_items");
+                  row.section = q.section;
+                  row.category = q.category;
+                  row.question = q.question;
+                  row.response = "";
+                  row.remarks = "";
+                });
+                frm.refresh_field("checklist_items");
+                frappe.msgprint(__("Checklist questions loaded successfully. Please save the document."));
+              }
+            },
+          });
+        }, __("Audit Checklist"));
       }
     }
   },
@@ -1181,7 +1517,9 @@ frappe.ui.form.on("My Audits", {
 
     const is_audit_team =
       frappe.user.has_role("Audit Manager") ||
-      frappe.user.has_role("Audit Member");
+      frappe.user.has_role("Audit Member") ||
+      frappe.user.has_role("System Manager") ||
+      frappe.session.user === "Administrator";
     const current_user = (frappe.session.user || "").toLowerCase();
     const audit_table = frm.doc.auditstages || frm.doc.audit_stages || [];
 
@@ -1226,6 +1564,15 @@ frappe.ui.form.on("My Audits", {
           });
         })
         .css({ "background-color": "#4a90e2", color: "white" });
+
+      // Edit Stages Button for Audit Team
+      if (is_audit_team && frm.doc.status !== "Closed") {
+        frm
+          .add_custom_button(__("Edit Stages"), function () {
+            open_stages_modal(frm);
+          })
+          .css({ "background-color": "#6366f1", color: "white" });
+      }
     }
 
     // 0. REOPEN LOGIC: Only Audit Team can reopen a Closed query
@@ -1237,6 +1584,37 @@ frappe.ui.form.on("My Audits", {
     if (is_audit_team) {
       frm
         .add_custom_button(__("Send"), function () {
+          // Gate check: Checklist must be completed before sending to stage users
+          if (frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
+            let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
+            if (unanswered.length > 0) {
+              frappe.msgprint({
+                title: __("Checklist Incomplete"),
+                indicator: "orange",
+                message: __(
+                  `<b>Please complete all questions in the "Audit Checklist" tab before sending.</b><br><br>There are currently <b>${unanswered.length}</b> questions pending response.`,
+                ),
+              });
+              return;
+            }
+          }
+
+          // Case details mandatory checks before dispatch
+          let missing_fields = [];
+          if (!frm.doc.query_type) missing_fields.push("Query Type");
+          if (!frm.doc.primary_nature) missing_fields.push("Primary Nature");
+          if (!frm.doc.department_alignment) missing_fields.push("Department Alignment");
+          if (missing_fields.length > 0) {
+            frappe.msgprint({
+              title: __("Missing Case Details"),
+              indicator: "red",
+              message: __(
+                `<b>Please fill mandatory case details before sending:</b><br>• ${missing_fields.join("<br>• ")}`,
+              ),
+            });
+            return;
+          }
+
           let stages = audit_table
             .filter((r) => r.stage_name)
             .map((r) => {
@@ -1633,7 +2011,9 @@ frappe.ui.form.on("My Audits", {
   handle_read_only_new: function (frm) {
     const is_audit_team =
       frappe.user.has_role("Audit Manager") ||
-      frappe.user.has_role("Audit Member");
+      frappe.user.has_role("Audit Member") ||
+      frappe.user.has_role("System Manager") ||
+      frappe.session.user === "Administrator";
 
     const current_user = frappe.session.user;
 
@@ -1672,7 +2052,28 @@ frappe.ui.form.on("My Audits", {
 
     frm.set_df_property("audit_stages", "read_only", 1);
 
-    // 2b. Make all *_attach_box fields read-only for stage users (prevent delete/remove)
+    // 2b. Checklist Tab visibility:
+    // Only show for new forms or cases that actually have checklist items.
+    // Completely hide for older legacy cases that don't have checklist items.
+    const has_checklist = frm.is_new() || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0);
+    const can_see_checklist = is_audit_team && has_checklist;
+
+    frm.toggle_display("checklist_tab", can_see_checklist);
+    frm.toggle_display("checklist_section", can_see_checklist);
+    frm.toggle_display("checklist_items", can_see_checklist);
+
+    // Explicitly toggle DOM nav-tab header in Frappe form
+    setTimeout(() => {
+      let $tab_nav_item = frm.page.wrapper.find('a[data-toggle="tab"][href="#checklist_tab"], a[data-fieldname="checklist_tab"]').closest("li");
+      if ($tab_nav_item.length) {
+        if (can_see_checklist) {
+          $tab_nav_item.show();
+        } else {
+          $tab_nav_item.hide();
+        }
+      }
+    }, 50);
+
     if (!is_audit_team) {
       const attach_fields = [
         "audit_attach_box", "bm_attach_box", "dh_attach_box", "com_attach_box",
@@ -1701,10 +2102,45 @@ frappe.ui.form.on("My Audits", {
       }
     }
 
-    // 3. Section Visibility
-    if (is_audit_team) {
-      frm.toggle_display("audit_items_section", true);
-      frm.toggle_display("audit_stages", true);
+    // 3. Section Visibility & Progressive Case Flow
+    // For legacy cases (without checklist), show fields directly like older flow
+    const is_checklist_done = !has_checklist || !!(frm.doc.checklist_completed || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0 && !frm.doc.checklist_items.some(r => !r.response)));
+
+    if (frm.is_new()) {
+      // Step 1: Initial new doc - only Branch is required to start
+      [
+        "query_type", "risk", "primary_nature", "department_alignment",
+        "employee_id", "query_description_section", "audit_query_subject_box",
+        "audit_query_box", "audit_attach_box", "tracking_section", "audit_items_section"
+      ].forEach(f => frm.toggle_display(f, false));
+
+      frm.toggle_display("emp_branch", true);
+      frm.set_df_property("emp_branch", "reqd", 1);
+    } else if (frm.doc.status === "Draft") {
+      // Step 2 & 3: Draft doc - show details only after checklist completion
+      let show_details = is_checklist_done;
+      [
+        "query_type", "risk", "primary_nature", "department_alignment",
+        "employee_id", "query_description_section", "audit_query_subject_box",
+        "audit_query_box", "audit_attach_box", "tracking_section"
+      ].forEach(f => frm.toggle_display(f, show_details));
+
+      // Make mandatory only after checklist is done
+      [
+        "query_type", "primary_nature", "department_alignment",
+        "audit_query_subject_box", "audit_query_box"
+      ].forEach(f => frm.set_df_property(f, "reqd", show_details ? 1 : 0));
+
+      if (is_audit_team) {
+        frm.toggle_display("audit_items_section", show_details);
+        frm.toggle_display("audit_stages", show_details);
+      }
+    } else {
+      // Non-draft existing docs: standard display
+      if (is_audit_team) {
+        frm.toggle_display("audit_items_section", true);
+        frm.toggle_display("audit_stages", true);
+      }
     }
 
     // Show the resolution section ONLY when the query is closed
@@ -2897,34 +3333,36 @@ function render_interactive_tracker(frm, can_edit) {
   // 4. Sortable Engine
   if (can_edit && typeof Sortable !== "undefined") {
     let el = document.getElementById("draggable-stages");
-    new Sortable(el, {
-      animation: 150,
-      draggable: ".sortable-item",
-      ghostClass: "sortable-ghost",
-      onEnd: function (evt) {
-        let old_index = evt.oldIndex - 1;
-        let new_index = evt.newIndex - 1;
+    if (el) {
+      new Sortable(el, {
+        animation: 150,
+        draggable: ".sortable-item",
+        ghostClass: "sortable-ghost",
+        onEnd: function (evt) {
+          let old_index = evt.oldIndex - 1;
+          let new_index = evt.newIndex - 1;
 
-        if (old_index < 0 || new_index < 0 || old_index === new_index) return;
+          if (old_index < 0 || new_index < 0 || old_index === new_index) return;
 
-        let moved_item = frm.doc.audit_stages.splice(old_index, 1)[0];
-        frm.doc.audit_stages.splice(new_index, 0, moved_item);
+          let moved_item = frm.doc.audit_stages.splice(old_index, 1)[0];
+          frm.doc.audit_stages.splice(new_index, 0, moved_item);
 
-        frm.doc.audit_stages.forEach((row, i) => {
-          row.stage = i + 1;
-          row.idx = i + 1;
-        });
-
-        frm.dirty();
-        frm.refresh_field("audit_stages");
-        frm.save().then(() => {
-          frappe.show_alert({
-            message: "Stage sequence updated",
-            indicator: "green",
+          frm.doc.audit_stages.forEach((row, i) => {
+            row.stage = i + 1;
+            row.idx = i + 1;
           });
-        });
-      },
-    });
+
+          frm.dirty();
+          frm.refresh_field("audit_stages");
+          frm.save().then(() => {
+            frappe.show_alert({
+              message: "Stage sequence updated",
+              indicator: "green",
+            });
+          });
+        },
+      });
+    }
   }
 }
 
@@ -2989,6 +3427,10 @@ function render_interactive_tracker(frm, can_edit) {
 // }
 
 function open_stages_modal(frm) {
+  const is_admin =
+    frappe.user.has_role("System Manager") ||
+    frappe.session.user === "Administrator";
+
   let d = new frappe.ui.Dialog({
     title: "Edit Audit Stages",
     size: "large",
@@ -3036,6 +3478,13 @@ function open_stages_modal(frm) {
           },
         ],
       },
+      {
+        fieldname: "update_master_audit_level",
+        fieldtype: "Check",
+        label: "Also sync & update Branch Audit Level master",
+        default: 1,
+        read_only: is_admin ? 0 : 1,
+      },
     ],
     primary_action_label: "Save Changes",
     primary_action: function () {
@@ -3043,57 +3492,71 @@ function open_stages_modal(frm) {
       if (document.activeElement) document.activeElement.blur();
 
       let grid_data = d.fields_dict.temp_stages.grid.get_data();
+      let update_al = d.get_value("update_master_audit_level") ? 1 : 0;
 
-      // 1. Store EXACT references to existing memory objects so we don't lose responses!
-      let old_rows_map = {};
-      (frm.doc.audit_stages || []).forEach((r) => {
-        old_rows_map[r.name] = r;
-      });
-
-      // 2. Empty the array WITHOUT deleting from frappe.locals memory
-      // This completely prevents the "Missing Fields" framework error
-      frm.doc.audit_stages = [];
-
-      // 3. Rebuild the child table perfectly
-      grid_data.forEach((row, idx) => {
-        let target_row;
-
-        if (row.stage_id && old_rows_map[row.stage_id]) {
-          // Re-use the existing Frappe object (retains responses, attachments, status)
-          target_row = old_rows_map[row.stage_id];
-          // Push it manually back into the form array
-          frm.doc.audit_stages.push(target_row);
-        } else {
-          // It's a completely new row added via the modal
-          // This automatically creates it in memory and pushes it to doc.audit_stages
-          target_row = frm.add_child("audit_stages");
-        }
-
-        // 4. Update the values from the modal safely
-        target_row.stage_name = row.stage_name;
-        target_row.employee = row.employee;
-        target_row.employee_name = row.employee_name;
-        target_row.email = row.email;
-        target_row.stage = idx + 1;
-        target_row.idx = idx + 1; // Required by Frappe for sequence tracking
-
-        if (!target_row.status) {
-          // target_row.status = 'Pending';
-          target_row.status = "";
-        }
-      });
-
-      frm.refresh_field("audit_stages");
-      frm.dirty(); // Tell Frappe the document has unsaved changes
-
-      // Save the document and refresh the UI tracker
-      frm.save().then(() => {
-        frappe.show_alert({
-          message: "Stages updated successfully",
-          indicator: "green",
+      // In Draft state or new doc, update memory objects
+      if (frm.is_new()) {
+        let old_rows_map = {};
+        (frm.doc.audit_stages || []).forEach((r) => {
+          old_rows_map[r.name] = r;
         });
-        render_interactive_tracker(frm, true);
-        d.hide();
+
+        frm.doc.audit_stages = [];
+        grid_data.forEach((row, idx) => {
+          let target_row;
+          if (row.stage_id && old_rows_map[row.stage_id]) {
+            target_row = old_rows_map[row.stage_id];
+            frm.doc.audit_stages.push(target_row);
+          } else {
+            target_row = frm.add_child("audit_stages");
+          }
+          target_row.stage_name = row.stage_name;
+          target_row.employee = row.employee;
+          target_row.employee_name = row.employee_name;
+          target_row.email = row.email;
+          target_row.stage = idx + 1;
+          target_row.idx = idx + 1;
+          if (!target_row.status) target_row.status = "";
+        });
+
+        frm.refresh_field("audit_stages");
+        frm.dirty();
+        frm.save().then(() => {
+          frappe.show_alert({
+            message: "Stages updated successfully",
+            indicator: "green",
+          });
+          render_interactive_tracker(frm, true);
+          d.hide();
+        });
+        return;
+      }
+
+      // For running or saved cases (Draft, Pending, Responded), call whitelisted backend method
+      frappe.call({
+        method: "audit_management.audit_management.doctype.my_audits.my_audits.update_case_audit_stages",
+        args: {
+          docname: frm.doc.name,
+          stages: JSON.stringify(grid_data),
+          update_audit_level: update_al,
+        },
+        freeze: true,
+        freeze_message: __("Updating stages..."),
+        callback: function (r) {
+          if (r.message && r.message.status === "success") {
+            let msg = r.message.audit_level_updated
+              ? "Stages & Branch Audit Level updated successfully"
+              : "Stages updated successfully";
+            frappe.show_alert({
+              message: msg,
+              indicator: "green",
+            });
+            d.hide();
+            frm.reload_doc().then(() => {
+              render_interactive_tracker(frm, true);
+            });
+          }
+        },
       });
     },
   });
@@ -3157,23 +3620,36 @@ function open_stages_modal(frm) {
   d.show();
 
   // --- ENABLE DRAG AND DROP IN THE MODAL ---
-  setTimeout(() => {
+  const init_modal_sortable = () => {
     let grid_body = d.$wrapper.find(".grid-body .rows")[0];
+    if (!grid_body) return;
 
-    if (grid_body && typeof Sortable !== "undefined") {
-      d.$wrapper.find(".grid-row").css("cursor", "grab");
+    // Use SortableJS (Frappe provides Sortable or window.Sortable)
+    let SortableLib = window.Sortable || (frappe.ui && frappe.ui.Sortable);
+    if (!SortableLib && typeof Sortable !== "undefined") {
+      SortableLib = Sortable;
+    }
 
-      new Sortable(grid_body, {
+    if (SortableLib) {
+      // Style index column as drag handles
+      d.$wrapper.find(".grid-row .row-index").css({
+        cursor: "grab",
+        "user-select": "none",
+        "font-weight": "bold",
+        color: "#2563eb",
+      }).attr("title", "Drag to reorder stage level");
+
+      new SortableLib(grid_body, {
         animation: 150,
-        handle: ".grid-row",
+        handle: ".row-index",
         ghostClass: "sortable-ghost",
         onEnd: function (evt) {
           let old_index = evt.oldIndex;
           let new_index = evt.newIndex;
-
           if (old_index === new_index) return;
 
-          let data_array = d.fields_dict.temp_stages.grid.data;
+          let grid_inst = d.fields_dict.temp_stages.grid;
+          let data_array = grid_inst.df.data || grid_inst.data;
           let moved_item = data_array.splice(old_index, 1)[0];
           data_array.splice(new_index, 0, moved_item);
 
@@ -3182,10 +3658,13 @@ function open_stages_modal(frm) {
             row._idx = i + 1;
           });
 
-          d.fields_dict.temp_stages.grid.refresh();
-          d.$wrapper.find(".grid-row").css("cursor", "grab");
+          grid_inst.refresh();
+          setTimeout(init_modal_sortable, 100);
         },
       });
     }
-  }, 300);
+  };
+
+  setTimeout(init_modal_sortable, 200);
+  setTimeout(init_modal_sortable, 600);
 }

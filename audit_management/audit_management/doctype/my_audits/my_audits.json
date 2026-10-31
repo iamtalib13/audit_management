@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
-  "autoname": "format:{branch_name}-{DD}{MM}{YY}-{###}",
+ "autoname": "format:{branch_name}-{DD}{MM}{YY}-{###}",
  "creation": "2024-09-02 15:38:12.323236",
  "default_view": "List",
  "doctype": "DocType",
@@ -204,7 +204,11 @@
   "query_generated_by_designation",
   "reopen",
   "column_break_eophe",
-  "query_generated_by_branch"
+  "query_generated_by_branch",
+  "checklist_tab",
+  "checklist_section",
+  "checklist_items",
+  "checklist_completed"
  ],
  "fields": [
   {
@@ -298,20 +302,18 @@
    "fieldname": "audit_query_box",
    "fieldtype": "Text Editor",
    "label": "Query Description :",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "primary_nature",
    "fieldtype": "Link",
    "label": "Primary Nature of Query",
-   "mandatory_depends_on": "eval:doc.__islocal",
    "options": "Audit Primary Nature"
   },
   {
    "fieldname": "department_alignment",
    "fieldtype": "Link",
    "label": "Departmental & Product Alignment",
-   "mandatory_depends_on": "eval:doc.__islocal",
    "options": "Audit Department"
   },
   {
@@ -603,23 +605,23 @@
   },
   {
    "fieldname": "emp_branch",
-    "fieldtype": "Link",
-    "ignore_user_permissions": 1,
-    "in_list_view": 1,
-    "in_standard_filter": 1,
-    "label": "Branch",
-    "options": "Audit Level",
-    "reqd": 1,
-    "set_only_once": 1
-   },
-   {
-    "fieldname": "branch_name",
-    "fieldtype": "Data",
-    "hidden": 1,
-    "label": "Branch Name",
-    "read_only": 1,
-    "set_only_once": 1
-   },
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Branch",
+   "options": "Audit Level",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Branch Name",
+   "read_only": 1,
+   "set_only_once": 1
+  },
   {
    "fieldname": "audit_attach_box",
    "fieldtype": "Attach",
@@ -1016,7 +1018,7 @@
    "fieldtype": "Small Text",
    "label": "Query Subject :",
    "max_height": "50px",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "column_break_afr2c",
@@ -1134,7 +1136,7 @@
    "fieldtype": "Link",
    "label": "Query Type",
    "options": "Audit Query Type",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "column_break_lmxqs",
@@ -1326,6 +1328,30 @@
    "fieldname": "reopen",
    "fieldtype": "Check",
    "label": "Reopen",
+   "read_only": 1
+  },
+  {
+   "fieldname": "checklist_tab",
+   "fieldtype": "Tab Break",
+   "label": "Audit Checklist"
+  },
+  {
+   "fieldname": "checklist_section",
+   "fieldtype": "Section Break",
+   "label": "Auditor Daily Checklist"
+  },
+  {
+   "fieldname": "checklist_items",
+   "fieldtype": "Table",
+   "label": "Checklist Items",
+   "options": "Audit Checklist Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "checklist_completed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Checklist Completed",
    "read_only": 1
   }
  ],

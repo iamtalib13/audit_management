@@ -50,9 +50,13 @@ def get_dashboard_stats(pending_start=0, recent_start=0, status=None, risk=None,
         from audit_management.audit_management.utils import get_user_allowed_divisions
         allowed_divisions = get_user_allowed_divisions(user)
 
+        # Check if current user is Employee 7487 or 447 (Full access to all records regardless of division)
+        emp_id = frappe.db.get_value("Employee", {"user_id": user}, "name") or user
+        is_all_division_user = emp_id in ("7487", "447") or user in ("7487", "447")
+
         # 1. 🟢 BASE FILTERS (Permissions)
         base_filters = {}
-        if is_admin: pass
+        if is_admin or is_all_division_user: pass
         elif is_manager:
             if allowed_divisions: base_filters["emp_division"] = ["in", allowed_divisions]
             else: base_filters["emp_division"] = "None"
