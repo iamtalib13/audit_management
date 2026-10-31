@@ -3405,6 +3405,10 @@ function render_interactive_tracker(frm, can_edit) {
 // }
 
 function open_stages_modal(frm) {
+  const is_admin =
+    frappe.user.has_role("System Manager") ||
+    frappe.session.user === "Administrator";
+
   let d = new frappe.ui.Dialog({
     title: "Edit Audit Stages",
     size: "large",
@@ -3457,6 +3461,7 @@ function open_stages_modal(frm) {
         fieldtype: "Check",
         label: "Also sync & update Branch Audit Level master",
         default: 1,
+        read_only: is_admin ? 0 : 1,
       },
     ],
     primary_action_label: "Save Changes",
