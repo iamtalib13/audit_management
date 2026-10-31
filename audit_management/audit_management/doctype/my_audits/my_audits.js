@@ -3593,23 +3593,36 @@ function open_stages_modal(frm) {
   d.show();
 
   // --- ENABLE DRAG AND DROP IN THE MODAL ---
-  setTimeout(() => {
+  const init_modal_sortable = () => {
     let grid_body = d.$wrapper.find(".grid-body .rows")[0];
+    if (!grid_body) return;
 
-    if (grid_body && typeof Sortable !== "undefined") {
-      d.$wrapper.find(".grid-row").css("cursor", "grab");
+    // Use SortableJS (Frappe provides Sortable or window.Sortable)
+    let SortableLib = window.Sortable || (frappe.ui && frappe.ui.Sortable);
+    if (!SortableLib && typeof Sortable !== "undefined") {
+      SortableLib = Sortable;
+    }
 
-      new Sortable(grid_body, {
+    if (SortableLib) {
+      // Style index column as drag handles
+      d.$wrapper.find(".grid-row .row-index").css({
+        cursor: "grab",
+        "user-select": "none",
+        "font-weight": "bold",
+        color: "#2563eb",
+      }).attr("title", "Drag to reorder stage level");
+
+      new SortableLib(grid_body, {
         animation: 150,
-        handle: ".grid-row",
+        handle: ".row-index",
         ghostClass: "sortable-ghost",
         onEnd: function (evt) {
           let old_index = evt.oldIndex;
           let new_index = evt.newIndex;
-
           if (old_index === new_index) return;
 
-          let data_array = d.fields_dict.temp_stages.grid.data;
+          let grid_inst = d.fields_dict.temp_stages.grid;
+          let data_array = grid_inst.df.data || grid_inst.data;
           let moved_item = data_array.splice(old_index, 1)[0];
           data_array.splice(new_index, 0, moved_item);
 
@@ -3618,10 +3631,13 @@ function open_stages_modal(frm) {
             row._idx = i + 1;
           });
 
-          d.fields_dict.temp_stages.grid.refresh();
-          d.$wrapper.find(".grid-row").css("cursor", "grab");
+          grid_inst.refresh();
+          setTimeout(init_modal_sortable, 100);
         },
       });
     }
-  }, 300);
+  };
+
+  setTimeout(init_modal_sortable, 200);
+  setTimeout(init_modal_sortable, 600);
 }
