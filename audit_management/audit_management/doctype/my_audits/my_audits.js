@@ -2067,13 +2067,19 @@ frappe.ui.form.on("My Audits", {
       "audit_query_box", "audit_attach_box", "tracking_section"
     ];
 
-    // Always keep audit details fields visible
+    // Always keep audit details fields visible and restore mandatory flags
     audit_details_fields.forEach((f) => frm.toggle_display(f, true));
     frm.toggle_display("emp_branch", true);
 
-    if (frm.is_new()) {
-      frm.set_df_property("emp_branch", "reqd", 1);
-    }
+    const mandatory_details_fields = [
+      "emp_branch",
+      "query_type",
+      "primary_nature",
+      "department_alignment",
+      "audit_query_subject_box",
+      "audit_query_box"
+    ];
+    mandatory_details_fields.forEach((f) => frm.set_df_property(f, "reqd", 1));
 
     if (is_audit_team) {
       frm.toggle_display("audit_items_section", true);
