@@ -2012,26 +2012,8 @@ frappe.ui.form.on("My Audits", {
     frm.set_df_property("audit_stages", "read_only", 1);
 
     // 2b. Checklist Tab visibility:
-    // Only show when query_type is 'Audit Report Compliance', user is in Audit Team, and only for new cases
-    const is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
-    const is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
-    const can_see_checklist = is_audit_team && is_audit_compliance && is_new_case;
-
-    frm.toggle_display("checklist_tab", can_see_checklist);
-    frm.toggle_display("checklist_section", can_see_checklist);
-    frm.toggle_display("checklist_items", can_see_checklist);
-
-    // Explicitly toggle DOM nav-tab header in Frappe form
-    setTimeout(() => {
-      let $tab_nav_item = frm.page.wrapper.find('a[data-toggle="tab"][href="#checklist_tab"], a[data-fieldname="checklist_tab"]').closest("li");
-      if ($tab_nav_item.length) {
-        if (can_see_checklist) {
-          $tab_nav_item.show();
-        } else {
-          $tab_nav_item.hide();
-        }
-      }
-    }, 50);
+    // Only show when query_type is 'Audit Report Compliance', user is in Audit Team, new case, and branch not disabled
+    update_checklist_visibility(frm);
 
     if (!is_audit_team) {
       const attach_fields = [
@@ -2125,20 +2107,39 @@ frappe.ui.form.on("My Audits", {
 
   handle_close_query: function (frm) {
     const is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
-    if (is_new_case && frm.doc.query_type === "Audit Report Compliance" && frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
-      let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
-      if (unanswered.length > 0) {
-        frappe.msgprint({
-          title: __("Checklist Incomplete"),
-          indicator: "red",
-          message: __(
-            `<b>Cannot close audit query until all Audit Checklist questions are completed.</b><br><br>There are currently <b>${unanswered.length}</b> questions pending response in the "Audit Checklist" tab.`,
-          ),
-        });
-        return;
-      }
+    
+    // Check if checklist is disabled for this branch before validating
+    if (is_new_case && frm.doc.query_type === "Audit Report Compliance" && frm.doc.emp_branch) {
+      frappe.call({
+        method: "audit_management.audit_management.doctype.my_audits.my_audits.is_checklist_disabled",
+        args: { emp_branch: frm.doc.emp_branch },
+        callback: function (r) {
+          if (!r.message) {
+            // Checklist is NOT disabled for this branch, enforce validation
+            if (frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
+              let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
+              if (unanswered.length > 0) {
+                frappe.msgprint({
+                  title: __("Checklist Incomplete"),
+                  indicator: "red",
+                  message: __(
+                    `<b>Cannot close audit query until all Audit Checklist questions are completed.</b><br><br>There are currently <b>${unanswered.length}</b> questions pending response in the "Audit Checklist" tab.`,
+                  ),
+                });
+                return;
+              }
+            }
+          }
+          frm.trigger("show_close_dialog");
+        },
+      });
+      return;
     }
 
+    frm.trigger("show_close_dialog");
+  },
+
+  show_close_dialog: function (frm) {
     let d = new frappe.ui.Dialog({
       title: __("Enter Resolution Details"),
       fields: [
@@ -2253,6 +2254,7 @@ frappe.ui.form.on("My Audits", {
   },
 
   emp_branch: function (frm) {
+    update_checklist_visibility(frm);
     if (!frm.doc.emp_branch) return;
     frappe.db
       .get_single_value("Audit Management Settings", "use_new_system")
@@ -2899,30 +2901,34 @@ frappe.ui.form.on("My Audits", {
       frappe.user_roles.includes("Audit Member");
     render_interactive_tracker(frm, can_edit);
 
-    // Dynamic handling of checklist tab when query_type changes
-    let is_audit_team =
-      frappe.user_roles.includes("Audit Manager") ||
-      frappe.user_roles.includes("Audit Member") ||
-      frappe.user_roles.includes("System Manager");
-    let is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
-    let is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
-    let can_see_checklist = is_audit_team && is_audit_compliance && is_new_case;
+    update_checklist_visibility(frm);
+  },
+});
 
-    frm.toggle_display("checklist_tab", can_see_checklist);
-    frm.toggle_display("checklist_section", can_see_checklist);
-    frm.toggle_display("checklist_items", can_see_checklist);
+function update_checklist_visibility(frm) {
+  let is_audit_team =
+    frappe.user_roles.includes("Audit Manager") ||
+    frappe.user_roles.includes("Audit Member") ||
+    frappe.user_roles.includes("System Manager");
+  let is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
+  let is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
+
+  const apply_visibility = (can_see) => {
+    frm.toggle_display("checklist_tab", can_see);
+    frm.toggle_display("checklist_section", can_see);
+    frm.toggle_display("checklist_items", can_see);
 
     let $tab_nav_item = frm.page.wrapper.find('a[data-toggle="tab"][href="#checklist_tab"], a[data-fieldname="checklist_tab"]').closest("li");
     if ($tab_nav_item.length) {
-      if (can_see_checklist) {
+      if (can_see) {
         $tab_nav_item.show();
       } else {
         $tab_nav_item.hide();
       }
     }
 
-    // Auto-populate checklist questions when Audit Report Compliance is selected and table is empty
-    if (can_see_checklist && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+    // Auto-populate checklist questions when visible and table is empty
+    if (can_see && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
       frappe.call({
         method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
         callback: function (r) {
@@ -2941,8 +2947,26 @@ frappe.ui.form.on("My Audits", {
         },
       });
     }
-  },
-});
+  };
+
+  if (!is_audit_team || !is_audit_compliance || !is_new_case) {
+    apply_visibility(false);
+    return;
+  }
+
+  // Check if branch disables checklist
+  if (frm.doc.emp_branch) {
+    frappe.call({
+      method: "audit_management.audit_management.doctype.my_audits.my_audits.is_checklist_disabled",
+      args: { emp_branch: frm.doc.emp_branch },
+      callback: function (r) {
+        apply_visibility(!r.message);
+      },
+    });
+  } else {
+    apply_visibility(true);
+  }
+}
 function render_interactive_tracker(frm, can_edit) {
   console.log("-> render_interactive_tracker entered. query_type:", frm.doc.query_type, "tat_config_loaded:", frm.tat_config_loaded);
   // 0. Fetch TAT Config if not already loaded
