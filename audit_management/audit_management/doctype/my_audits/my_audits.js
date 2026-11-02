@@ -2143,6 +2143,20 @@ frappe.ui.form.on("My Audits", {
   },
 
   handle_close_query: function (frm) {
+    if (frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
+      let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
+      if (unanswered.length > 0) {
+        frappe.msgprint({
+          title: __("Checklist Incomplete"),
+          indicator: "red",
+          message: __(
+            `<b>Cannot close audit query until all Audit Checklist questions are completed.</b><br><br>There are currently <b>${unanswered.length}</b> questions pending response in the "Audit Checklist" tab.`,
+          ),
+        });
+        return;
+      }
+    }
+
     let d = new frappe.ui.Dialog({
       title: __("Enter Resolution Details"),
       fields: [

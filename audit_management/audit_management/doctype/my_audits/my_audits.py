@@ -19,6 +19,7 @@ class MyAudits(Document):
         update_audit_aging(self)
         if self.status == "Closed":
             self.validate_resolution_fields()
+            self.validate_checklist_for_closure()
         
         # Sync auditor_name and branch to all checklist items for reporting
         self.sync_checklist_meta()
@@ -403,6 +404,18 @@ class MyAudits(Document):
             if not self.get(field):
                 frappe.throw(_("Field '{0}' is mandatory for query resolution.").format(
                     self.meta.get_label(field)))
+
+    def validate_checklist_for_closure(self):
+        """Enforce checklist completion before a case can be closed."""
+        if getattr(self, "checklist_items", None):
+            unanswered = [row.idx for row in self.checklist_items if not row.response]
+            if unanswered:
+                self.checklist_completed = 0
+                frappe.throw(
+                    _("Cannot close audit query until all Audit Checklist questions are answered. ({0} questions pending)").format(len(unanswered))
+                )
+            else:
+                self.checklist_completed = 1
 
 
 def populate_audit_stages(doc):
