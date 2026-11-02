@@ -2103,44 +2103,23 @@ frappe.ui.form.on("My Audits", {
     }
 
     // 3. Section Visibility & Progressive Case Flow
-    // For legacy cases (without checklist), show fields directly like older flow
-    const is_checklist_done = !has_checklist || !!(frm.doc.checklist_completed || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0 && !frm.doc.checklist_items.some(r => !r.response)));
+    const audit_details_fields = [
+      "query_type", "risk", "primary_nature", "department_alignment",
+      "employee_id", "query_description_section", "audit_query_subject_box",
+      "audit_query_box", "audit_attach_box", "tracking_section"
+    ];
+
+    // Always keep audit details fields visible
+    audit_details_fields.forEach((f) => frm.toggle_display(f, true));
+    frm.toggle_display("emp_branch", true);
 
     if (frm.is_new()) {
-      // Step 1: Initial new doc - only Branch is required to start
-      [
-        "query_type", "risk", "primary_nature", "department_alignment",
-        "employee_id", "query_description_section", "audit_query_subject_box",
-        "audit_query_box", "audit_attach_box", "tracking_section", "audit_items_section"
-      ].forEach(f => frm.toggle_display(f, false));
-
-      frm.toggle_display("emp_branch", true);
       frm.set_df_property("emp_branch", "reqd", 1);
-    } else if (frm.doc.status === "Draft") {
-      // Step 2 & 3: Draft doc - show details only after checklist completion
-      let show_details = is_checklist_done;
-      [
-        "query_type", "risk", "primary_nature", "department_alignment",
-        "employee_id", "query_description_section", "audit_query_subject_box",
-        "audit_query_box", "audit_attach_box", "tracking_section"
-      ].forEach(f => frm.toggle_display(f, show_details));
+    }
 
-      // Make mandatory only after checklist is done
-      [
-        "query_type", "primary_nature", "department_alignment",
-        "audit_query_subject_box", "audit_query_box"
-      ].forEach(f => frm.set_df_property(f, "reqd", show_details ? 1 : 0));
-
-      if (is_audit_team) {
-        frm.toggle_display("audit_items_section", show_details);
-        frm.toggle_display("audit_stages", show_details);
-      }
-    } else {
-      // Non-draft existing docs: standard display
-      if (is_audit_team) {
-        frm.toggle_display("audit_items_section", true);
-        frm.toggle_display("audit_stages", true);
-      }
+    if (is_audit_team) {
+      frm.toggle_display("audit_items_section", true);
+      frm.toggle_display("audit_stages", true);
     }
 
     // Show the resolution section ONLY when the query is closed
