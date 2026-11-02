@@ -233,8 +233,8 @@ frappe.ui.form.on("My Audits", {
       }
     }
 
-    // Auto-populate checklist questions for new doc if empty
-    if (frm.is_new() && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+    // Auto-populate checklist questions ONLY when query_type is Audit Report Compliance
+    if (frm.is_new() && frm.doc.query_type === "Audit Report Compliance" && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
       frappe.call({
         method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
         callback: function (r) {
@@ -543,32 +543,6 @@ frappe.ui.form.on("My Audits", {
       setTimeout(render_inline_checklist_headers, 100);
       setTimeout(render_inline_checklist_headers, 400);
       setTimeout(render_inline_checklist_headers, 800);
-    }
-
-    // Add Load Checklist button if empty on existing document
-    if (!frm.is_new() && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
-      if (frappe.user_roles.includes("Audit Manager") || frappe.user_roles.includes("Audit Member") || frappe.user_roles.includes("System Manager")) {
-        frm.add_custom_button(__("Load Checklist Questions"), function () {
-          frappe.call({
-            method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
-            callback: function (r) {
-              if (r.message && r.message.length) {
-                frm.clear_table("checklist_items");
-                r.message.forEach((q) => {
-                  let row = frm.add_child("checklist_items");
-                  row.section = q.section;
-                  row.category = q.category;
-                  row.question = q.question;
-                  row.response = "";
-                  row.remarks = "";
-                });
-                frm.refresh_field("checklist_items");
-                frappe.msgprint(__("Checklist questions loaded successfully. Please save the document."));
-              }
-            },
-          });
-        }, __("Audit Checklist"));
-      }
     }
   },
 
@@ -1584,21 +1558,6 @@ frappe.ui.form.on("My Audits", {
     if (is_audit_team) {
       frm
         .add_custom_button(__("Send"), function () {
-          // Gate check: Checklist must be completed before sending to stage users
-          if (frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
-            let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
-            if (unanswered.length > 0) {
-              frappe.msgprint({
-                title: __("Checklist Incomplete"),
-                indicator: "orange",
-                message: __(
-                  `<b>Please complete all questions in the "Audit Checklist" tab before sending.</b><br><br>There are currently <b>${unanswered.length}</b> questions pending response.`,
-                ),
-              });
-              return;
-            }
-          }
-
           // Case details mandatory checks before dispatch
           let missing_fields = [];
           if (!frm.doc.query_type) missing_fields.push("Query Type");
@@ -2053,10 +2012,10 @@ frappe.ui.form.on("My Audits", {
     frm.set_df_property("audit_stages", "read_only", 1);
 
     // 2b. Checklist Tab visibility:
-    // Only show for new forms or cases that actually have checklist items.
-    // Completely hide for older legacy cases that don't have checklist items.
-    const has_checklist = frm.is_new() || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0);
-    const can_see_checklist = is_audit_team && has_checklist;
+    // Only show when query_type is 'Audit Report Compliance', user is in Audit Team, and only for new cases
+    const is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
+    const is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
+    const can_see_checklist = is_audit_team && is_audit_compliance && is_new_case;
 
     frm.toggle_display("checklist_tab", can_see_checklist);
     frm.toggle_display("checklist_section", can_see_checklist);
@@ -2103,44 +2062,30 @@ frappe.ui.form.on("My Audits", {
     }
 
     // 3. Section Visibility & Progressive Case Flow
-    // For legacy cases (without checklist), show fields directly like older flow
-    const is_checklist_done = !has_checklist || !!(frm.doc.checklist_completed || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0 && !frm.doc.checklist_items.some(r => !r.response)));
+    const audit_details_fields = [
+      "query_type", "risk", "primary_nature", "department_alignment",
+      "query_description_section", "audit_query_subject_box",
+      "audit_query_box", "audit_attach_box", "tracking_section"
+    ];
 
-    if (frm.is_new()) {
-      // Step 1: Initial new doc - only Branch is required to start
-      [
-        "query_type", "risk", "primary_nature", "department_alignment",
-        "employee_id", "query_description_section", "audit_query_subject_box",
-        "audit_query_box", "audit_attach_box", "tracking_section", "audit_items_section"
-      ].forEach(f => frm.toggle_display(f, false));
+    // Always keep audit details fields visible and restore mandatory flags
+    audit_details_fields.forEach((f) => frm.toggle_display(f, true));
+    frm.toggle_display("emp_branch", true);
+    frm.toggle_display("employee_id", false);
 
-      frm.toggle_display("emp_branch", true);
-      frm.set_df_property("emp_branch", "reqd", 1);
-    } else if (frm.doc.status === "Draft") {
-      // Step 2 & 3: Draft doc - show details only after checklist completion
-      let show_details = is_checklist_done;
-      [
-        "query_type", "risk", "primary_nature", "department_alignment",
-        "employee_id", "query_description_section", "audit_query_subject_box",
-        "audit_query_box", "audit_attach_box", "tracking_section"
-      ].forEach(f => frm.toggle_display(f, show_details));
+    const mandatory_details_fields = [
+      "emp_branch",
+      "query_type",
+      "primary_nature",
+      "department_alignment",
+      "audit_query_subject_box",
+      "audit_query_box"
+    ];
+    mandatory_details_fields.forEach((f) => frm.set_df_property(f, "reqd", 1));
 
-      // Make mandatory only after checklist is done
-      [
-        "query_type", "primary_nature", "department_alignment",
-        "audit_query_subject_box", "audit_query_box"
-      ].forEach(f => frm.set_df_property(f, "reqd", show_details ? 1 : 0));
-
-      if (is_audit_team) {
-        frm.toggle_display("audit_items_section", show_details);
-        frm.toggle_display("audit_stages", show_details);
-      }
-    } else {
-      // Non-draft existing docs: standard display
-      if (is_audit_team) {
-        frm.toggle_display("audit_items_section", true);
-        frm.toggle_display("audit_stages", true);
-      }
+    if (is_audit_team) {
+      frm.toggle_display("audit_items_section", true);
+      frm.toggle_display("audit_stages", true);
     }
 
     // Show the resolution section ONLY when the query is closed
@@ -2179,6 +2124,21 @@ frappe.ui.form.on("My Audits", {
   },
 
   handle_close_query: function (frm) {
+    const is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
+    if (is_new_case && frm.doc.query_type === "Audit Report Compliance" && frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
+      let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
+      if (unanswered.length > 0) {
+        frappe.msgprint({
+          title: __("Checklist Incomplete"),
+          indicator: "red",
+          message: __(
+            `<b>Cannot close audit query until all Audit Checklist questions are completed.</b><br><br>There are currently <b>${unanswered.length}</b> questions pending response in the "Audit Checklist" tab.`,
+          ),
+        });
+        return;
+      }
+    }
+
     let d = new frappe.ui.Dialog({
       title: __("Enter Resolution Details"),
       fields: [
@@ -2938,6 +2898,49 @@ frappe.ui.form.on("My Audits", {
       frappe.user_roles.includes("Audit Manager") ||
       frappe.user_roles.includes("Audit Member");
     render_interactive_tracker(frm, can_edit);
+
+    // Dynamic handling of checklist tab when query_type changes
+    let is_audit_team =
+      frappe.user_roles.includes("Audit Manager") ||
+      frappe.user_roles.includes("Audit Member") ||
+      frappe.user_roles.includes("System Manager");
+    let is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
+    let is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
+    let can_see_checklist = is_audit_team && is_audit_compliance && is_new_case;
+
+    frm.toggle_display("checklist_tab", can_see_checklist);
+    frm.toggle_display("checklist_section", can_see_checklist);
+    frm.toggle_display("checklist_items", can_see_checklist);
+
+    let $tab_nav_item = frm.page.wrapper.find('a[data-toggle="tab"][href="#checklist_tab"], a[data-fieldname="checklist_tab"]').closest("li");
+    if ($tab_nav_item.length) {
+      if (can_see_checklist) {
+        $tab_nav_item.show();
+      } else {
+        $tab_nav_item.hide();
+      }
+    }
+
+    // Auto-populate checklist questions when Audit Report Compliance is selected and table is empty
+    if (can_see_checklist && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+      frappe.call({
+        method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
+        callback: function (r) {
+          if (r.message && r.message.length) {
+            frm.clear_table("checklist_items");
+            r.message.forEach((q) => {
+              let row = frm.add_child("checklist_items");
+              row.section = q.section;
+              row.category = q.category;
+              row.question = q.question;
+              row.response = "";
+              row.remarks = "";
+            });
+            frm.refresh_field("checklist_items");
+          }
+        },
+      });
+    }
   },
 });
 function render_interactive_tracker(frm, can_edit) {

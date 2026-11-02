@@ -19,6 +19,7 @@ class MyAudits(Document):
         update_audit_aging(self)
         if self.status == "Closed":
             self.validate_resolution_fields()
+            self.validate_checklist_for_closure()
         
         # Sync auditor_name and branch to all checklist items for reporting
         self.sync_checklist_meta()
@@ -32,7 +33,7 @@ class MyAudits(Document):
                 if not self.get(field):
                     frappe.throw(_("{0} is mandatory to send query").format(self.meta.get_label(field)))
 
-            # Ensure all checklist questions are answered before leaving Draft
+            # Sync checklist completion status without blocking dispatch
             self.validate_checklist_completion()
         else:
             # Sync completion status while in Draft
@@ -43,13 +44,7 @@ class MyAudits(Document):
     def validate_checklist_completion(self):
         if getattr(self, "checklist_items", None):
             unanswered = [row.idx for row in self.checklist_items if not row.response]
-            if unanswered:
-                self.checklist_completed = 0
-                frappe.throw(
-                    _("Please complete all Audit Checklist questions before sending the audit query. ({0} questions pending)").format(len(unanswered))
-                )
-            else:
-                self.checklist_completed = 1
+            self.checklist_completed = 0 if unanswered else 1
 
     def before_insert(self):
         # 1. Force the status to Draft upon creation
@@ -80,8 +75,9 @@ class MyAudits(Document):
         # 4. Set emp_division on the document from the Employee's custom_division
         self.emp_division = employee.custom_division
 
-        # 5. Populate default Audit Checklist items if empty
-        self.populate_default_checklist()
+        # 5. Populate default Audit Checklist items if empty and query_type is Audit Report Compliance
+        if getattr(self, "query_type", None) == "Audit Report Compliance":
+            self.populate_default_checklist()
 
     def sync_checklist_meta(self):
         auditor = self.query_generated_by_name or frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "employee_name") or self.owner
@@ -409,6 +405,19 @@ class MyAudits(Document):
             if not self.get(field):
                 frappe.throw(_("Field '{0}' is mandatory for query resolution.").format(
                     self.meta.get_label(field)))
+
+    def validate_checklist_for_closure(self):
+        """Enforce checklist completion before a case can be closed (only for new cases with Audit Report Compliance)."""
+        is_new_case = self.is_new() or (self.creation and str(self.creation) >= "2026-11-02")
+        if is_new_case and getattr(self, "query_type", None) == "Audit Report Compliance" and getattr(self, "checklist_items", None):
+            unanswered = [row.idx for row in self.checklist_items if not row.response]
+            if unanswered:
+                self.checklist_completed = 0
+                frappe.throw(
+                    _("Cannot close audit query until all Audit Checklist questions are answered. ({0} questions pending)").format(len(unanswered))
+                )
+            else:
+                self.checklist_completed = 1
 
 
 def populate_audit_stages(doc):
