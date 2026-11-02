@@ -198,17 +198,7 @@ frappe.ui.form.on("My Audits", {
 
         // 2. Hide the Save button manually without touching the "Draft" header status!
         frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
-      }, 800);
-
-      // 3. Optional: Add a real-time listener.
-      // If Frappe ever forces it back on, this ensures it only stays visible if the form is actually modified.
-      setInterval(() => {
-        if (!frm.is_dirty()) {
-          frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
-        } else {
-          frm.page.wrapper.find('.primary-action[data-label="Save"]').show();
-        }
-      }, 1000);
+      }, 500);
     }
 
     // Realtime filter: remove admin/system entries as they arrive
@@ -538,11 +528,11 @@ frappe.ui.form.on("My Audits", {
         });
       }
 
-      // Initial loads
-      render_checklist_info_banner();
-      setTimeout(render_inline_checklist_headers, 100);
-      setTimeout(render_inline_checklist_headers, 400);
-      setTimeout(render_inline_checklist_headers, 800);
+      // Initial loads only if tab is currently active
+      if ($('a[data-toggle="tab"][href="#checklist_tab"]').closest("li").hasClass("active")) {
+        render_checklist_info_banner();
+        setTimeout(render_inline_checklist_headers, 50);
+      }
     }
   },
 
@@ -2954,12 +2944,22 @@ function update_checklist_visibility(frm) {
     return;
   }
 
-  // Check if branch disables checklist
+  // Check if branch disables checklist (cached to prevent slow API re-fetching)
+  if (!window._checklist_branch_cache) {
+    window._checklist_branch_cache = {};
+  }
+
   if (frm.doc.emp_branch) {
+    if (window._checklist_branch_cache[frm.doc.emp_branch] !== undefined) {
+      apply_visibility(!window._checklist_branch_cache[frm.doc.emp_branch]);
+      return;
+    }
+
     frappe.call({
       method: "audit_management.audit_management.doctype.my_audits.my_audits.is_checklist_disabled",
       args: { emp_branch: frm.doc.emp_branch },
       callback: function (r) {
+        window._checklist_branch_cache[frm.doc.emp_branch] = !!r.message;
         apply_visibility(!r.message);
       },
     });
