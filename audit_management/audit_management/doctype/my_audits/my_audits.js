@@ -2063,13 +2063,14 @@ frappe.ui.form.on("My Audits", {
     // 3. Section Visibility & Progressive Case Flow
     const audit_details_fields = [
       "query_type", "risk", "primary_nature", "department_alignment",
-      "employee_id", "query_description_section", "audit_query_subject_box",
+      "query_description_section", "audit_query_subject_box",
       "audit_query_box", "audit_attach_box", "tracking_section"
     ];
 
     // Always keep audit details fields visible and restore mandatory flags
     audit_details_fields.forEach((f) => frm.toggle_display(f, true));
     frm.toggle_display("emp_branch", true);
+    frm.toggle_display("employee_id", false);
 
     const mandatory_details_fields = [
       "emp_branch",
