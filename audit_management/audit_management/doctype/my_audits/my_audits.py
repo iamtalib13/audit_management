@@ -75,8 +75,9 @@ class MyAudits(Document):
         # 4. Set emp_division on the document from the Employee's custom_division
         self.emp_division = employee.custom_division
 
-        # 5. Populate default Audit Checklist items if empty
-        self.populate_default_checklist()
+        # 5. Populate default Audit Checklist items if empty and query_type is Audit Report Compliance
+        if getattr(self, "query_type", None) == "Audit Report Compliance":
+            self.populate_default_checklist()
 
     def sync_checklist_meta(self):
         auditor = self.query_generated_by_name or frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "employee_name") or self.owner
@@ -406,8 +407,8 @@ class MyAudits(Document):
                     self.meta.get_label(field)))
 
     def validate_checklist_for_closure(self):
-        """Enforce checklist completion before a case can be closed."""
-        if getattr(self, "checklist_items", None):
+        """Enforce checklist completion before a case can be closed (only for Audit Report Compliance)."""
+        if getattr(self, "query_type", None) == "Audit Report Compliance" and getattr(self, "checklist_items", None):
             unanswered = [row.idx for row in self.checklist_items if not row.response]
             if unanswered:
                 self.checklist_completed = 0

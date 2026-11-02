@@ -233,8 +233,8 @@ frappe.ui.form.on("My Audits", {
       }
     }
 
-    // Auto-populate checklist questions for new doc if empty
-    if (frm.is_new() && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+    // Auto-populate checklist questions ONLY when query_type is Audit Report Compliance
+    if (frm.is_new() && frm.doc.query_type === "Audit Report Compliance" && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
       frappe.call({
         method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
         callback: function (r) {
@@ -2038,10 +2038,9 @@ frappe.ui.form.on("My Audits", {
     frm.set_df_property("audit_stages", "read_only", 1);
 
     // 2b. Checklist Tab visibility:
-    // Only show for new forms or cases that actually have checklist items.
-    // Completely hide for older legacy cases that don't have checklist items.
-    const has_checklist = frm.is_new() || (frm.doc.checklist_items && frm.doc.checklist_items.length > 0);
-    const can_see_checklist = is_audit_team && has_checklist;
+    // Only show when query_type is 'Audit Report Compliance' and user is in Audit Team
+    const is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
+    const can_see_checklist = is_audit_team && is_audit_compliance;
 
     frm.toggle_display("checklist_tab", can_see_checklist);
     frm.toggle_display("checklist_section", can_see_checklist);
@@ -2143,7 +2142,7 @@ frappe.ui.form.on("My Audits", {
   },
 
   handle_close_query: function (frm) {
-    if (frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
+    if (frm.doc.query_type === "Audit Report Compliance" && frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
       let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
       if (unanswered.length > 0) {
         frappe.msgprint({
@@ -2916,6 +2915,48 @@ frappe.ui.form.on("My Audits", {
       frappe.user_roles.includes("Audit Manager") ||
       frappe.user_roles.includes("Audit Member");
     render_interactive_tracker(frm, can_edit);
+
+    // Dynamic handling of checklist tab when query_type changes
+    let is_audit_team =
+      frappe.user_roles.includes("Audit Manager") ||
+      frappe.user_roles.includes("Audit Member") ||
+      frappe.user_roles.includes("System Manager");
+    let is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
+    let can_see_checklist = is_audit_team && is_audit_compliance;
+
+    frm.toggle_display("checklist_tab", can_see_checklist);
+    frm.toggle_display("checklist_section", can_see_checklist);
+    frm.toggle_display("checklist_items", can_see_checklist);
+
+    let $tab_nav_item = frm.page.wrapper.find('a[data-toggle="tab"][href="#checklist_tab"], a[data-fieldname="checklist_tab"]').closest("li");
+    if ($tab_nav_item.length) {
+      if (can_see_checklist) {
+        $tab_nav_item.show();
+      } else {
+        $tab_nav_item.hide();
+      }
+    }
+
+    // Auto-populate checklist questions when Audit Report Compliance is selected and table is empty
+    if (can_see_checklist && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+      frappe.call({
+        method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
+        callback: function (r) {
+          if (r.message && r.message.length) {
+            frm.clear_table("checklist_items");
+            r.message.forEach((q) => {
+              let row = frm.add_child("checklist_items");
+              row.section = q.section;
+              row.category = q.category;
+              row.question = q.question;
+              row.response = "";
+              row.remarks = "";
+            });
+            frm.refresh_field("checklist_items");
+          }
+        },
+      });
+    }
   },
 });
 function render_interactive_tracker(frm, can_edit) {
