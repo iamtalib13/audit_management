@@ -407,8 +407,11 @@ class MyAudits(Document):
                     self.meta.get_label(field)))
 
     def validate_checklist_for_closure(self):
-        """Enforce checklist completion before a case can be closed (only for new cases with Audit Report Compliance)."""
+        """Enforce checklist completion before a case can be closed (only for new cases with Audit Report Compliance and branch not disabled)."""
         is_new_case = self.is_new() or (self.creation and str(self.creation) >= "2026-11-02")
+        if is_checklist_disabled_for_branch(self.emp_branch):
+            return
+
         if is_new_case and getattr(self, "query_type", None) == "Audit Report Compliance" and getattr(self, "checklist_items", None):
             unanswered = [row.idx for row in self.checklist_items if not row.response]
             if unanswered:
@@ -418,6 +421,21 @@ class MyAudits(Document):
                 )
             else:
                 self.checklist_completed = 1
+
+
+def is_checklist_disabled_for_branch(emp_branch):
+    """Check if audit checklist is disabled for the branch via linked Sahayog Branch."""
+    if not emp_branch:
+        return False
+    sahayog_branch = frappe.db.get_value("Audit Level", emp_branch, "sahayog_branch")
+    if sahayog_branch and frappe.db.has_column("Sahayog Branch", "disable_audit_checklist"):
+        return bool(frappe.db.get_value("Sahayog Branch", sahayog_branch, "disable_audit_checklist"))
+    return False
+
+
+@frappe.whitelist()
+def is_checklist_disabled(emp_branch):
+    return is_checklist_disabled_for_branch(emp_branch)
 
 
 def populate_audit_stages(doc):
