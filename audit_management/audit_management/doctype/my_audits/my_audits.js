@@ -2012,9 +2012,10 @@ frappe.ui.form.on("My Audits", {
     frm.set_df_property("audit_stages", "read_only", 1);
 
     // 2b. Checklist Tab visibility:
-    // Only show when query_type is 'Audit Report Compliance' and user is in Audit Team
+    // Only show when query_type is 'Audit Report Compliance', user is in Audit Team, and only for new cases
     const is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
-    const can_see_checklist = is_audit_team && is_audit_compliance;
+    const is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
+    const can_see_checklist = is_audit_team && is_audit_compliance && is_new_case;
 
     frm.toggle_display("checklist_tab", can_see_checklist);
     frm.toggle_display("checklist_section", can_see_checklist);
@@ -2123,7 +2124,8 @@ frappe.ui.form.on("My Audits", {
   },
 
   handle_close_query: function (frm) {
-    if (frm.doc.query_type === "Audit Report Compliance" && frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
+    const is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
+    if (is_new_case && frm.doc.query_type === "Audit Report Compliance" && frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
       let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
       if (unanswered.length > 0) {
         frappe.msgprint({
@@ -2903,7 +2905,8 @@ frappe.ui.form.on("My Audits", {
       frappe.user_roles.includes("Audit Member") ||
       frappe.user_roles.includes("System Manager");
     let is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
-    let can_see_checklist = is_audit_team && is_audit_compliance;
+    let is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
+    let can_see_checklist = is_audit_team && is_audit_compliance && is_new_case;
 
     frm.toggle_display("checklist_tab", can_see_checklist);
     frm.toggle_display("checklist_section", can_see_checklist);

@@ -407,8 +407,9 @@ class MyAudits(Document):
                     self.meta.get_label(field)))
 
     def validate_checklist_for_closure(self):
-        """Enforce checklist completion before a case can be closed (only for Audit Report Compliance)."""
-        if getattr(self, "query_type", None) == "Audit Report Compliance" and getattr(self, "checklist_items", None):
+        """Enforce checklist completion before a case can be closed (only for new cases with Audit Report Compliance)."""
+        is_new_case = self.is_new() or (self.creation and str(self.creation) >= "2026-11-02")
+        if is_new_case and getattr(self, "query_type", None) == "Audit Report Compliance" and getattr(self, "checklist_items", None):
             unanswered = [row.idx for row in self.checklist_items if not row.response]
             if unanswered:
                 self.checklist_completed = 0
