@@ -1584,21 +1584,6 @@ frappe.ui.form.on("My Audits", {
     if (is_audit_team) {
       frm
         .add_custom_button(__("Send"), function () {
-          // Gate check: Checklist must be completed before sending to stage users
-          if (frm.doc.checklist_items && frm.doc.checklist_items.length > 0) {
-            let unanswered = frm.doc.checklist_items.filter((r) => !r.response);
-            if (unanswered.length > 0) {
-              frappe.msgprint({
-                title: __("Checklist Incomplete"),
-                indicator: "orange",
-                message: __(
-                  `<b>Please complete all questions in the "Audit Checklist" tab before sending.</b><br><br>There are currently <b>${unanswered.length}</b> questions pending response.`,
-                ),
-              });
-              return;
-            }
-          }
-
           // Case details mandatory checks before dispatch
           let missing_fields = [];
           if (!frm.doc.query_type) missing_fields.push("Query Type");

@@ -32,7 +32,7 @@ class MyAudits(Document):
                 if not self.get(field):
                     frappe.throw(_("{0} is mandatory to send query").format(self.meta.get_label(field)))
 
-            # Ensure all checklist questions are answered before leaving Draft
+            # Sync checklist completion status without blocking dispatch
             self.validate_checklist_completion()
         else:
             # Sync completion status while in Draft
@@ -43,13 +43,7 @@ class MyAudits(Document):
     def validate_checklist_completion(self):
         if getattr(self, "checklist_items", None):
             unanswered = [row.idx for row in self.checklist_items if not row.response]
-            if unanswered:
-                self.checklist_completed = 0
-                frappe.throw(
-                    _("Please complete all Audit Checklist questions before sending the audit query. ({0} questions pending)").format(len(unanswered))
-                )
-            else:
-                self.checklist_completed = 1
+            self.checklist_completed = 0 if unanswered else 1
 
     def before_insert(self):
         # 1. Force the status to Draft upon creation
