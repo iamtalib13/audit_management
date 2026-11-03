@@ -528,11 +528,11 @@ frappe.ui.form.on("My Audits", {
         });
       }
 
-      // Initial loads only if tab is currently active
-      if ($('a[data-toggle="tab"][href="#checklist_tab"]').closest("li").hasClass("active")) {
-        render_checklist_info_banner();
-        setTimeout(render_inline_checklist_headers, 50);
-      }
+      // Initial loads
+      render_checklist_info_banner();
+      setTimeout(render_checklist_info_banner, 150);
+      setTimeout(render_checklist_info_banner, 500);
+      setTimeout(render_inline_checklist_headers, 100);
     }
   },
 
@@ -2034,31 +2034,7 @@ frappe.ui.form.on("My Audits", {
     }
 
     // 3. Section Visibility & Progressive Case Flow
-    const audit_details_fields = [
-      "query_type", "risk", "primary_nature", "department_alignment",
-      "query_description_section", "audit_query_subject_box",
-      "audit_query_box", "audit_attach_box", "tracking_section"
-    ];
-
-    // Always keep audit details fields visible and restore mandatory flags
-    audit_details_fields.forEach((f) => frm.toggle_display(f, true));
-    frm.toggle_display("emp_branch", true);
-    frm.toggle_display("employee_id", false);
-
-    const mandatory_details_fields = [
-      "emp_branch",
-      "query_type",
-      "primary_nature",
-      "department_alignment",
-      "audit_query_subject_box",
-      "audit_query_box"
-    ];
-    mandatory_details_fields.forEach((f) => frm.set_df_property(f, "reqd", 1));
-
-    if (is_audit_team) {
-      frm.toggle_display("audit_items_section", true);
-      frm.toggle_display("audit_stages", true);
-    }
+    update_audit_details_visibility(frm);
 
     // Show the resolution section ONLY when the query is closed
     frm.toggle_display("resolution_section", frm.doc.status === "Closed");
@@ -2245,6 +2221,7 @@ frappe.ui.form.on("My Audits", {
 
   emp_branch: function (frm) {
     update_checklist_visibility(frm);
+    update_audit_details_visibility(frm);
     if (!frm.doc.emp_branch) return;
     frappe.db
       .get_single_value("Audit Management Settings", "use_new_system")
@@ -2892,6 +2869,7 @@ frappe.ui.form.on("My Audits", {
     render_interactive_tracker(frm, can_edit);
 
     update_checklist_visibility(frm);
+    update_audit_details_visibility(frm);
   },
 });
 
@@ -2965,6 +2943,105 @@ function update_checklist_visibility(frm) {
     });
   } else {
     apply_visibility(true);
+  }
+}
+
+function update_audit_details_visibility(frm) {
+  let is_audit_team =
+    frappe.user_roles.includes("Audit Manager") ||
+    frappe.user_roles.includes("Audit Member") ||
+    frappe.user_roles.includes("System Manager");
+
+  const other_details_fields = [
+    "risk", "primary_nature", "department_alignment",
+    "query_description_section", "audit_query_subject_box",
+    "audit_query_box", "audit_attach_box", "tracking_section"
+  ];
+
+  frm.toggle_display("emp_branch", true);
+  frm.toggle_display("query_type", true);
+  frm.toggle_display("employee_id", false);
+
+  frm.set_df_property("emp_branch", "reqd", 1);
+  frm.set_df_property("query_type", "reqd", 1);
+
+  // If case is already beyond Draft or not an audit team member, keep standard display
+  if (!frm.is_new() && frm.doc.status !== "Draft") {
+    other_details_fields.forEach((f) => frm.toggle_display(f, true));
+    ["primary_nature", "department_alignment", "audit_query_subject_box", "audit_query_box"].forEach((f) => {
+      frm.set_df_property(f, "reqd", 1);
+    });
+    if (is_audit_team) {
+      frm.toggle_display("audit_items_section", true);
+      frm.toggle_display("audit_stages", true);
+    }
+    return;
+  }
+
+  const apply_details_mode = (is_disabled_branch) => {
+    if (is_disabled_branch) {
+      // Branch has disable_audit_checklist checked: SHOW ALL FIELDS directly (original flow)
+      other_details_fields.forEach((f) => frm.toggle_display(f, true));
+      ["primary_nature", "department_alignment", "audit_query_subject_box", "audit_query_box"].forEach((f) => {
+        frm.set_df_property(f, "reqd", 1);
+      });
+      if (is_audit_team) {
+        frm.toggle_display("audit_items_section", true);
+        frm.toggle_display("audit_stages", true);
+      }
+    } else {
+      // Branch has disable_audit_checklist UNCHECKED: Progressive checklist-first flow
+      // Only show other fields if:
+      // a) A non-compliance query_type is selected, OR
+      // b) query_type is Audit Report Compliance AND checklist is fully answered.
+      let is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
+      let is_checklist_done = !!(
+        frm.doc.checklist_completed ||
+        (frm.doc.checklist_items &&
+          frm.doc.checklist_items.length > 0 &&
+          !frm.doc.checklist_items.some((r) => !r.response))
+      );
+
+      let show_other_fields = Boolean(frm.doc.query_type) && (!is_audit_compliance || is_checklist_done);
+
+      other_details_fields.forEach((f) => frm.toggle_display(f, show_other_fields));
+      ["primary_nature", "department_alignment", "audit_query_subject_box", "audit_query_box"].forEach((f) => {
+        frm.set_df_property(f, "reqd", show_other_fields ? 1 : 0);
+      });
+
+      if (is_audit_team) {
+        frm.toggle_display("audit_items_section", show_other_fields);
+        frm.toggle_display("audit_stages", show_other_fields);
+      }
+    }
+  };
+
+  if (!frm.doc.emp_branch) {
+    // No branch selected yet: only show emp_branch & query_type
+    other_details_fields.forEach((f) => frm.toggle_display(f, false));
+    if (is_audit_team) {
+      frm.toggle_display("audit_items_section", false);
+      frm.toggle_display("audit_stages", false);
+    }
+    return;
+  }
+
+  // Check branch cache
+  if (!window._checklist_branch_cache) {
+    window._checklist_branch_cache = {};
+  }
+
+  if (window._checklist_branch_cache[frm.doc.emp_branch] !== undefined) {
+    apply_details_mode(window._checklist_branch_cache[frm.doc.emp_branch]);
+  } else {
+    frappe.call({
+      method: "audit_management.audit_management.doctype.my_audits.my_audits.is_checklist_disabled",
+      args: { emp_branch: frm.doc.emp_branch },
+      callback: function (r) {
+        window._checklist_branch_cache[frm.doc.emp_branch] = !!r.message;
+        apply_details_mode(!!r.message);
+      },
+    });
   }
 }
 function render_interactive_tracker(frm, can_edit) {
@@ -3695,3 +3772,11 @@ function open_stages_modal(frm) {
   setTimeout(init_modal_sortable, 200);
   setTimeout(init_modal_sortable, 600);
 }
+
+frappe.ui.form.on("Audit Checklist Item", {
+  response: function (frm, cdt, cdn) {
+    if (typeof update_audit_details_visibility === "function") {
+      update_audit_details_visibility(frm);
+    }
+  },
+});
