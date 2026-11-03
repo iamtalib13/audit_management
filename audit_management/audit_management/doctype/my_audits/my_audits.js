@@ -189,16 +189,11 @@ frappe.ui.form.on("My Audits", {
           frm.trigger("old_system_refresh");
         }
       });
-    // 🌟 FINAL FIX: KEEP STATUS AS "DRAFT", SHOW SAVE ONLY ON MODIFY 🌟
-    if (!frm.is_new()) {
-      // Wait for background scripts (like employee data fetches) to finish
-      setTimeout(() => {
-        // 1. Tell Frappe the form is "clean" (Not modified)
-        frm.doc.__unsaved = 0;
-
-        // 2. Hide the Save button manually without touching the "Draft" header status!
-        frm.page.wrapper.find('.primary-action[data-label="Save"]').hide();
-      }, 500);
+    // In Draft or New state, always keep Save enabled so user can save checklist progress
+    if (frm.is_new() || frm.doc.status === "Draft") {
+      frm.enable_save();
+    } else {
+      frm.disable_save();
     }
 
     // Realtime filter: remove admin/system entries as they arrive
@@ -2965,8 +2960,7 @@ function update_audit_details_visibility(frm) {
   frm.set_df_property("emp_branch", "reqd", 1);
   frm.set_df_property("query_type", "reqd", 1);
 
-  // If case is already beyond Draft or not an audit team member, keep standard display
-  if (!frm.is_new() && frm.doc.status !== "Draft") {
+  const show_all_fields = () => {
     other_details_fields.forEach((f) => frm.toggle_display(f, true));
     ["primary_nature", "department_alignment", "audit_query_subject_box", "audit_query_box"].forEach((f) => {
       frm.set_df_property(f, "reqd", 1);
@@ -2975,71 +2969,70 @@ function update_audit_details_visibility(frm) {
       frm.toggle_display("audit_items_section", true);
       frm.toggle_display("audit_stages", true);
     }
-    return;
-  }
+  };
 
-  const apply_details_mode = (is_disabled_branch) => {
-    if (is_disabled_branch) {
-      // Branch has disable_audit_checklist checked: SHOW ALL FIELDS directly (original flow)
-      other_details_fields.forEach((f) => frm.toggle_display(f, true));
-      ["primary_nature", "department_alignment", "audit_query_subject_box", "audit_query_box"].forEach((f) => {
-        frm.set_df_property(f, "reqd", 1);
-      });
-      if (is_audit_team) {
-        frm.toggle_display("audit_items_section", true);
-        frm.toggle_display("audit_stages", true);
-      }
-    } else {
-      // Branch has disable_audit_checklist UNCHECKED: Progressive checklist-first flow
-      // Only show other fields if:
-      // a) A non-compliance query_type is selected, OR
-      // b) query_type is Audit Report Compliance AND checklist is fully answered.
-      let is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
-      let is_checklist_done = !!(
-        frm.doc.checklist_completed ||
-        (frm.doc.checklist_items &&
-          frm.doc.checklist_items.length > 0 &&
-          !frm.doc.checklist_items.some((r) => !r.response))
-      );
+  const hide_details_for_checklist = () => {
+    let is_checklist_done = !!(
+      frm.doc.checklist_completed ||
+      (frm.doc.checklist_items &&
+        frm.doc.checklist_items.length > 0 &&
+        !frm.doc.checklist_items.some((r) => !r.response))
+    );
 
-      let show_other_fields = Boolean(frm.doc.query_type) && (!is_audit_compliance || is_checklist_done);
+    other_details_fields.forEach((f) => frm.toggle_display(f, is_checklist_done));
+    ["primary_nature", "department_alignment", "audit_query_subject_box", "audit_query_box"].forEach((f) => {
+      frm.set_df_property(f, "reqd", is_checklist_done ? 1 : 0);
+    });
 
-      other_details_fields.forEach((f) => frm.toggle_display(f, show_other_fields));
-      ["primary_nature", "department_alignment", "audit_query_subject_box", "audit_query_box"].forEach((f) => {
-        frm.set_df_property(f, "reqd", show_other_fields ? 1 : 0);
-      });
-
-      if (is_audit_team) {
-        frm.toggle_display("audit_items_section", show_other_fields);
-        frm.toggle_display("audit_stages", show_other_fields);
-      }
+    if (is_audit_team) {
+      frm.toggle_display("audit_items_section", is_checklist_done);
+      frm.toggle_display("audit_stages", is_checklist_done);
     }
   };
 
-  if (!frm.doc.emp_branch) {
-    // No branch selected yet: only show emp_branch & query_type
-    other_details_fields.forEach((f) => frm.toggle_display(f, false));
-    if (is_audit_team) {
-      frm.toggle_display("audit_items_section", false);
-      frm.toggle_display("audit_stages", false);
-    }
+  // If case is already beyond Draft or not in audit team, always show all fields
+  if (!frm.is_new() && frm.doc.status !== "Draft") {
+    show_all_fields();
     return;
   }
 
-  // Check branch cache
+  // If query_type is NOT "Audit Report Compliance", ALWAYS show all fields
+  if (frm.doc.query_type !== "Audit Report Compliance") {
+    show_all_fields();
+    return;
+  }
+
+  // If emp_branch is not selected yet, keep standard view until selected
+  if (!frm.doc.emp_branch) {
+    show_all_fields();
+    return;
+  }
+
+  // Check branch status:
   if (!window._checklist_branch_cache) {
     window._checklist_branch_cache = {};
   }
 
+  const apply_decision = (is_disabled_branch) => {
+    if (is_disabled_branch) {
+      // Branch is CHECKED in Sahayog Branch: SHOW ALL FIELDS (original flow, no checklist)
+      show_all_fields();
+    } else {
+      // Branch is NOT CHECKED in Sahayog Branch AND query_type is "Audit Report Compliance":
+      // HIDE all other fields and require checklist completion
+      hide_details_for_checklist();
+    }
+  };
+
   if (window._checklist_branch_cache[frm.doc.emp_branch] !== undefined) {
-    apply_details_mode(window._checklist_branch_cache[frm.doc.emp_branch]);
+    apply_decision(window._checklist_branch_cache[frm.doc.emp_branch]);
   } else {
     frappe.call({
       method: "audit_management.audit_management.doctype.my_audits.my_audits.is_checklist_disabled",
       args: { emp_branch: frm.doc.emp_branch },
       callback: function (r) {
         window._checklist_branch_cache[frm.doc.emp_branch] = !!r.message;
-        apply_details_mode(!!r.message);
+        apply_decision(!!r.message);
       },
     });
   }
