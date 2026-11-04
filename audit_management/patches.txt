@@ -15,3 +15,4 @@ audit_management.patches.update_audit_level_branch_fields
 audit_management.patches.fix_status_mispelling
 audit_management.patches.fix_fake_responded_status
 audit_management.patches.fix_incorrect_responded_status
+audit_management.patches.fix_my_audits_naming
