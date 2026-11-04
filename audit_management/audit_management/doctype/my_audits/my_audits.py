@@ -75,8 +75,8 @@ class MyAudits(Document):
         # 4. Set emp_division on the document from the Employee's custom_division
         self.emp_division = employee.custom_division
 
-        # 5. Populate default Audit Checklist items if empty and query_type is Audit Report Compliance
-        if getattr(self, "query_type", None) == "Audit Report Compliance":
+        # 5. Populate default Audit Checklist items if empty and query_type is Audit Report Compliance (exclude JLL division)
+        if getattr(self, "query_type", None) == "Audit Report Compliance" and getattr(self, "emp_division", None) != "JLL":
             self.populate_default_checklist()
 
     def sync_checklist_meta(self):
@@ -407,7 +407,10 @@ class MyAudits(Document):
                     self.meta.get_label(field)))
 
     def validate_checklist_for_closure(self):
-        """Enforce checklist completion before a case can be closed (only for new cases with Audit Report Compliance and branch not disabled)."""
+        """Enforce checklist completion before a case can be closed (only for new cases with Audit Report Compliance and branch not disabled, excluding JLL)."""
+        if getattr(self, "emp_division", None) == "JLL":
+            return
+
         is_new_case = self.is_new() or (self.creation and str(self.creation) >= "2026-11-02")
         if is_checklist_disabled_for_branch(self.emp_branch):
             return

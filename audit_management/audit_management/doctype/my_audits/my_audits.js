@@ -218,8 +218,8 @@ frappe.ui.form.on("My Audits", {
       }
     }
 
-    // Auto-populate checklist questions ONLY when query_type is Audit Report Compliance
-    if (frm.is_new() && frm.doc.query_type === "Audit Report Compliance" && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
+    // Auto-populate checklist questions ONLY when query_type is Audit Report Compliance and division is not JLL
+    if (frm.is_new() && frm.doc.query_type === "Audit Report Compliance" && frm.doc.emp_division !== "JLL" && (!frm.doc.checklist_items || frm.doc.checklist_items.length === 0)) {
       frappe.call({
         method: "audit_management.audit_management.doctype.my_audits.my_audits.load_audit_checklist_template",
         callback: function (r) {
@@ -2864,6 +2864,7 @@ function update_checklist_visibility(frm) {
     frappe.user_roles.includes("Audit Member") ||
     frappe.user_roles.includes("System Manager");
   let is_audit_compliance = frm.doc.query_type === "Audit Report Compliance";
+  let is_jll = frm.doc.emp_division === "JLL";
   let is_new_case = frm.is_new() || (frm.doc.creation && frm.doc.creation >= "2026-11-02");
 
   const apply_visibility = (can_see) => {
@@ -2902,7 +2903,7 @@ function update_checklist_visibility(frm) {
     }
   };
 
-  if (!is_audit_team || !is_audit_compliance || !is_new_case) {
+  if (!is_audit_team || !is_audit_compliance || !is_new_case || is_jll) {
     apply_visibility(false);
     return;
   }
@@ -2986,8 +2987,8 @@ function update_audit_details_visibility(frm) {
     return;
   }
 
-  // If query_type is NOT "Audit Report Compliance", ALWAYS show all fields
-  if (frm.doc.query_type !== "Audit Report Compliance") {
+  // If query_type is NOT "Audit Report Compliance" or division is "JLL", ALWAYS show all fields
+  if (frm.doc.query_type !== "Audit Report Compliance" || frm.doc.emp_division === "JLL") {
     show_all_fields();
     return;
   }
