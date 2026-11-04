@@ -75,7 +75,50 @@ class MyAudits(Document):
         # 4. Set emp_division on the document from the Employee's custom_division
         self.emp_division = employee.custom_division
 
-        # 5. Populate default Audit Checklist items if empty and query_type is Audit Report Compliance (exclude JLL division)
+        if not self.emp_division:
+            frappe.throw(
+                _("Division is not set for Employee: <b>{0}</b>. Please update HR master data.").format(employee.employee_name))
+
+        if not self.emp_branch:
+            frappe.throw(_("Branch is mandatory to create an Audit Query."))
+
+        # ==========================================================
+        # 5. Fetch the exact Audit Level document directly!
+        # ==========================================================
+        if not frappe.db.exists("Audit Level", self.emp_branch):
+            frappe.throw(
+                _("The selected Audit Level <b>{0}</b> does not exist.").format(self.emp_branch))
+
+        audit_level = frappe.get_doc("Audit Level", self.emp_branch)
+
+        # 5.1 Set branch_name for naming (fallback if JS didn't set it)
+        if not self.branch_name:
+            self.branch_name = audit_level.branch_name
+
+        # 6. Validate division
+        if audit_level.division != self.emp_division:
+            frappe.throw(_("Audit Level division mismatch: Expected {0}, found {1}.").format(
+                self.emp_division, audit_level.division))
+
+        # 7. Populate audit_stages if empty
+        if not self.audit_stages:
+            self.set("audit_stages", [])
+            for row in audit_level.audit_stages:
+                designation = ""
+                if row.employee:
+                    designation = frappe.db.get_value("Employee", row.employee, "designation") or ""
+                self.append("audit_stages", {
+                    "stage": row.stage,
+                    "stage_name": row.stage_name,
+                    "employee": row.employee,
+                    "user_id": row.user_id,
+                    "employee_name": row.employee_name,
+                    "designation": designation,
+                    "email": row.email,
+                    "status": "" # Start as empty, not Pending
+                })
+
+        # 8. Populate default Audit Checklist items if empty and query_type is Audit Report Compliance (exclude JLL division)
         if getattr(self, "query_type", None) == "Audit Report Compliance" and getattr(self, "emp_division", None) != "JLL":
             self.populate_default_checklist()
 
@@ -109,45 +152,6 @@ class MyAudits(Document):
                         "response": "",
                         "remarks": ""
                     })
-
-        if not self.emp_division:
-            frappe.throw(
-                _("Division is not set for Employee: <b>{0}</b>. Please update HR master data.").format(employee.employee_name))
-
-        if not self.emp_branch:
-            frappe.throw(_("Branch is mandatory to create an Audit Query."))
-
-        # ==========================================================
-        # 5. Fetch the exact Audit Level document directly!
-        # ==========================================================
-        if not frappe.db.exists("Audit Level", self.emp_branch):
-            frappe.throw(
-                _("The selected Audit Level <b>{0}</b> does not exist.").format(self.emp_branch))
-
-        audit_level = frappe.get_doc("Audit Level", self.emp_branch)
-
-        # 5.1 Set branch_name for naming (fallback if JS didn't set it)
-        if not self.branch_name:
-            self.branch_name = audit_level.branch_name
-
-        # 6. Validate division
-        if audit_level.division != self.emp_division:
-            frappe.throw(_("Audit Level division mismatch: Expected {0}, found {1}.").format(
-                self.emp_division, audit_level.division))
-
-        # 7. Populate audit_stages
-        self.set("audit_stages", [])
-
-        for row in audit_level.audit_stages:
-            self.append("audit_stages", {
-                "stage": row.stage,
-                "stage_name": row.stage_name,
-                "employee": row.employee,
-                "user_id": row.user_id,
-                "employee_name": row.employee_name,
-                "email": row.email,
-                "status": "" # Start as empty, not Pending
-            })
 
     def before_save(self):
         # 1. POPULATE/REPAIR AUDIT STAGES: If child table is missing or empty, populate it from Audit Level
