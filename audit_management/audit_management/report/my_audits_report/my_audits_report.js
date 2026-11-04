@@ -71,12 +71,12 @@ frappe.query_reports["My Audits Report"] = {
 		}).addClass('btn-primary');
 
 			// Hide Frappe standard Actions dropdown button
-		// let hide_actions_interval = setInterval(() => {
-		// 	let $actions = report.page.wrapper.find('.actions-btn-group, [data-label="Actions"]');
-		// 	if ($actions.length) {
-		// 		$actions.attr('style', 'display: none !important');
-		// 	}
-		// }, 50);
-		// setTimeout(() => clearInterval(hide_actions_interval), 2000);
+		let hide_actions_interval = setInterval(() => {
+			let $actions = report.page.wrapper.find('.actions-btn-group, [data-label="Actions"]');
+			if ($actions.length) {
+				$actions.attr('style', 'display: none !important');
+			}
+		}, 50);
+		setTimeout(() => clearInterval(hide_actions_interval), 2000);
 	},
 };
