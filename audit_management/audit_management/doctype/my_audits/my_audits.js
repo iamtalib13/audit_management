@@ -2208,6 +2208,36 @@ frappe.ui.form.on("My Audits", {
     update_checklist_visibility(frm);
     update_audit_details_visibility(frm);
     if (!frm.doc.emp_branch) return;
+
+    // Fetch and populate audit_stages child table from selected branch (Audit Level)
+    // Only update stages table if case is in Draft or New to avoid overwriting running/closed stages
+    if (frm.is_new() || frm.doc.status === "Draft") {
+      frappe.call({
+        method: "audit_management.audit_management.doctype.my_audits.my_audits.get_audit_level_stages",
+        args: { emp_branch: frm.doc.emp_branch },
+        callback: function (r) {
+          if (r.message && r.message.length) {
+            frm.clear_table("audit_stages");
+            r.message.forEach((s) => {
+              let row = frm.add_child("audit_stages");
+              row.stage = s.stage;
+              row.stage_name = s.stage_name;
+              row.employee = s.employee;
+              row.user_id = s.user_id;
+              row.employee_name = s.employee_name;
+              row.designation = s.designation;
+              row.email = s.email;
+              row.status = "";
+            });
+            frm.refresh_field("audit_stages");
+            if (typeof render_interactive_tracker === "function") {
+              render_interactive_tracker(frm, true);
+            }
+          }
+        },
+      });
+    }
+
     frappe.db
       .get_single_value("Audit Management Settings", "use_new_system")
       .then((use_new_system) => {

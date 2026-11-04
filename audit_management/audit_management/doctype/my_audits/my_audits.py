@@ -10,9 +10,9 @@ from audit_management.audit_management.utils import get_working_days, update_aud
 
 class MyAudits(Document):
     def onload(self):
-        # 1. AUTO-REPAIR OLD RECORDS ON LOAD: 
-        # If child table is missing but old fields have data, populate it so UI/Tracker works
-        if not self.audit_stages and self.status != "Draft" and self.emp_branch:
+        # 1. AUTO-REPAIR OLD/DRAFT RECORDS ON LOAD:
+        # If child table is missing, populate it so UI/Tracker works
+        if not self.audit_stages and self.emp_branch:
             self.repair_audit_stages()
 
     def validate(self):
@@ -150,8 +150,8 @@ class MyAudits(Document):
             })
 
     def before_save(self):
-        # 1. REPAIR OLD RECORDS: If child table is missing, populate it
-        if not self.audit_stages and self.status != "Draft" and self.emp_branch:
+        # 1. POPULATE/REPAIR AUDIT STAGES: If child table is missing or empty, populate it from Audit Level
+        if not self.audit_stages and self.emp_branch:
             self.repair_audit_stages()
 
         # SKIP SYNC IF ROLLBACK IS IN PROGRESS
@@ -468,6 +468,30 @@ def populate_audit_stages(doc):
 
 
 
+
+
+@frappe.whitelist()
+def get_audit_level_stages(emp_branch):
+    """Fetch audit stages for a branch from its Audit Level document."""
+    if not emp_branch or not frappe.db.exists("Audit Level", emp_branch):
+        return []
+    audit_level = frappe.get_doc("Audit Level", emp_branch)
+    stages = []
+    for row in audit_level.audit_stages:
+        designation = ""
+        if row.employee:
+            designation = frappe.db.get_value("Employee", row.employee, "designation") or ""
+        stages.append({
+            "stage": row.stage,
+            "stage_name": row.stage_name,
+            "employee": row.employee,
+            "user_id": row.user_id,
+            "employee_name": row.employee_name,
+            "designation": designation,
+            "email": row.email,
+            "status": ""
+        })
+    return stages
 
 
 @frappe.whitelist()
