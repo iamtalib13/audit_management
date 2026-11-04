@@ -59,9 +59,24 @@ frappe.query_reports["My Audits Report"] = {
 	],
 
 	onload: function (report) {
+		// Clear Filters Button
 		report.page.add_inner_button(__("Clear Filters"), function () {
 			report.filters.forEach((f) => f.set_value(""));
 			report.refresh();
 		});
+
+		// Download CSV Button
+		report.page.add_inner_button(__('Download Report'), function () {
+			frappe.query_report.export_report();
+		}).addClass('btn-primary');
+
+			// Hide Frappe standard Actions dropdown button
+		let hide_actions_interval = setInterval(() => {
+			let $actions = report.page.wrapper.find('.actions-btn-group, [data-label="Actions"]');
+			if ($actions.length) {
+				$actions.attr('style', 'display: none !important');
+			}
+		}, 50);
+		setTimeout(() => clearInterval(hide_actions_interval), 2000);
 	},
 };

@@ -424,74 +424,64 @@ frappe.ui.form.on("My Audits", {
       }
 
       const render_inline_checklist_headers = () => {
-        if (!grid || !grid.wrapper) return;
-        let rows = grid.wrapper.find(".grid-body .grid-row");
-        if (!rows.length) return;
+        if (!grid || !grid.wrapper || !grid.grid_rows || !grid.grid_rows.length) return;
 
         // Remove old injected headers
         grid.wrapper.find(".checklist-inline-header, .checklist-inline-subcategory").remove();
 
         let prev_section = null;
         let prev_category = null;
-        rows.each(function () {
-          let $row = $(this);
-          // Look up doc by name or index
-          let docname = $row.attr("data-name");
-          let row_doc = docname ? locals["Audit Checklist Item"][docname] : null;
-          if (!row_doc) {
-            let row_idx = parseInt($row.attr("data-idx"), 10);
-            if (row_idx && frm.doc.checklist_items) {
-              row_doc = frm.doc.checklist_items[row_idx - 1];
-            }
+
+        grid.grid_rows.forEach((grid_row) => {
+          let row_doc = grid_row.doc;
+          let $row = $(grid_row.row);
+          if (!row_doc || !$row || !$row.length) return;
+
+          // 1. Major Section Header
+          if (row_doc.section && row_doc.section !== prev_section) {
+            prev_section = row_doc.section;
+            prev_category = null; // reset category on section change
+            let header_row = $(`
+              <div class="checklist-inline-header" style="
+                background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+                color: #ffffff;
+                font-weight: 700;
+                font-size: 13px;
+                padding: 8px 14px;
+                margin: 10px 0 4px 0;
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              ">
+                <i class="fa fa-folder-open-o"></i> <span>${prev_section}</span>
+              </div>
+            `);
+            $row.before(header_row);
           }
 
-          if (row_doc) {
-            // 1. Major Section Header
-            if (row_doc.section && row_doc.section !== prev_section) {
-              prev_section = row_doc.section;
-              prev_category = null; // reset category on section change
-              let header_row = $(`
-                <div class="checklist-inline-header" style="
-                  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
-                  color: #ffffff;
-                  font-weight: 700;
-                  font-size: 13px;
-                  padding: 8px 14px;
-                  margin: 10px 0 4px 0;
-                  border-radius: 4px;
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                ">
-                  <i class="fa fa-folder-open-o"></i> <span>${prev_section}</span>
-                </div>
-              `);
-              $row.before(header_row);
-            }
-
-            // 2. Sub-Category Header
-            if (row_doc.category && row_doc.category !== prev_category) {
-              prev_category = row_doc.category;
-              let subhead_row = $(`
-                <div class="checklist-inline-subcategory" style="
-                  background: #f1f5f9;
-                  color: #1e293b;
-                  border-left: 4px solid #2563eb;
-                  font-weight: 600;
-                  font-size: 12px;
-                  padding: 5px 12px;
-                  margin: 6px 0 2px 0;
-                  border-radius: 2px;
-                  display: flex;
-                  align-items: center;
-                  gap: 6px;
-                ">
-                  <i class="fa fa-tag" style="color: #3b82f6; font-size: 11px;"></i> <span>${prev_category}</span>
-                </div>
-              `);
-              $row.before(subhead_row);
-            }
+          // 2. Sub-Category Header
+          if (row_doc.category && row_doc.category !== prev_category) {
+            prev_category = row_doc.category;
+            let subhead_row = $(`
+              <div class="checklist-inline-subcategory" style="
+                background: #f1f5f9;
+                color: #1e293b;
+                border-left: 4px solid #2563eb;
+                font-weight: 600;
+                font-size: 12px;
+                padding: 5px 12px;
+                margin: 6px 0 2px 0;
+                border-radius: 2px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+              ">
+                <i class="fa fa-tag" style="color: #3b82f6; font-size: 11px;"></i> <span>${prev_category}</span>
+              </div>
+            `);
+            $row.before(subhead_row);
           }
         });
       };
