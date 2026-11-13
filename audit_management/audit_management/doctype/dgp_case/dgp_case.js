@@ -140,11 +140,22 @@ frappe.ui.form.on('DGP Case', {
 
             // 2. Send to Reviewer (Case Creator & Audit Team)
             if (is_creator_or_audit) {
-                let b2 = frm.add_custom_button(__('Send to All Reviewers'), function() {
-                    frm.events.send_to_all_reviewers(frm);
-                });
-                b2.removeClass('disabled').prop('disabled', false).addClass('dgp-btn-send').find('i, svg').remove();
-                b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
+                if (frm.doc.status === 'Draft' || !frm.doc.status) {
+                    let b2 = frm.add_custom_button(__('Send to All Reviewers'), function() {
+                        frm.events.send_to_all_reviewers(frm);
+                    });
+                    b2.removeClass('disabled').prop('disabled', false).addClass('dgp-btn-send').find('i, svg').remove();
+                    b2.prepend('<i class="fa fa-paper-plane mr-1"></i> ');
+                }
+
+                // Resend Reviewers Button (when Under Review or has stages)
+                if (frm.doc.status === 'Under Review' || (frm.doc.dgp_case_stages && frm.doc.dgp_case_stages.some(s => s.status && s.status !== 'Not Sent'))) {
+                    let b_resend = frm.add_custom_button(__('Resend Reviewers'), function() {
+                        frm.events.resend_reviewers_dialog(frm);
+                    });
+                    b_resend.addClass('btn-warning').find('i, svg').remove();
+                    b_resend.prepend('<i class="fa fa-share mr-1"></i> ');
+                }
             }
 
             // 3. Submit Response (Stage Reviewer & Admin - visible before & after response)
@@ -661,6 +672,133 @@ frappe.ui.form.on('DGP Case', {
                 }
             });
         });
+    },
+
+    // Multi-select dialog to resend specific or all stage reviewers (same as My Audits flow)
+    resend_reviewers_dialog: function(frm) {
+        if (!frm.doc.dgp_case_stages || frm.doc.dgp_case_stages.length === 0) {
+            frappe.msgprint(__('No stages found to resend.'));
+            return;
+        }
+
+        if (frm.is_dirty()) {
+            frappe.msgprint({
+                title: __('Unsaved Changes'),
+                indicator: 'orange',
+                message: __('Please save the document before resending to reviewers.')
+            });
+            return;
+        }
+
+        let stages = frm.doc.dgp_case_stages.map(r => {
+            const emp_name = r.employee_name || r.reviewer_employee || __('Unassigned');
+            const status = r.status || 'Not Sent';
+            return {
+                name: r.name,
+                stage: r.stage,
+                stage_name: r.stage_name || `Stage ${r.stage}`,
+                dc_level: r.dc_level || '',
+                employee_name: emp_name,
+                status: status,
+                is_disabled: false
+            };
+        });
+
+        let html_content = `
+            <div style="padding: 10px;">
+                <div style="border-bottom: 1px solid #d1d8dd; padding-bottom: 10px; margin-bottom: 15px;">
+                    <label class="checkbox-inline" style="font-weight: bold; cursor: pointer; display: flex; align-items: center;">
+                        <input type="checkbox" id="dgp-select-all-stages" style="margin-right: 10px; width: 18px; height: 18px;">
+                        <span style="font-size: 14px;">${__("Select All Stages")}</span>
+                    </label>
+                </div>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-bordered table-hover" style="font-size: 13px;">
+                        <thead style="background-color: #f8f9fa;">
+                            <tr>
+                                <th style="width: 40px; text-align: center;">#</th>
+                                <th style="width: 80px;">${__("Stage")}</th>
+                                <th style="width: 160px;">${__("Role / DC Level")}</th>
+                                <th style="width: 180px;">${__("Reviewer")}</th>
+                                <th style="width: 130px;">${__("Current Status")}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dgp-stage-table-body">
+                            ${stages.map(s => `
+                                <tr>
+                                    <td style="text-align: center; vertical-align: middle;">
+                                        <input type="checkbox" class="dgp-stage-checkbox" value="${s.name}" 
+                                            style="width: 16px; height: 16px;">
+                                    </td>
+                                    <td style="vertical-align: middle; font-weight: 600;">Stage ${s.stage}</td>
+                                    <td style="vertical-align: middle; font-weight: 500;">
+                                        ${s.stage_name} ${s.dc_level ? `<span class="badge badge-light" style="font-size: 10px; margin-left: 4px;">${s.dc_level}</span>` : ''}
+                                    </td>
+                                    <td style="vertical-align: middle;">${s.employee_name}</td>
+                                    <td style="vertical-align: middle;">
+                                        <span style="color: ${s.status === 'Responded' ? '#28a745' : s.status === 'Pending' ? '#f39c12' : '#6c757d'}; font-weight: 600;">
+                                            ${s.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        let d = new frappe.ui.Dialog({
+            title: __('Resend DGP Reviewers'),
+            size: 'large',
+            fields: [
+                {
+                    fieldname: 'stagename_html',
+                    fieldtype: 'HTML',
+                    options: html_content
+                }
+            ],
+            primary_action_label: __('Resend Selected'),
+            primary_action: function() {
+                let selected_stage_names = [];
+                d.$wrapper.find('.dgp-stage-checkbox:checked').each(function() {
+                    selected_stage_names.push($(this).val());
+                });
+
+                if (selected_stage_names.length === 0) {
+                    frappe.msgprint(__('Please select at least one stage to resend.'));
+                    return;
+                }
+
+                frappe.call({
+                    method: 'audit_management.audit_management.doctype.dgp_case.dgp_case.resend_to_specific_stages',
+                    args: {
+                        docname: frm.doc.name,
+                        stage_names: selected_stage_names
+                    },
+                    freeze: true,
+                    freeze_message: __('Resending review assignment...'),
+                    callback: function(r) {
+                        if (!r.exc && r.message) {
+                            d.hide();
+                            frappe.show_alert({
+                                message: r.message.message || __('Reviewers resent successfully!'),
+                                indicator: 'green'
+                            });
+                            frm.reload_doc();
+                        }
+                    }
+                });
+            }
+        });
+
+        // Handle Select All Checkbox
+        d.$wrapper.on('change', '#dgp-select-all-stages', function() {
+            let is_checked = $(this).is(':checked');
+            d.$wrapper.find('.dgp-stage-checkbox').prop('checked', is_checked);
+        });
+
+        d.show();
     },
 
     // Open closure dialog with decision and justification
