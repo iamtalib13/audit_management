@@ -472,6 +472,91 @@ def send_to_all_reviewers(docname):
 
     return {"success": True, "message": _("Case successfully sent to all reviewers with TAT of {0} days").format(total_tat_days)}
 
+@frappe.whitelist()
+def resend_to_specific_stages(docname, stage_names):
+    """
+    Resend DGP Case review to selected stage reviewers (supports multi-select resend like My Audits).
+    Resets selected stages to Pending, updates pending_time, creates ToDo, ensures DocShare,
+    and sends email notification to selected reviewers.
+    """
+    import json
+    if isinstance(stage_names, str):
+        try:
+            stage_names = json.loads(stage_names)
+        except Exception:
+            stage_names = [stage_names]
+
+    doc = frappe.get_doc("DGP Case", docname)
+
+    if doc.status in ["Closed", "Cessation"]:
+        frappe.throw(_("Cannot resend review for a closed case."))
+
+    if not doc.dgp_case_stages:
+        frappe.throw(_("No stages found to resend."))
+
+    from frappe.desk.form.assign_to import add as add_assignment
+
+    now_dt = now_datetime()
+    today_date = getdate(now_dt)
+    total_tat_days = get_stage_tat(doc.cmg_code, 1, 1)
+    tat_deadline_str = str(add_days(today_date, total_tat_days))
+
+    selected_rows = []
+    for row in doc.dgp_case_stages:
+        # Match by row.name or row.stage_name or row.stage
+        if row.name in stage_names or row.stage_name in stage_names or str(row.stage) in stage_names:
+            if not (getattr(row, 'reviewer_employee', None) or getattr(row, 'employee', None)):
+                frappe.throw(_("Employee is not assigned for Stage {0} ({1}).").format(row.stage, row.stage_name))
+
+            row.status = "Pending"
+            row.pending_time = now_dt
+            row.tat_deadline = tat_deadline_str
+            selected_rows.append(row)
+
+            if row.user_id:
+                try:
+                    frappe.share.add("DGP Case", doc.name, row.user_id, read=1, write=1, share=0)
+                except Exception:
+                    pass
+
+                # Re-assign ToDo
+                existing_todos = frappe.get_all("ToDo", filters={
+                    "reference_type": "DGP Case",
+                    "reference_name": doc.name,
+                    "allocated_to": row.user_id,
+                    "status": "Open"
+                })
+                for todo in existing_todos:
+                    frappe.db.set_value("ToDo", todo.name, "status", "Closed")
+
+                try:
+                    add_assignment({
+                        "assign_to": [row.user_id],
+                        "doctype": "DGP Case",
+                        "name": doc.name,
+                        "description": f"DGP Case Review re-assigned for {doc.employee_name or doc.employee} ({row.dc_level or row.stage_name})",
+                        "date": tat_deadline_str
+                    })
+                except Exception as e:
+                    frappe.log_error(f"DGP Case assignment failed during resend: {e}")
+
+    if not selected_rows:
+        frappe.throw(_("No valid stages selected to resend."))
+
+    doc.status = "Under Review"
+    doc.save()
+
+    # Send notification specifically to resent reviewers
+    for r in selected_rows:
+        send_stage_notification(doc, r, action="assign")
+
+    stage_labels = [f"{r.stage_name or r.dc_level}" for r in selected_rows]
+    return {
+        "success": True,
+        "message": _("Successfully resent review to: {0}").format(", ".join(stage_labels))
+    }
+
+
 def get_target_stage_row(doc, user, stage_row_name=None):
     """Find specific stage row for responding user or stage_row_name"""
     if not getattr(doc, "dgp_case_stages", None):
