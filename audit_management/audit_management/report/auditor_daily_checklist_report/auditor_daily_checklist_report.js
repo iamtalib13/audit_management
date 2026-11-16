@@ -160,6 +160,8 @@ frappe.query_reports["Auditor Daily Checklist Report"] = {
 									? `<span style="color: #16a34a; font-weight: 700;">Yes</span>`
 									: item.response === "No"
 									? `<span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 2px 6px; border-radius: 3px;">No</span>`
+									: item.response === "N/A"
+									? `<span style="color: #475569; font-weight: 700; background: #f1f5f9; padding: 2px 6px; border-radius: 3px;">N/A</span>`
 									: `<span style="color: #94a3b8;">Pending</span>`;
 
 								return `
