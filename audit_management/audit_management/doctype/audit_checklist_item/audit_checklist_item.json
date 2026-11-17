@@ -107,7 +107,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Response",
-   "options": "\nYes\nNo"
+   "options": "\nYes\nNo\nN/A"
   },
   {
    "columns": 4,
