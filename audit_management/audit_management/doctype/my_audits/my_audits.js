@@ -51,50 +51,70 @@ frappe.ui.form.on("My Audits", {
   },
 
   refresh: function (frm) {
-    // 1. Inject Creation/Closing Date & Aging into Header
+    // 1. Inject Creation/Closing Date & Aging into Header below activity buttons
     if (!frm.is_new() && (frm.doc.modified || frm.doc.creation)) {
       setTimeout(() => {
-        let header_status = frm.page.wrapper.find(".indicator-pill").first();
-
-        // Remove existing date-tag if it exists to allow re-injection on status change
+        // Remove existing date-tag if it exists to allow clean re-injection
         frm.page.wrapper.find(".date-tag").remove();
 
-        if (header_status.length > 0) {
-          // Show last modified date with "Created" label as requested
-          const last_modified_source = frm.doc.modified || frm.doc.creation;
-          const display_date = frappe.datetime.str_to_user(
-            last_modified_source.split(" ")[0],
-          );
+        // Target placement: below action buttons (.page-actions) or adjacent to header title
+        let $actions_bar = frm.page.wrapper.find(".custom-actions, .page-actions").first();
+        let $header_status = frm.page.wrapper.find(".indicator-pill").first();
 
-          let date_html = `<span class="date-tag" style="margin-left: 12px; font-size: 11px; display: inline-flex; align-items: center; gap: 8px; color: #475569;">`;
+        // Helper for attractive pill badge with icon, subtle border & soft shadow
+        const item = (label, val, icon, bg_color = "#f8fafc", text_color = "#0f172a", border_color = "#e2e8f0") => `
+          <div style="display: inline-flex; align-items: center; gap: 6px; background: ${bg_color}; border: 1px solid ${border_color}; padding: 4px 10px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); font-size: 11.5px; font-weight: 500; line-height: 1.2;">
+            <i class="${icon}" style="color: #64748b; font-size: 11px;"></i>
+            <span style="color: #64748b; font-weight: 600; letter-spacing: 0.3px;">${label}:</span>
+            <span style="color: ${text_color}; font-weight: 600;">${val}</span>
+          </div>`;
 
-          // Helper for icon + text
-          const item = (label, val) =>
-            `<span style="display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px 10px; border-radius: 4px; white-space: nowrap;"><span style="color: #64748b; font-weight: 600;">${label}:</span> <span style="color: #1e293b;">${val}</span></span>`;
+        let date_html = `<div class="date-tag" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 4px 0; width: 100%;">`;
 
-          date_html += item("Created", display_date);
+        // 1. Actual Creation Date (immutable, never changes)
+        if (frm.doc.creation) {
+          const created_date = frappe.datetime.str_to_user(frm.doc.creation.split(" ")[0]);
+          date_html += item("Created", created_date, "fa fa-calendar-plus-o", "#f0fdf4", "#15803d", "#bbf7d0");
+        }
 
-          if (frm.doc.status === "Closed" && frm.doc.closing_date) {
-            const closed_date = frappe.datetime.str_to_user(
-              frm.doc.closing_date,
-            );
-            date_html += item("Closed", closed_date);
+        // 2. Auditor-Side Last Modification Date (only if modified by case creator/auditor, not by stage/branch users)
+        const is_auditor_modifier = (
+          frm.doc.modified_by === frm.doc.owner ||
+          frm.doc.modified_by === frm.doc.query_generated_by_mail ||
+          frm.doc.modified_by === frm.doc.query_generated_by_empid
+        );
+
+        if (is_auditor_modifier && frm.doc.modified && frm.doc.creation) {
+          const mod_date_str = frm.doc.modified.split(" ")[0];
+          const create_date_str = frm.doc.creation.split(" ")[0];
+          if (mod_date_str !== create_date_str) {
+            const display_mod_date = frappe.datetime.str_to_user(mod_date_str);
+            date_html += item("Modified", display_mod_date, "fa fa-pencil-square-o", "#eff6ff", "#1d4ed8", "#bfdbfe");
           }
+        }
 
-          if (frm.doc.creation) {
-            // Calculate dynamic aging: today - creation date
-            const creation_date_obj = frappe.datetime.str_to_obj(
-              frm.doc.creation,
-            );
-            const today = new Date();
-            const time_diff = today - creation_date_obj;
-            const dynamic_aging = Math.floor(time_diff / (1000 * 60 * 60 * 24));
+        // 3. Dynamic Aging: today - creation date
+        if (frm.doc.creation) {
+          const creation_date_obj = frappe.datetime.str_to_obj(frm.doc.creation);
+          const today = new Date();
+          const time_diff = today - creation_date_obj;
+          const dynamic_aging = Math.floor(time_diff / (1000 * 60 * 60 * 24));
+          date_html += item("Aging", `${dynamic_aging} Days`, "fa fa-clock-o", "#fffbeb", "#b45309", "#fde68a");
+        }
 
-            date_html += item("Aging", `${dynamic_aging} Days`);
-          }
+        // 4. Closed Date (if closed)
+        if (frm.doc.status === "Closed" && frm.doc.closing_date) {
+          const closed_date = frappe.datetime.str_to_user(frm.doc.closing_date);
+          date_html += item("Closed", closed_date, "fa fa-check-circle", "#f8fafc", "#475569", "#cbd5e1");
+        }
 
-          date_html += `</span>`;
-          header_status.after(date_html);
+        date_html += `</div>`;
+
+        // Inject attractive cards right below the action buttons toolbar, or below header status if toolbar is not ready
+        if ($actions_bar.length) {
+          $actions_bar.after(date_html);
+        } else if ($header_status.length) {
+          $header_status.closest(".page-title, .title-area").append(date_html);
         }
 
         // Correct status label text from 'Close' to 'Closed'
