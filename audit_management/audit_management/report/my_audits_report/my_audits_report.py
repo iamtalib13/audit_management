@@ -22,6 +22,7 @@ def get_columns():
         {"label": "Query Status", "fieldname": "status", "fieldtype": "Select", "width": 130},
         {"label": "Subject", "fieldname": "audit_query_subject_box", "fieldtype": "Data", "width": 200},
         {"label": "Description", "fieldname": "audit_query_box", "fieldtype": "Data", "width": 300},
+        {"label": "Closing Date", "fieldname": "closing_date", "fieldtype": "Date", "width": 100}
     ]
 
     # Fetch all audit stages to add dynamic columns
@@ -100,7 +101,7 @@ def get_data(filters):
 
     query = f"""
         SELECT
-            ma.name, ma.creation, ma.status,
+            ma.name, ma.creation, ma.closing_date, ma.status,
             ma.emp_branch, ma.query_generated_by_empid, ma.query_generated_by_name, ma.query_type,
             ma.audit_query_subject_box, ma.audit_query_box
         FROM `tabMy Audits` ma
@@ -144,6 +145,7 @@ def get_data(filters):
 
     for row in result:
         row["date_formatted"] = formatdate(row.creation, "dd-mm-yyyy")
+        row["date_formatted"] = formatdate(row.closing_date, "dd-mm-yyyy") if row.closing_date else ""
         row["sol_id"] = sol_map.get(row.emp_branch, "")
         if row.name in items_map:
             row.update(items_map[row.name])
